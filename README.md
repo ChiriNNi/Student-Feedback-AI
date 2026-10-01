@@ -64,6 +64,15 @@ self-registrable — they're provisioned by an administrator, like in a real
 university system. A successful registration signs the new account in
 immediately.
 
+### Admin: managing users
+
+Signed in as `admin`, the success screen has a **"Manage users"** panel:
+lists every account with its role and active/disabled status, and lets you
+create a new account with any role (student/faculty/manager/admin) or edit an
+existing one — change its role, department, active status, or reset its
+password. Disabling an account there takes effect immediately; a disabled
+account can no longer sign in (`403 ACCOUNT_DISABLED`).
+
 ---
 
 ## Stopping / resetting
@@ -146,6 +155,9 @@ that file for the full list and defaults). Notable ones:
 - **Student self-registration**, scoped to the `student` role only, with
   uniqueness checks on both email and student ID (including a race-safe
   fallback if two requests register the same login at the same time).
+- **Admin user management** (`/api/admin/users`) — create/edit accounts of any
+  role, gated by the `admin` role on the JWT; an admin can't demote or disable
+  their own account.
 - The database port is bound to `127.0.0.1` only; the backend port is never
   required to be exposed beyond `nginx`'s proxy in a real deployment.
 
@@ -160,15 +172,16 @@ review before deploying this anywhere beyond your own machine.
 pulse/
 ├── backend/                 FastAPI application
 │   ├── app/
-│   │   ├── routers/auth.py  Login, /me, change-password, forgot-password
+│   │   ├── routers/auth.py  Login, register, /me, change-password, forgot-password
+│   │   ├── routers/admin.py Admin user management (mounted), topics/catalogue (not yet used by the UI)
 │   │   ├── models.py        SQLAlchemy models (users, courses, feedback, ...)
 │   │   ├── security.py      JWT + bcrypt helpers
 │   │   ├── seed.py          Demo departments & users (login-focused seed)
-│   │   └── main.py          App entrypoint (currently mounts only `auth`)
+│   │   └── main.py          App entrypoint (mounts `auth` + `admin`)
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
-│   ├── public/index.html    The sign-in page (single static file)
+│   ├── public/index.html    Sign-in / registration / admin user panel (single static file)
 │   ├── nginx.conf           Proxies /api/* to the backend
 │   └── Dockerfile
 ├── docker-compose.yml
@@ -176,7 +189,8 @@ pulse/
 └── start.ps1
 ```
 
-> Note: several backend routers and models (surveys, feedback analytics,
-> admin management, etc.) exist in the codebase for future use but are
-> intentionally not mounted in `main.py` yet, since the current scope is the
-> login system only.
+> Note: a few backend routers and models (surveys, feedback analytics, etc.)
+> exist in the codebase for future use but are intentionally not mounted in
+> `main.py` yet, since the current scope is login + account management. The
+> `admin` router's topic/course/service endpoints are mounted and usable via
+> the API, but have no UI yet — only user management does.

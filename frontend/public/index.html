@@ -250,6 +250,7 @@
     animation: shine 3.6s ease-in-out infinite;
   }
   .btn.secondary::after, .btn.danger::after { display: none; }
+  .btn[hidden] { display: none; }
   @keyframes shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
   .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(5, 6, 15, 0.3); border-top-color: #05060f; animation: rot 0.7s linear infinite; display: none; }
   .btn.secondary .spinner { border-color: rgba(232, 235, 255, 0.25); border-top-color: var(--text); }
@@ -277,6 +278,35 @@
   .field .lbl span:last-child:not(:first-child) {
     text-transform: none; letter-spacing: normal; font-weight: 400; color: #565b85;
   }
+
+  /* ---------- admin: user management ---------- */
+  .sub-muted { color: var(--muted); font-size: 13px; padding: 8px 2px; }
+  .users-list { max-height: 260px; overflow-y: auto; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .user-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 12px;
+    background: var(--field); border: 1px solid var(--glass-border);
+  }
+  .user-row .who { flex: 1; min-width: 0; }
+  .user-row .who b { display: block; font-size: 13.5px; color: var(--text); }
+  .user-row .who span { display: block; font: 400 11.5px var(--mono); color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .role-badge {
+    font: 500 10px var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 3px 7px; border-radius: 999px; border: 1px solid currentColor; flex-shrink: 0;
+  }
+  .role-badge.student { color: var(--cyan); }
+  .role-badge.faculty { color: var(--violet); }
+  .role-badge.manager { color: var(--neu); }
+  .role-badge.admin { color: var(--pink); }
+  .user-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .user-row .dot.on { background: var(--pos); box-shadow: 0 0 6px var(--pos); }
+  .user-row .dot.off { background: var(--neg); box-shadow: 0 0 6px var(--neg); }
+  .user-row button {
+    background: none; border: 1px solid var(--glass-border); color: var(--muted);
+    border-radius: 8px; padding: 5px 9px; font-size: 11.5px; cursor: pointer; flex-shrink: 0;
+  }
+  .user-row button:hover { color: var(--text); border-color: var(--violet); }
   .demo {
     margin-top: 14px; padding: 10px 12px; border-radius: 12px;
     border: 1px dashed var(--glass-border);
@@ -287,7 +317,7 @@
 
   /* ---------- success ---------- */
   .success { display: none; padding: 4px 0 6px; }
-  .card.done form, .card.done .head, .card.done .foot { display: none; }
+  .card.done .view-signin, .card.done .view-register { display: none; }
   .card.done .success { display: block; animation: slideIn 0.6s; }
   @keyframes slideIn { from { opacity: 0; transform: translateY(14px); } }
   .success-head { text-align: center; }
@@ -564,6 +594,82 @@
             </div>
           </div>
 
+          <!-- admin-only: visible when the signed-in account's role is "admin" -->
+          <div class="accordion" id="usersAccordion" hidden>
+            <button type="button" class="accordion-toggle" id="usersToggle">
+              <span>Manage users</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="accordion-body">
+              <div class="users-list" id="usersList"><p class="sub-muted">Loading…</p></div>
+
+              <button type="button" class="btn secondary" id="newUserBtn">+ New user</button>
+
+              <form id="userForm" novalidate hidden>
+                <input type="hidden" id="userEditId">
+                <div class="field">
+                  <label class="lbl" for="userName"><span>Full name</span></label>
+                  <div class="input" id="userNameBox">
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+                    <input id="userName" type="text" placeholder="Full name">
+                  </div>
+                  <div class="hint" id="userNameHint" aria-live="polite"></div>
+                </div>
+                <div class="field">
+                  <label class="lbl" for="userEmail"><span>Email</span></label>
+                  <div class="input" id="userEmailBox">
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 6 8 7 8-7"/></svg>
+                    <input id="userEmail" type="email" placeholder="name@sdu.edu.kz">
+                  </div>
+                  <div class="hint" id="userEmailHint" aria-live="polite"></div>
+                </div>
+                <div class="field">
+                  <label class="lbl" for="userRole"><span>Role</span></label>
+                  <div class="input" id="userRoleBox">
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+                    <select id="userRole">
+                      <option value="student">Student</option>
+                      <option value="faculty">Faculty</option>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Administrator</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field" id="userStudentIdField">
+                  <label class="lbl" for="userStudentId"><span>Student ID</span><span>students only</span></label>
+                  <div class="input" id="userStudentIdBox">
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+                    <input id="userStudentId" type="text" inputmode="numeric" maxlength="9" placeholder="240103083">
+                  </div>
+                  <div class="hint" id="userStudentIdHint" aria-live="polite"></div>
+                </div>
+                <div class="field">
+                  <label class="lbl" for="userDept"><span>Department</span><span>optional</span></label>
+                  <div class="input" id="userDeptBox">
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>
+                    <select id="userDept"><option value="">No department</option></select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="lbl" for="userPassword"><span>Password</span><span id="userPasswordOptionalTag"></span></label>
+                  <div class="input" id="userPasswordBox">
+                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    <input id="userPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters, letters + digits">
+                  </div>
+                  <div class="hint" id="userPasswordHint" aria-live="polite"></div>
+                </div>
+                <label class="check" style="margin-bottom:16px"><input type="checkbox" id="userActive" checked> Account active</label>
+
+                <button type="submit" class="btn secondary" id="userSubmit">
+                  <span class="spinner"></span><span id="userSubmitText">Create user</span>
+                </button>
+                <button type="button" class="btn secondary" id="userCancel" style="margin-top:8px">Cancel</button>
+
+                <div class="alert" id="userAlert" role="alert"></div>
+              </form>
+            </div>
+          </div>
+
           <div class="divider">or</div>
           <button class="btn danger" id="logout">Sign out</button>
         </div>
@@ -823,9 +929,12 @@ form.addEventListener("submit", async e => {
 });
 
 /* ---------- success view: fetch a fresh profile from the API ---------- */
+let currentSession = null;
 async function showSuccess(session) {
   const { ok, data } = await api("/auth/me", { token: session.token });
   const user = ok ? data : session.user;
+  session.user = user;
+  currentSession = session;
 
   $("welcome").textContent = `Welcome, ${user.name}`;
   $("welcomeSub").textContent = `Signed in as ${ROLE_LABEL[user.role] || user.role}.`;
@@ -838,13 +947,19 @@ async function showSuccess(session) {
   ].filter(Boolean).map(([k, v]) => `<div class="row-kv"><span>${k}</span><b>${escapeHtml(v)}</b></div>`).join("");
 
   card.classList.add("done");
+
+  $("usersAccordion").hidden = user.role !== "admin";
+  if (user.role === "admin") loadUsers();
 }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 $("logout").addEventListener("click", () => {
   clearSession();
+  currentSession = null;
   card.classList.remove("done");
   $("pwAccordion").classList.remove("open");
+  $("usersAccordion").classList.remove("open");
+  $("usersAccordion").hidden = true;
   toast("You have been signed out.");
   loginEl.focus();
 });
@@ -952,19 +1067,26 @@ function showRegAlert(msg, type = "error") {
   regAlertEl.textContent = msg;
 }
 
-let departmentsLoaded = false;
-async function loadDepartments() {
-  if (departmentsLoaded) return;
+let cachedDepartments = null;
+async function getDepartments() {
+  if (cachedDepartments) return cachedDepartments;
   const { ok, data } = await api("/auth/departments");
-  if (ok && Array.isArray(data)) {
-    for (const d of data) {
-      const opt = document.createElement("option");
-      opt.value = d.id;
-      opt.textContent = d.name;
-      regDept.appendChild(opt);
-    }
-    departmentsLoaded = true;
+  cachedDepartments = ok && Array.isArray(data) ? data : [];
+  return cachedDepartments;
+}
+function fillDeptSelect(select) {
+  for (const d of cachedDepartments) {
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.name;
+    select.appendChild(opt);
   }
+}
+async function loadDepartments() {
+  if (regDept.dataset.filled) return;
+  await getDepartments();
+  fillDeptSelect(regDept);
+  regDept.dataset.filled = "1";
 }
 
 function updateRegStrength() {
@@ -1054,6 +1176,153 @@ regForm.addEventListener("submit", async e => {
   } else {
     showRegAlert("Something went wrong. Please try again.");
   }
+});
+
+/* ---------- admin: user management ---------- */
+const usersList = $("usersList");
+const userForm = $("userForm"), userEditId = $("userEditId");
+const userName = $("userName"), userEmail = $("userEmail"), userRole = $("userRole");
+const userStudentId = $("userStudentId"), userStudentIdField = $("userStudentIdField"), userDept = $("userDept");
+const userPassword = $("userPassword"), userPasswordOptionalTag = $("userPasswordOptionalTag"), userActive = $("userActive");
+const userNameBox = $("userNameBox"), userEmailBox = $("userEmailBox"), userStudentIdBox = $("userStudentIdBox"), userPasswordBox = $("userPasswordBox");
+const userNameHint = $("userNameHint"), userEmailHint = $("userEmailHint"), userStudentIdHint = $("userStudentIdHint"), userPasswordHint = $("userPasswordHint");
+const userSubmit = $("userSubmit"), userSubmitText = $("userSubmitText"), userAlertEl = $("userAlert");
+let usersCache = [];
+
+$("usersToggle").addEventListener("click", () => $("usersAccordion").classList.toggle("open"));
+
+function showUserAlert(msg, type = "error") {
+  userAlertEl.className = "alert show" + (type === "info" ? " info" : type === "ok" ? " ok" : "");
+  userAlertEl.textContent = msg;
+}
+
+function roleBadge(role) {
+  return `<span class="role-badge ${role}">${ROLE_LABEL[role] || role}</span>`;
+}
+
+function renderUsers() {
+  if (!usersCache.length) { usersList.innerHTML = '<p class="sub-muted">No users yet.</p>'; return; }
+  usersList.innerHTML = usersCache.map(u => `
+    <div class="user-row" data-id="${u.id}">
+      <span class="dot ${u.is_active ? "on" : "off"}" title="${u.is_active ? "Active" : "Disabled"}"></span>
+      <div class="who">
+        <b>${escapeHtml(u.name)}</b>
+        <span>${escapeHtml(u.email || u.student_id || "")}</span>
+      </div>
+      ${roleBadge(u.role)}
+      <button type="button" data-edit="${u.id}">Edit</button>
+    </div>
+  `).join("");
+  usersList.querySelectorAll("[data-edit]").forEach(b =>
+    b.addEventListener("click", () => openUserForm(usersCache.find(u => u.id === Number(b.dataset.edit)))));
+}
+
+async function loadUsers() {
+  usersList.innerHTML = '<p class="sub-muted">Loading…</p>';
+  const { ok, data } = await api("/admin/users", { token: currentSession.token });
+  if (!ok) { usersList.innerHTML = '<p class="sub-muted">Could not load users.</p>'; return; }
+  usersCache = data;
+  renderUsers();
+}
+
+function clearUserForm() {
+  [userNameBox, userEmailBox, userStudentIdBox, userPasswordBox].forEach(b => b.classList.remove("invalid"));
+  [userNameHint, userEmailHint, userStudentIdHint, userPasswordHint].forEach(h => h.textContent = "");
+  userAlertEl.className = "alert";
+}
+
+function toggleStudentIdField() {
+  userStudentIdField.hidden = userRole.value !== "student";
+}
+userRole.addEventListener("change", toggleStudentIdField);
+
+async function openUserForm(user) {
+  clearUserForm();
+  await getDepartments();
+  userDept.innerHTML = '<option value="">No department</option>';
+  fillDeptSelect(userDept);
+
+  if (user) {
+    userEditId.value = user.id;
+    userName.value = user.name;
+    userEmail.value = user.email || "";
+    userRole.value = user.role;
+    userStudentId.value = user.student_id || "";
+    userDept.value = user.department_id || "";
+    userActive.checked = user.is_active;
+    userPassword.value = "";
+    userPasswordOptionalTag.textContent = "leave blank to keep it";
+    userSubmitText.textContent = "Save changes";
+  } else {
+    userEditId.value = "";
+    userForm.reset();
+    userActive.checked = true;
+    userPasswordOptionalTag.textContent = "";
+    userSubmitText.textContent = "Create user";
+  }
+  toggleStudentIdField();
+  userForm.hidden = false;
+  $("newUserBtn").hidden = true;
+}
+
+$("newUserBtn").addEventListener("click", () => openUserForm(null));
+$("userCancel").addEventListener("click", () => {
+  userForm.hidden = true;
+  $("newUserBtn").hidden = false;
+});
+
+userForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  clearUserForm();
+
+  let ok = true;
+  if (userName.value.trim().length < 2) { setError(userNameBox, userNameHint, "Enter a full name."); ok = false; }
+  if (!EMAIL_RE.test(userEmail.value.trim())) { setError(userEmailBox, userEmailHint, "Enter a valid email."); ok = false; }
+  const isStudent = userRole.value === "student";
+  if (isStudent && !STUDENT_ID_RE.test(userStudentId.value.trim())) {
+    setError(userStudentIdBox, userStudentIdHint, "Student ID must be exactly 9 digits."); ok = false;
+  }
+  const isNew = !userEditId.value;
+  const pw = userPassword.value;
+  if ((isNew || pw) && (pw.length < 8 || !(/[A-Za-z]/.test(pw) && /\d/.test(pw)))) {
+    setError(userPasswordBox, userPasswordHint, isNew ? "At least 8 characters, with letters and digits." : "Leave blank to keep it, or enter 8+ chars with letters and digits.");
+    ok = false;
+  }
+  if (!ok) return;
+
+  userSubmit.classList.add("loading");
+  userSubmit.disabled = true;
+
+  const body = {
+    name: userName.value.trim(),
+    email: userEmail.value.trim(),
+    role: userRole.value,
+    student_id: isStudent ? userStudentId.value.trim() : null,
+    department_id: userDept.value ? Number(userDept.value) : null,
+    is_active: userActive.checked,
+    password: pw || null,
+  };
+
+  const path = isNew ? "/admin/users" : `/admin/users/${userEditId.value}`;
+  const { ok: success, status, data } = await api(path, {
+    method: isNew ? "POST" : "PUT", token: currentSession.token, body,
+  });
+
+  userSubmit.classList.remove("loading");
+  userSubmit.disabled = false;
+
+  if (success) {
+    toast(isNew ? "User created." : "User updated.");
+    userForm.hidden = true;
+    $("newUserBtn").hidden = false;
+    loadUsers();
+    return;
+  }
+  const detail = typeof data.detail === "string" ? data.detail : null;
+  if (status === 409) showUserAlert(detail || "Email or student ID already in use.");
+  else if (status === 400) showUserAlert(detail || "You cannot remove your own admin access.");
+  else if (status === 422) showUserAlert(detail || "Please check the entered values.");
+  else showUserAlert("Something went wrong. Please try again.");
 });
 
 /* ---------- backend / database status probe ---------- */
