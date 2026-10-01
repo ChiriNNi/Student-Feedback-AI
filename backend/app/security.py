@@ -27,8 +27,13 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_token(user: User, remember: bool = False) -> tuple[str, datetime]:
     hours = settings.jwt_remember_hours if remember else settings.jwt_hours
     expires = datetime.now(timezone.utc) + timedelta(hours=hours)
-    payload = {"sub": str(user.id), "role": user.role, "exp": expires}
+    payload = {"sub": str(user.id), "role": user.role, "tv": user.token_version or 0, "exp": expires}
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256"), expires
+
+
+def revoke_sessions(user: User) -> None:
+    """Invalidate every token issued to this user so far (caller commits)."""
+    user.token_version = (user.token_version or 0) + 1
 
 
 def get_current_user(
@@ -45,7 +50,10 @@ def get_current_user(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
     user = db.get(User, int(payload["sub"]))
     if not user or not user.is_active:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Account disabled")
+        # Covers deleted and banned accounts: an already-issued token stops working at once.
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Account banned or removed")
+    if payload.get("tv", 0) != (user.token_version or 0):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Session ended because the password was changed")
     return user
 
 

@@ -21,6 +21,11 @@ async def lifespan(_: FastAPI):
         conn.execute(text("SELECT pg_advisory_lock(424242)"))
         try:
             Base.metadata.create_all(conn)
+            # create_all() never alters existing tables, so columns added after the
+            # first deploy are applied here (idempotent on every start).
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason TEXT"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"))
         finally:
             conn.execute(text("SELECT pg_advisory_unlock(424242)"))
     if settings.seed_demo_data:

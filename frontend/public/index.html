@@ -26,6 +26,8 @@
     --mono: "JetBrains Mono", ui-monospace, monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Author rules like .btn { display: flex } would otherwise beat the UA's [hidden] style. */
+  [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
     font-family: "Space Grotesk", system-ui, sans-serif;
@@ -250,7 +252,6 @@
     animation: shine 3.6s ease-in-out infinite;
   }
   .btn.secondary::after, .btn.danger::after { display: none; }
-  .btn[hidden] { display: none; }
   @keyframes shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
   .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(5, 6, 15, 0.3); border-top-color: #05060f; animation: rot 0.7s linear infinite; display: none; }
   .btn.secondary .spinner { border-color: rgba(232, 235, 255, 0.25); border-top-color: var(--text); }
@@ -279,34 +280,162 @@
     text-transform: none; letter-spacing: normal; font-weight: 400; color: #565b85;
   }
 
-  /* ---------- admin: user management ---------- */
-  .sub-muted { color: var(--muted); font-size: 13px; padding: 8px 2px; }
-  .users-list { max-height: 260px; overflow-y: auto; margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
-  .user-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 12px;
-    background: var(--field); border: 1px solid var(--glass-border);
-  }
-  .user-row .who { flex: 1; min-width: 0; }
-  .user-row .who b { display: block; font-size: 13.5px; color: var(--text); }
-  .user-row .who span { display: block; font: 400 11.5px var(--mono); color: var(--muted);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* ---------- admin panel (full page) ---------- */
   .role-badge {
-    font: 500 10px var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
-    padding: 3px 7px; border-radius: 999px; border: 1px solid currentColor; flex-shrink: 0;
+    display: inline-block; font: 500 10px var(--mono); letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap;
   }
   .role-badge.student { color: var(--cyan); }
   .role-badge.faculty { color: var(--violet); }
   .role-badge.manager { color: var(--neu); }
   .role-badge.admin { color: var(--pink); }
-  .user-row .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .user-row .dot.on { background: var(--pos); box-shadow: 0 0 6px var(--pos); }
-  .user-row .dot.off { background: var(--neg); box-shadow: 0 0 6px var(--neg); }
-  .user-row button {
-    background: none; border: 1px solid var(--glass-border); color: var(--muted);
-    border-radius: 8px; padding: 5px 9px; font-size: 11.5px; cursor: pointer; flex-shrink: 0;
+
+  .admin-entry { margin-top: 14px; }
+  .admin-app { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 24px 32px 48px; min-height: 100vh; }
+  .adm-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--glass-border); }
+  .adm-brand { display: flex; align-items: center; gap: 12px; }
+  .adm-brand .logo-mark { width: 34px; height: 34px; border-radius: 10px; }
+  .adm-brand .logo-mark::after { width: 20px; height: 20px; border-radius: 6px; }
+  .adm-brand .logo-text { font-size: 19px; }
+  .adm-top-right { display: flex; align-items: center; gap: 10px; }
+  .me-chip { display: flex; align-items: center; gap: 10px; padding: 5px 14px 5px 5px; border-radius: 999px; border: 1px solid var(--glass-border); background: var(--field); }
+  .me-chip b { display: block; font-size: 13px; font-weight: 500; }
+  .me-chip small { display: block; font: 400 11px var(--mono); color: var(--muted); }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center; font: 600 12px var(--mono); color: #05060f;
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
   }
-  .user-row button:hover { color: var(--text); border-color: var(--violet); }
+  .avatar.role-faculty { background: linear-gradient(135deg, var(--violet), #b18cff); }
+  .avatar.role-manager { background: linear-gradient(135deg, var(--neu), #ff8f70); }
+  .avatar.role-admin { background: linear-gradient(135deg, var(--pink), var(--violet)); }
+  .avatar.banned { background: #2a2d4a; color: var(--muted); }
+  .btn-sm {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.03); color: var(--text);
+    border-radius: 10px; padding: 8px 14px; font: 500 13px "Space Grotesk", sans-serif; transition: 0.15s;
+  }
+  .btn-sm svg { width: 15px; height: 15px; }
+  .btn-sm:hover { border-color: var(--violet); background: rgba(139, 92, 255, 0.08); }
+  .btn-sm.danger:hover { border-color: var(--neg); background: rgba(255, 92, 122, 0.08); color: #ffc2cd; }
+  .btn-sm:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  .adm-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 28px 0 20px; }
+  .adm-head h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+  .adm-head p { color: var(--muted); margin-top: 4px; font-size: 14.5px; }
+  .adm-head .btn { width: auto; padding: 12px 20px; }
+
+  .adm-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .adm-stat {
+    text-align: left; cursor: pointer; font: inherit; color: var(--text);
+    border: 1px solid var(--glass-border); background: rgba(10, 12, 30, 0.55);
+    border-radius: 16px; padding: 16px 18px; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .adm-stat:hover { border-color: rgba(139, 92, 255, 0.5); }
+  .adm-stat.on { border-color: var(--cyan); background: rgba(62, 242, 224, 0.07); box-shadow: 0 0 0 3px rgba(62, 242, 224, 0.12); }
+  .adm-stat:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .adm-stat span { font: 500 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .adm-stat b { display: block; font: 600 28px var(--mono); margin-top: 6px; }
+  .adm-stat.pos b { color: var(--pos); }
+  .adm-stat.neg b { color: var(--neg); }
+  .adm-stat.vio b { color: var(--violet); }
+
+  .adm-panel {
+    border: 1px solid var(--glass-border); border-radius: 20px; overflow: hidden;
+    background: linear-gradient(160deg, rgba(22, 26, 58, 0.85), rgba(8, 10, 26, 0.9)); backdrop-filter: blur(20px);
+  }
+  .adm-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 16px; border-bottom: 1px solid var(--glass-border); }
+  .adm-toolbar .input { flex: 1 1 260px; }
+  .adm-toolbar .input input { padding: 11px 12px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 12px; background: var(--field); border: 1px solid var(--glass-border); }
+  .seg button { border: 0; background: none; color: var(--muted); font: 500 12.5px "Space Grotesk", sans-serif; padding: 7px 12px; border-radius: 9px; cursor: pointer; }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: rgba(62, 242, 224, 0.14); color: var(--cyan); }
+  .seg button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+
+  .adm-table-wrap { overflow-x: auto; }
+  .adm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .adm-table th {
+    text-align: left; white-space: nowrap; user-select: none;
+    font: 500 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+    padding: 12px 14px; border-bottom: 1px solid var(--glass-border);
+  }
+  .adm-table th[data-sort] { cursor: pointer; }
+  .adm-table th[data-sort]:hover { color: var(--text); }
+  .adm-table th .arrow { display: inline-block; width: 10px; margin-left: 4px; opacity: 0; }
+  .adm-table th.sorted { color: var(--cyan); }
+  .adm-table th.sorted .arrow { opacity: 1; }
+  .adm-table td { padding: 12px 14px; border-bottom: 1px solid rgba(140, 160, 255, 0.07); vertical-align: middle; }
+  .adm-table tbody tr { transition: background 0.15s; }
+  .adm-table tbody tr:hover { background: rgba(139, 92, 255, 0.05); }
+  .adm-table tbody tr:last-child td { border-bottom: 0; }
+  .adm-table .loading-row td { text-align: center; color: var(--muted); padding: 36px 16px; }
+  .u-cell { display: flex; align-items: center; gap: 12px; min-width: 200px; }
+  .u-cell b { display: block; font-weight: 500; }
+  .u-cell small { display: block; font: 400 11.5px var(--mono); color: var(--muted); }
+  .you-tag { font: 500 9.5px var(--mono); letter-spacing: 0.06em; padding: 2px 6px; border-radius: 6px; background: rgba(62, 242, 224, 0.12); color: var(--cyan); margin-left: 6px; vertical-align: 1px; }
+  .mono { font-family: var(--mono); font-size: 12.5px; color: #c9cdf0; }
+  .cell-muted { color: var(--muted); }
+  .cell-dept { display: inline-block; max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; color: var(--muted); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font: 500 10.5px var(--mono); letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; }
+  .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status.active { color: var(--pos); background: rgba(62, 242, 160, 0.08); }
+  .status.banned { color: var(--neg); background: rgba(255, 92, 122, 0.1); }
+  .ban-note { display: block; max-width: 170px; margin-top: 4px; font-size: 11.5px; color: #ffb3c1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .icon-btn {
+    width: 32px; height: 32px; display: grid; place-items: center; flex-shrink: 0; cursor: pointer;
+    border-radius: 9px; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.02); color: var(--muted); transition: 0.15s;
+  }
+  .icon-btn svg { width: 15px; height: 15px; }
+  .icon-btn:hover { color: var(--text); border-color: var(--violet); }
+  .icon-btn.warn:hover { color: var(--neu); border-color: var(--neu); background: rgba(255, 200, 87, 0.08); }
+  .icon-btn.ok:hover { color: var(--pos); border-color: var(--pos); background: rgba(62, 242, 160, 0.08); }
+  .icon-btn.del:hover { color: var(--neg); border-color: var(--neg); background: rgba(255, 92, 122, 0.08); }
+  .icon-btn:disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+  .icon-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .adm-empty { padding: 44px 16px; text-align: center; color: var(--muted); }
+  .adm-empty b { display: block; color: var(--text); font-weight: 500; margin-bottom: 4px; }
+  .adm-foot { padding: 12px 16px; border-top: 1px solid var(--glass-border); font: 400 12px var(--mono); color: var(--muted); }
+
+  /* ---------- modals ---------- */
+  .modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; }
+  .modal-backdrop { position: absolute; inset: 0; background: rgba(3, 4, 12, 0.72); backdrop-filter: blur(6px); animation: fadeIn 0.2s; }
+  .modal-card {
+    position: relative; width: 100%; max-width: 580px; max-height: calc(100vh - 32px); overflow-y: auto;
+    padding: 24px; border-radius: 20px; border: 1px solid var(--glass-border);
+    background: linear-gradient(160deg, rgba(24, 28, 62, 0.98), rgba(10, 12, 30, 0.98));
+    box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8); animation: popIn 0.25s cubic-bezier(.2,.8,.2,1);
+  }
+  .modal-card.sm { max-width: 430px; }
+  .modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .modal-head h3 { font-size: 20px; font-weight: 600; }
+  .modal-head p { color: var(--muted); font-size: 13.5px; margin-top: 4px; line-height: 1.5; }
+  .modal form { margin-top: 0; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; margin-top: 20px; }
+  /* Grid items default to min-width:auto, so an <input>'s intrinsic width would overflow the column. */
+  .form-grid > * { min-width: 0; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+  .modal-actions .btn { width: auto; padding: 12px 20px; }
+  .btn.warn { background: linear-gradient(92deg, #ffc857, #ff8f70); }
+  .btn.warn::after { display: none; }
+  .confirm-icon { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; margin-bottom: 16px; }
+  .confirm-icon svg { width: 24px; height: 24px; }
+  .confirm-icon.neg { background: rgba(255, 92, 122, 0.12); color: var(--neg); }
+  .confirm-icon.warn { background: rgba(255, 200, 87, 0.12); color: var(--neu); }
+  .confirm-icon.pos { background: rgba(62, 242, 160, 0.12); color: var(--pos); }
+  .confirm-text { color: #c9cdf0; font-size: 14px; line-height: 1.55; margin-top: 8px; }
+  .confirm-text b { color: var(--text); font-weight: 500; }
+  textarea.ta {
+    width: 100%; min-height: 84px; resize: vertical; outline: 0;
+    background: var(--field); border: 1px solid var(--glass-border); border-radius: 14px;
+    color: var(--text); font: 400 14px "Space Grotesk", sans-serif; padding: 12px 14px;
+  }
+  textarea.ta::placeholder { color: #565b85; }
+  textarea.ta:focus { border-color: var(--cyan); box-shadow: 0 0 0 4px rgba(62, 242, 224, 0.12); }
+  @keyframes fadeIn { from { opacity: 0; } }
+  @keyframes popIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
   .demo {
     margin-top: 14px; padding: 10px 12px; border-radius: 12px;
     border: 1px dashed var(--glass-border);
@@ -355,7 +484,7 @@
 
   /* toast */
   .toast {
-    position: fixed; left: 50%; bottom: 28px; z-index: 10;
+    position: fixed; left: 50%; bottom: 28px; z-index: 30;
     transform: translate(-50%, 30px); opacity: 0; pointer-events: none;
     padding: 12px 18px; border-radius: 12px;
     background: rgba(18, 22, 48, 0.95); border: 1px solid var(--glass-border);
@@ -373,6 +502,30 @@
     .brand p.lead { margin-left: auto; margin-right: auto; }
     .status-panel, .stats { display: none; }
     .brand h1 { font-size: 32px; }
+  }
+  @media (max-width: 1000px) {
+    .admin-app { padding: 16px 16px 40px; }
+    .me-chip .me-txt { display: none; }
+    .me-chip { padding: 4px; }
+    .btn-sm .lbl-txt { display: none; }
+    .adm-head { flex-direction: column; align-items: stretch; margin-top: 22px; }
+    .adm-head .btn { width: 100%; }
+    .adm-stats { grid-template-columns: repeat(2, 1fr); }
+    .adm-table thead { display: none; }
+    .adm-table, .adm-table tbody, .adm-table tr, .adm-table td { display: block; width: 100%; }
+    .adm-table tbody tr { padding: 14px 16px; border-bottom: 1px solid var(--glass-border); }
+    .adm-table td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; border: 0; }
+    .adm-table td[data-label]::before {
+      content: attr(data-label); flex-shrink: 0;
+      font: 500 10.5px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    }
+    .adm-table td.u-td { display: block; padding-bottom: 10px; }
+    .adm-table td.status-td { flex-wrap: wrap; }
+    .u-cell { min-width: 0; }
+    .row-actions { justify-content: flex-start; margin-top: 8px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .modal-actions { flex-direction: column-reverse; }
+    .modal-actions .btn { width: 100%; }
   }
   @media (max-width: 420px) {
     .card { padding: 28px 20px 24px; }
@@ -518,7 +671,7 @@
               <label class="lbl" for="regPassword"><span>Password</span></label>
               <div class="input" id="regPasswordBox">
                 <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                <input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters, letters + digits">
+                <input id="regPassword" type="password" autocomplete="new-password" placeholder="8+ chars, letters + digits, not a common word">
                 <button type="button" class="eye" id="regEye" aria-label="Show password">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -594,80 +747,9 @@
             </div>
           </div>
 
-          <!-- admin-only: visible when the signed-in account's role is "admin" -->
-          <div class="accordion" id="usersAccordion" hidden>
-            <button type="button" class="accordion-toggle" id="usersToggle">
-              <span>Manage users</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div class="accordion-body">
-              <div class="users-list" id="usersList"><p class="sub-muted">Loading…</p></div>
-
-              <button type="button" class="btn secondary" id="newUserBtn">+ New user</button>
-
-              <form id="userForm" novalidate hidden>
-                <input type="hidden" id="userEditId">
-                <div class="field">
-                  <label class="lbl" for="userName"><span>Full name</span></label>
-                  <div class="input" id="userNameBox">
-                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-                    <input id="userName" type="text" placeholder="Full name">
-                  </div>
-                  <div class="hint" id="userNameHint" aria-live="polite"></div>
-                </div>
-                <div class="field">
-                  <label class="lbl" for="userEmail"><span>Email</span></label>
-                  <div class="input" id="userEmailBox">
-                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 6 8 7 8-7"/></svg>
-                    <input id="userEmail" type="email" placeholder="name@sdu.edu.kz">
-                  </div>
-                  <div class="hint" id="userEmailHint" aria-live="polite"></div>
-                </div>
-                <div class="field">
-                  <label class="lbl" for="userRole"><span>Role</span></label>
-                  <div class="input" id="userRoleBox">
-                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
-                    <select id="userRole">
-                      <option value="student">Student</option>
-                      <option value="faculty">Faculty</option>
-                      <option value="manager">Manager</option>
-                      <option value="admin">Administrator</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="field" id="userStudentIdField">
-                  <label class="lbl" for="userStudentId"><span>Student ID</span><span>students only</span></label>
-                  <div class="input" id="userStudentIdBox">
-                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
-                    <input id="userStudentId" type="text" inputmode="numeric" maxlength="9" placeholder="240103083">
-                  </div>
-                  <div class="hint" id="userStudentIdHint" aria-live="polite"></div>
-                </div>
-                <div class="field">
-                  <label class="lbl" for="userDept"><span>Department</span><span>optional</span></label>
-                  <div class="input" id="userDeptBox">
-                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>
-                    <select id="userDept"><option value="">No department</option></select>
-                  </div>
-                </div>
-                <div class="field">
-                  <label class="lbl" for="userPassword"><span>Password</span><span id="userPasswordOptionalTag"></span></label>
-                  <div class="input" id="userPasswordBox">
-                    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    <input id="userPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters, letters + digits">
-                  </div>
-                  <div class="hint" id="userPasswordHint" aria-live="polite"></div>
-                </div>
-                <label class="check" style="margin-bottom:16px"><input type="checkbox" id="userActive" checked> Account active</label>
-
-                <button type="submit" class="btn secondary" id="userSubmit">
-                  <span class="spinner"></span><span id="userSubmitText">Create user</span>
-                </button>
-                <button type="button" class="btn secondary" id="userCancel" style="margin-top:8px">Cancel</button>
-
-                <div class="alert" id="userAlert" role="alert"></div>
-              </form>
-            </div>
+          <!-- admin-only entry point; the panel itself is a separate full-page view -->
+          <div class="admin-entry" id="adminEntry" hidden>
+            <button type="button" class="btn" id="openAdmin">Open admin panel &rarr;</button>
           </div>
 
           <div class="divider">or</div>
@@ -676,6 +758,190 @@
       </div>
     </section>
   </main>
+
+  <!-- ========== Admin panel (full page, admins only) ========== -->
+  <div class="admin-app" id="adminApp" hidden>
+    <header class="adm-top">
+      <div class="adm-brand">
+        <div class="logo-mark"></div>
+        <div class="logo-text">Pulse<small>Admin panel</small></div>
+      </div>
+      <div class="adm-top-right">
+        <div class="me-chip">
+          <span class="avatar role-admin" id="admAvatar">A</span>
+          <span class="me-txt"><b id="admMeName">Admin</b><small id="admMeEmail"></small></span>
+        </div>
+        <button type="button" class="btn-sm" id="admBack" title="Back to profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <span class="lbl-txt">Profile</span>
+        </button>
+        <button type="button" class="btn-sm danger" id="admLogout" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span class="lbl-txt">Sign out</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="adm-head">
+      <div>
+        <h1>Users</h1>
+        <p>Create accounts, assign roles, ban or remove access.</p>
+      </div>
+      <button type="button" class="btn" id="newUserBtn">+ New user</button>
+    </div>
+
+    <section class="adm-stats" aria-label="User statistics — click to filter">
+      <button type="button" class="adm-stat" data-filter-status="" data-filter-role=""><span>Total users</span><b id="stTotal">0</b></button>
+      <button type="button" class="adm-stat pos" data-filter-status="active"><span>Active</span><b id="stActive">0</b></button>
+      <button type="button" class="adm-stat neg" data-filter-status="banned"><span>Banned</span><b id="stBanned">0</b></button>
+      <button type="button" class="adm-stat vio" data-filter-role="staff"><span>Staff</span><b id="stStaff">0</b></button>
+    </section>
+
+    <section class="adm-panel">
+      <div class="adm-toolbar">
+        <div class="input">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="admSearch" type="search" placeholder="Search by name, email, ID or department" autocomplete="off">
+        </div>
+        <div class="seg" id="roleSeg" role="group" aria-label="Filter by role">
+          <button type="button" data-role="" class="on">All roles</button>
+          <button type="button" data-role="student">Students</button>
+          <button type="button" data-role="faculty">Faculty</button>
+          <button type="button" data-role="manager">Managers</button>
+          <button type="button" data-role="admin">Admins</button>
+        </div>
+        <div class="seg" id="statusSeg" role="group" aria-label="Filter by status">
+          <button type="button" data-status="" class="on">Any status</button>
+          <button type="button" data-status="active">Active</button>
+          <button type="button" data-status="banned">Banned</button>
+        </div>
+      </div>
+
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead>
+            <tr>
+              <th data-sort="name">User<span class="arrow"></span></th>
+              <th>Student ID</th>
+              <th data-sort="role">Role<span class="arrow"></span></th>
+              <th>Department</th>
+              <th data-sort="status">Status<span class="arrow"></span></th>
+              <th data-sort="last_login">Last sign-in<span class="arrow"></span></th>
+              <th aria-label="Actions"></th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody"></tbody>
+        </table>
+        <div class="adm-empty" id="admEmpty" hidden><b>No users match these filters</b>Try a different search or clear the filters.</div>
+      </div>
+      <div class="adm-foot" id="admCount"></div>
+    </section>
+  </div>
+
+  <!-- ========== Create / edit user modal ========== -->
+  <div class="modal" id="userModal" hidden role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3 id="userModalTitle">New user</h3>
+          <p id="userModalSub">Create an account and choose its role.</p>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="userForm" novalidate>
+        <input type="hidden" id="userEditId">
+        <div class="form-grid">
+          <div class="field">
+            <label class="lbl" for="userName"><span>Full name</span></label>
+            <div class="input" id="userNameBox">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+              <input id="userName" type="text" placeholder="Full name" autocomplete="off">
+            </div>
+            <div class="hint" id="userNameHint" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="userEmail"><span>Email</span></label>
+            <div class="input" id="userEmailBox">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 6 8 7 8-7"/></svg>
+              <input id="userEmail" type="email" placeholder="name@sdu.edu.kz" autocomplete="off">
+            </div>
+            <div class="hint" id="userEmailHint" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="userRole"><span>Role</span></label>
+            <div class="input">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+              <select id="userRole">
+                <option value="student">Student</option>
+                <option value="faculty">Faculty</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <div class="hint"></div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="userDept"><span>Department</span><span>optional</span></label>
+            <div class="input">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>
+              <select id="userDept"><option value="">No department</option></select>
+            </div>
+            <div class="hint"></div>
+          </div>
+          <div class="field" id="userStudentIdField">
+            <label class="lbl" for="userStudentId"><span>Student ID</span><span>students only</span></label>
+            <div class="input" id="userStudentIdBox">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+              <input id="userStudentId" type="text" inputmode="numeric" maxlength="9" placeholder="240103083" autocomplete="off">
+            </div>
+            <div class="hint" id="userStudentIdHint" aria-live="polite"></div>
+          </div>
+          <div class="field" id="userPasswordField">
+            <label class="lbl" for="userPassword"><span>Password</span><span id="userPasswordOptionalTag"></span></label>
+            <div class="input" id="userPasswordBox">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+              <input id="userPassword" type="password" autocomplete="new-password" placeholder="8+ chars, letters + digits">
+              <button type="button" class="eye" id="userEye" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="hint" id="userPasswordHint" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="alert" id="userAlert" role="alert"></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn secondary" data-close>Cancel</button>
+          <button type="submit" class="btn" id="userSubmit">
+            <span class="spinner"></span><span id="userSubmitText">Create user</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== Confirm (ban / unban / delete) modal ========== -->
+  <div class="modal" id="confirmModal" hidden role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+    <div class="modal-backdrop" data-cancel></div>
+    <div class="modal-card sm">
+      <div class="confirm-icon" id="confirmIcon"></div>
+      <h3 id="confirmTitle" style="font-size:19px;font-weight:600"></h3>
+      <p class="confirm-text" id="confirmText"></p>
+      <div class="field" id="confirmReasonField" style="margin-top:16px">
+        <label class="lbl" for="confirmReason"><span>Reason</span><span>optional, shown to the user</span></label>
+        <textarea class="ta" id="confirmReason" maxlength="300" placeholder="e.g. Repeated abusive comments in course reviews"></textarea>
+      </div>
+      <div class="modal-actions" style="margin-top:20px">
+        <button type="button" class="btn secondary" data-cancel>Cancel</button>
+        <button type="button" class="btn" id="confirmOk"><span class="spinner"></span><span id="confirmOkText">Confirm</span></button>
+      </div>
+    </div>
+  </div>
 
   <div class="toast" id="toast" role="status"></div>
 
@@ -948,21 +1214,28 @@ async function showSuccess(session) {
 
   card.classList.add("done");
 
-  $("usersAccordion").hidden = user.role !== "admin";
-  if (user.role === "admin") loadUsers();
+  const isAdmin = user.role === "admin";
+  $("adminEntry").hidden = !isAdmin;
+  // Reloading the page while in the admin panel brings you back to it.
+  if (isAdmin && store.get("sessionStorage", "pulse.view") === "admin") openAdmin();
 }
-function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
-$("logout").addEventListener("click", () => {
+function signOut(message = "You have been signed out.") {
   clearSession();
   currentSession = null;
+  closeAllModals();
+  closeAdmin();
   card.classList.remove("done");
   $("pwAccordion").classList.remove("open");
-  $("usersAccordion").classList.remove("open");
-  $("usersAccordion").hidden = true;
-  toast("You have been signed out.");
+  $("adminEntry").hidden = true;
+  toast(message);
   loginEl.focus();
-});
+}
+// Admin calls that come back 401/403 mean the session is no longer valid (expired, banned, demoted).
+function sessionRevoked() { signOut("Your session is no longer valid. Please sign in again."); }
+
+$("logout").addEventListener("click", () => signOut());
 
 /* ---------- change password ---------- */
 const pwForm = $("pwForm"), curPass = $("curPass"), newPass = $("newPass"), newPass2 = $("newPass2");
@@ -1009,25 +1282,32 @@ pwForm.addEventListener("submit", async e => {
   pwSubmit.disabled = true;
   const { ok, status, data } = await api("/auth/change-password", {
     method: "POST", token: session.token,
-    body: { current_password: curPass.value, new_password: newPass.value },
+    body: { current_password: curPass.value, new_password: newPass.value, remember: !!session.remember },
   });
   pwSubmit.classList.remove("loading");
   pwSubmit.disabled = false;
 
   if (ok) {
+    // The server revoked every older token; this tab continues with the fresh one.
+    session.token = data.token;
+    session.expires_at = data.expires_at;
+    saveSession(session);
+    if (currentSession) { currentSession.token = data.token; currentSession.expires_at = data.expires_at; }
     pwHint.className = "hint ok";
-    pwHint.textContent = "Password updated.";
+    pwHint.textContent = "Password updated. You've been signed out on all other devices.";
     curPass.value = newPass.value = newPass2.value = "";
     updatePwStrength();
-    toast("Password changed successfully.");
-    $("pwAccordion").classList.remove("open");
+    toast("Password changed. Other sessions were signed out.");
   } else if (status === 400) {
     curPassBox.classList.add("invalid");
     pwHint.textContent = data.detail || "Current password is incorrect.";
+    curPass.focus();
+  } else if (status === 422) {
+    newPassBox.classList.add("invalid");
+    pwHint.textContent = typeof data.detail === "string" ? data.detail : "Choose a stronger password.";
+    newPass.focus();
   } else if (status === 401) {
-    toast("Your session expired. Please sign in again.");
-    clearSession();
-    card.classList.remove("done");
+    signOut("Your session is no longer valid. Please sign in again.");
   } else {
     pwHint.textContent = "Something went wrong. Please try again.";
   }
@@ -1171,6 +1451,9 @@ regForm.addEventListener("submit", async e => {
     if (data.code === "STUDENT_ID_TAKEN") setError(regStudentIdBox, regStudentIdHint, detail || "This student ID is already registered.");
     else if (data.code === "EMAIL_TAKEN") setError(regEmailBox, regEmailHint, detail || "This email is already registered.");
     else showRegAlert(detail || "This account already exists.");
+  } else if (status === 422 && data.code === "WEAK_PASSWORD") {
+    setError(regPasswordBox, regPasswordHint, detail);
+    regPassword.focus();
   } else if (status === 422) {
     showRegAlert(detail || "Please check the entered values.");
   } else {
@@ -1178,98 +1461,340 @@ regForm.addEventListener("submit", async e => {
   }
 });
 
-/* ---------- admin: user management ---------- */
-const usersList = $("usersList");
+/* =========================================================
+   ADMIN PANEL — full-page view, admins only
+   ========================================================= */
+const shellEl = document.querySelector(".shell");
+const adminApp = $("adminApp");
+const usersTbody = $("usersTbody"), admEmpty = $("admEmpty"), admCount = $("admCount"), admSearch = $("admSearch");
+const userModal = $("userModal"), confirmModal = $("confirmModal");
 const userForm = $("userForm"), userEditId = $("userEditId");
 const userName = $("userName"), userEmail = $("userEmail"), userRole = $("userRole");
 const userStudentId = $("userStudentId"), userStudentIdField = $("userStudentIdField"), userDept = $("userDept");
-const userPassword = $("userPassword"), userPasswordOptionalTag = $("userPasswordOptionalTag"), userActive = $("userActive");
+const userPassword = $("userPassword"), userPasswordOptionalTag = $("userPasswordOptionalTag");
 const userNameBox = $("userNameBox"), userEmailBox = $("userEmailBox"), userStudentIdBox = $("userStudentIdBox"), userPasswordBox = $("userPasswordBox");
 const userNameHint = $("userNameHint"), userEmailHint = $("userEmailHint"), userStudentIdHint = $("userStudentIdHint"), userPasswordHint = $("userPasswordHint");
 const userSubmit = $("userSubmit"), userSubmitText = $("userSubmitText"), userAlertEl = $("userAlert");
+
+const ROLE_ORDER = { admin: 0, manager: 1, faculty: 2, student: 3 };
+const admState = { q: "", role: "", status: "", sort: "name", dir: 1 };
 let usersCache = [];
 
-$("usersToggle").addEventListener("click", () => $("usersAccordion").classList.toggle("open"));
+const ICONS = {
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  ban: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>',
+  unban: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+  del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>',
+};
 
-function showUserAlert(msg, type = "error") {
-  userAlertEl.className = "alert show" + (type === "info" ? " info" : type === "ok" ? " ok" : "");
+wireEye($("userEye"), userPassword);
+
+function initials(name) {
+  const words = String(name || "").split(/\s+/).filter(w => w && !/^dr\.?$/i.test(w));
+  return (words.slice(0, 2).map(w => w[0]).join("") || "?").toUpperCase();
+}
+function timeAgo(iso) {
+  if (!iso) return "Never";
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 60) return "Just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 86400 * 30) return `${Math.floor(s / 86400)} d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+const isMe = u => !!currentSession && u.id === currentSession.user.id;
+
+/* ---------- open / close ---------- */
+function openAdmin() {
+  if (!currentSession || currentSession.user.role !== "admin") return;
+  const me = currentSession.user;
+  $("admMeName").textContent = me.name;
+  $("admMeEmail").textContent = me.email || "";
+  $("admAvatar").textContent = initials(me.name);
+  shellEl.hidden = true;
+  adminApp.hidden = false;
+  window.scrollTo(0, 0);
+  store.set("sessionStorage", "pulse.view", "admin");
+  loadUsers();
+}
+function closeAdmin() {
+  adminApp.hidden = true;
+  shellEl.hidden = false;
+  store.del("sessionStorage", "pulse.view");
+}
+$("openAdmin").addEventListener("click", openAdmin);
+$("admBack").addEventListener("click", closeAdmin);
+$("admLogout").addEventListener("click", () => signOut());
+
+/* ---------- data ---------- */
+async function loadUsers() {
+  usersTbody.innerHTML = '<tr class="loading-row"><td colspan="7">Loading users…</td></tr>';
+  admEmpty.hidden = true;
+  const { ok, status, data, network } = await api("/admin/users", { token: currentSession.token });
+  if (status === 401 || status === 403) return sessionRevoked();
+  if (!ok) {
+    usersTbody.innerHTML = `<tr class="loading-row"><td colspan="7">${network ? "Cannot reach the server." : "Could not load users."}</td></tr>`;
+    return;
+  }
+  usersCache = data;
+  render();
+}
+function upsertUser(u) {
+  const i = usersCache.findIndex(x => x.id === u.id);
+  if (i >= 0) usersCache[i] = u; else usersCache.push(u);
+  render();
+}
+
+/* ---------- filtering / sorting / rendering ---------- */
+function visibleUsers() {
+  const q = admState.q.trim().toLowerCase();
+  const list = usersCache.filter(u => {
+    if (admState.role === "staff" ? u.role === "student" : admState.role && u.role !== admState.role) return false;
+    if (admState.status === "active" && !u.is_active) return false;
+    if (admState.status === "banned" && u.is_active) return false;
+    if (q && ![u.name, u.email, u.student_id, u.department].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const key = {
+    name: u => u.name.toLowerCase(),
+    role: u => ROLE_ORDER[u.role] ?? 9,
+    status: u => (u.is_active ? 0 : 1),
+    last_login: u => (u.last_login ? -new Date(u.last_login).getTime() : Infinity),
+  }[admState.sort];
+  return list.sort((a, b) => {
+    const ka = key(a), kb = key(b);
+    const c = ka < kb ? -1 : ka > kb ? 1 : a.name.localeCompare(b.name);
+    return c * admState.dir;
+  });
+}
+
+function rowHtml(u) {
+  const me = isMe(u);
+  const status = u.is_active
+    ? '<span class="status active">Active</span>'
+    : `<span class="status banned">Banned</span>${u.ban_reason ? `<span class="ban-note" title="${escapeHtml(u.ban_reason)}">${escapeHtml(u.ban_reason)}</span>` : ""}`;
+  const banTitle = u.banned_at ? ` title="Banned ${new Date(u.banned_at).toLocaleString()}"` : "";
+  const guard = me ? " disabled" : "";
+  const banBtn = u.is_active
+    ? `<button type="button" class="icon-btn warn" data-act="ban" title="Ban user" aria-label="Ban ${escapeHtml(u.name)}"${guard}>${ICONS.ban}</button>`
+    : `<button type="button" class="icon-btn ok" data-act="unban" title="Unban user" aria-label="Unban ${escapeHtml(u.name)}"${guard}>${ICONS.unban}</button>`;
+  return `
+    <tr data-id="${u.id}">
+      <td class="u-td">
+        <div class="u-cell">
+          <span class="avatar ${u.is_active ? "role-" + u.role : "banned"}">${escapeHtml(initials(u.name))}</span>
+          <div><b>${escapeHtml(u.name)}${me ? '<span class="you-tag">YOU</span>' : ""}</b><small>${escapeHtml(u.email)}</small></div>
+        </div>
+      </td>
+      <td data-label="Student ID"><span class="mono">${u.student_id ? escapeHtml(u.student_id) : '<span class="cell-muted">—</span>'}</span></td>
+      <td data-label="Role"><span class="role-badge ${u.role}">${ROLE_LABEL[u.role] || u.role}</span></td>
+      <td data-label="Department"><span class="cell-dept" title="${escapeHtml(u.department || "")}">${u.department ? escapeHtml(u.department) : "—"}</span></td>
+      <td data-label="Status" class="status-td"${banTitle}><div>${status}</div></td>
+      <td data-label="Last sign-in"><span class="cell-muted" title="${u.last_login ? new Date(u.last_login).toLocaleString() : ""}">${timeAgo(u.last_login)}</span></td>
+      <td>
+        <div class="row-actions">
+          <button type="button" class="icon-btn" data-act="edit" title="Edit user" aria-label="Edit ${escapeHtml(u.name)}">${ICONS.edit}</button>
+          ${banBtn}
+          <button type="button" class="icon-btn del" data-act="delete" title="Delete user" aria-label="Delete ${escapeHtml(u.name)}"${guard}>${ICONS.del}</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function render() {
+  const banned = usersCache.filter(u => !u.is_active).length;
+  $("stTotal").textContent = usersCache.length;
+  $("stActive").textContent = usersCache.length - banned;
+  $("stBanned").textContent = banned;
+  $("stStaff").textContent = usersCache.filter(u => u.role !== "student").length;
+
+  // Highlight the stat tile that matches the current filter combination exactly.
+  document.querySelectorAll(".adm-stat").forEach(b => {
+    const role = b.dataset.filterRole || "", status = b.dataset.filterStatus || "";
+    b.classList.toggle("on", admState.role === role && admState.status === status);
+  });
+  document.querySelectorAll("#roleSeg button").forEach(b => b.classList.toggle("on", b.dataset.role === admState.role));
+  document.querySelectorAll("#statusSeg button").forEach(b => b.classList.toggle("on", b.dataset.status === admState.status));
+  document.querySelectorAll(".adm-table th[data-sort]").forEach(th => {
+    const on = th.dataset.sort === admState.sort;
+    th.classList.toggle("sorted", on);
+    th.querySelector(".arrow").textContent = on ? (admState.dir > 0 ? "↑" : "↓") : "";
+    th.setAttribute("aria-sort", on ? (admState.dir > 0 ? "ascending" : "descending") : "none");
+  });
+
+  const list = visibleUsers();
+  usersTbody.innerHTML = list.map(rowHtml).join("");
+  admEmpty.hidden = list.length > 0 || !usersCache.length;
+  admCount.textContent = `Showing ${list.length} of ${usersCache.length} user${usersCache.length === 1 ? "" : "s"}`;
+}
+
+admSearch.addEventListener("input", () => { admState.q = admSearch.value; render(); });
+$("roleSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  admState.role = b.dataset.role; render();
+});
+$("statusSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  admState.status = b.dataset.status; render();
+});
+document.querySelectorAll(".adm-stat").forEach(b => b.addEventListener("click", () => {
+  admState.role = b.dataset.filterRole || "";
+  admState.status = b.dataset.filterStatus || "";
+  render();
+}));
+document.querySelectorAll(".adm-table th[data-sort]").forEach(th => th.addEventListener("click", () => {
+  if (admState.sort === th.dataset.sort) admState.dir *= -1;
+  else { admState.sort = th.dataset.sort; admState.dir = 1; }
+  render();
+}));
+
+usersTbody.addEventListener("click", e => {
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const u = usersCache.find(x => x.id === Number(btn.closest("tr").dataset.id)); if (!u) return;
+  ({ edit: openUserModal, ban: banUser, unban: unbanUser, delete: deleteUser })[btn.dataset.act](u);
+});
+
+/* ---------- modal plumbing ---------- */
+let lastFocus = null;
+function openModal(m, focusEl) {
+  lastFocus = document.activeElement;
+  m.hidden = false;
+  document.body.style.overflow = "hidden";
+  setTimeout(() => focusEl?.focus(), 30);
+}
+function closeModal(m) {
+  if (m.hidden) return;
+  m.hidden = true;
+  if (userModal.hidden && confirmModal.hidden) document.body.style.overflow = "";
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+}
+function closeAllModals() {
+  cancelConfirm();
+  closeModal(userModal);
+}
+userModal.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", () => closeModal(userModal)));
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!confirmModal.hidden) cancelConfirm();
+  else if (!userModal.hidden) closeModal(userModal);
+});
+
+/* ---------- confirm dialog (returns a promise) ---------- */
+let confirmResolve = null;
+const CONFIRM_ICONS = { neg: ICONS.del, warn: ICONS.ban, pos: ICONS.unban };
+function confirmDialog({ tone, title, html, okText, withReason = false }) {
+  $("confirmIcon").className = `confirm-icon ${tone}`;
+  $("confirmIcon").innerHTML = CONFIRM_ICONS[tone];
+  $("confirmTitle").textContent = title;
+  $("confirmText").innerHTML = html;
+  $("confirmReasonField").hidden = !withReason;
+  $("confirmReason").value = "";
+  const ok = $("confirmOk");
+  ok.className = `btn ${tone === "neg" ? "danger" : tone === "warn" ? "warn" : ""}`;
+  ok.disabled = false;
+  $("confirmOkText").textContent = okText;
+  openModal(confirmModal, withReason ? $("confirmReason") : ok);
+  return new Promise(resolve => { confirmResolve = resolve; });
+}
+function cancelConfirm() {
+  if (confirmModal.hidden) return;
+  const r = confirmResolve; confirmResolve = null;
+  closeModal(confirmModal);
+  r?.(null);
+}
+$("confirmOk").addEventListener("click", () => {
+  const r = confirmResolve; confirmResolve = null;
+  r?.({ reason: $("confirmReason").value.trim() });
+});
+confirmModal.querySelectorAll("[data-cancel]").forEach(el => el.addEventListener("click", cancelConfirm));
+
+// Runs the API call while the dialog shows a spinner, then closes it.
+async function runConfirmed(choice, request) {
+  if (!choice) return null;
+  const ok = $("confirmOk");
+  ok.classList.add("loading"); ok.disabled = true;
+  const res = await request(choice);
+  ok.classList.remove("loading"); ok.disabled = false;
+  closeModal(confirmModal);
+  if (res.status === 401 || res.status === 403) { sessionRevoked(); return null; }
+  if (!res.ok) { toast(typeof res.data.detail === "string" ? res.data.detail : "Something went wrong."); return null; }
+  return res;
+}
+
+/* ---------- ban / unban / delete ---------- */
+async function banUser(u) {
+  const choice = await confirmDialog({
+    tone: "warn", title: `Ban ${u.name}?`, okText: "Ban user", withReason: true,
+    html: `<b>${escapeHtml(u.email)}</b> will be signed out everywhere immediately and won't be able to sign in until you unban the account.`,
+  });
+  const res = await runConfirmed(choice, c => api(`/admin/users/${u.id}/ban`, {
+    method: "POST", token: currentSession.token, body: { reason: c.reason || null },
+  }));
+  if (res) { upsertUser(res.data); toast(`${u.name} has been banned.`); }
+}
+async function unbanUser(u) {
+  const choice = await confirmDialog({
+    tone: "pos", title: `Unban ${u.name}?`, okText: "Unban user",
+    html: `<b>${escapeHtml(u.email)}</b> will be able to sign in again.${u.ban_reason ? `<br><span class="cell-muted">Ban reason: ${escapeHtml(u.ban_reason)}</span>` : ""}`,
+  });
+  const res = await runConfirmed(choice, () => api(`/admin/users/${u.id}/unban`, { method: "POST", token: currentSession.token }));
+  if (res) { upsertUser(res.data); toast(`${u.name} has been unbanned.`); }
+}
+async function deleteUser(u) {
+  const choice = await confirmDialog({
+    tone: "neg", title: `Delete ${u.name}?`, okText: "Delete permanently",
+    html: `This permanently removes the account <b>${escapeHtml(u.email)}</b> from the database. This cannot be undone.<br><br><span class="cell-muted">To only block access, use Ban instead.</span>`,
+  });
+  const res = await runConfirmed(choice, () => api(`/admin/users/${u.id}`, { method: "DELETE", token: currentSession.token }));
+  if (res) {
+    usersCache = usersCache.filter(x => x.id !== u.id);
+    render();
+    toast(`${u.name} has been deleted.`);
+  }
+}
+
+/* ---------- create / edit ---------- */
+function showUserAlert(msg) {
+  userAlertEl.className = "alert show";
   userAlertEl.textContent = msg;
 }
-
-function roleBadge(role) {
-  return `<span class="role-badge ${role}">${ROLE_LABEL[role] || role}</span>`;
-}
-
-function renderUsers() {
-  if (!usersCache.length) { usersList.innerHTML = '<p class="sub-muted">No users yet.</p>'; return; }
-  usersList.innerHTML = usersCache.map(u => `
-    <div class="user-row" data-id="${u.id}">
-      <span class="dot ${u.is_active ? "on" : "off"}" title="${u.is_active ? "Active" : "Disabled"}"></span>
-      <div class="who">
-        <b>${escapeHtml(u.name)}</b>
-        <span>${escapeHtml(u.email || u.student_id || "")}</span>
-      </div>
-      ${roleBadge(u.role)}
-      <button type="button" data-edit="${u.id}">Edit</button>
-    </div>
-  `).join("");
-  usersList.querySelectorAll("[data-edit]").forEach(b =>
-    b.addEventListener("click", () => openUserForm(usersCache.find(u => u.id === Number(b.dataset.edit)))));
-}
-
-async function loadUsers() {
-  usersList.innerHTML = '<p class="sub-muted">Loading…</p>';
-  const { ok, data } = await api("/admin/users", { token: currentSession.token });
-  if (!ok) { usersList.innerHTML = '<p class="sub-muted">Could not load users.</p>'; return; }
-  usersCache = data;
-  renderUsers();
-}
-
 function clearUserForm() {
   [userNameBox, userEmailBox, userStudentIdBox, userPasswordBox].forEach(b => b.classList.remove("invalid"));
-  [userNameHint, userEmailHint, userStudentIdHint, userPasswordHint].forEach(h => h.textContent = "");
+  [userNameHint, userEmailHint, userStudentIdHint, userPasswordHint].forEach(h => { h.className = "hint"; h.textContent = ""; });
   userAlertEl.className = "alert";
 }
-
-function toggleStudentIdField() {
-  userStudentIdField.hidden = userRole.value !== "student";
-}
+function toggleStudentIdField() { userStudentIdField.hidden = userRole.value !== "student"; }
 userRole.addEventListener("change", toggleStudentIdField);
+userStudentId.addEventListener("input", () => { userStudentId.value = userStudentId.value.replace(/\D/g, "").slice(0, 9); });
 
-async function openUserForm(user) {
+async function openUserModal(user) {
   clearUserForm();
+  userForm.reset();
   await getDepartments();
   userDept.innerHTML = '<option value="">No department</option>';
   fillDeptSelect(userDept);
 
-  if (user) {
-    userEditId.value = user.id;
+  const editing = !!user;
+  userEditId.value = editing ? user.id : "";
+  $("userModalTitle").textContent = editing ? "Edit user" : "New user";
+  $("userModalSub").textContent = editing
+    ? (isMe(user) ? "This is your own account — its admin role can't be removed here." : `Editing ${user.email}`)
+    : "Create an account and choose its role.";
+  if (editing) {
     userName.value = user.name;
     userEmail.value = user.email || "";
     userRole.value = user.role;
     userStudentId.value = user.student_id || "";
     userDept.value = user.department_id || "";
-    userActive.checked = user.is_active;
-    userPassword.value = "";
-    userPasswordOptionalTag.textContent = "leave blank to keep it";
-    userSubmitText.textContent = "Save changes";
-  } else {
-    userEditId.value = "";
-    userForm.reset();
-    userActive.checked = true;
-    userPasswordOptionalTag.textContent = "";
-    userSubmitText.textContent = "Create user";
   }
+  userRole.disabled = editing && isMe(user);
+  userPasswordOptionalTag.textContent = editing ? "leave blank to keep" : "";
+  userPassword.placeholder = editing ? "New password (optional)" : "8+ chars, letters + digits";
+  userSubmitText.textContent = editing ? "Save changes" : "Create user";
   toggleStudentIdField();
-  userForm.hidden = false;
-  $("newUserBtn").hidden = true;
+  openModal(userModal, userName);
 }
-
-$("newUserBtn").addEventListener("click", () => openUserForm(null));
-$("userCancel").addEventListener("click", () => {
-  userForm.hidden = true;
-  $("newUserBtn").hidden = false;
-});
+$("newUserBtn").addEventListener("click", () => openUserModal(null));
 
 userForm.addEventListener("submit", async e => {
   e.preventDefault();
@@ -1280,49 +1805,47 @@ userForm.addEventListener("submit", async e => {
   if (!EMAIL_RE.test(userEmail.value.trim())) { setError(userEmailBox, userEmailHint, "Enter a valid email."); ok = false; }
   const isStudent = userRole.value === "student";
   if (isStudent && !STUDENT_ID_RE.test(userStudentId.value.trim())) {
-    setError(userStudentIdBox, userStudentIdHint, "Student ID must be exactly 9 digits."); ok = false;
+    setError(userStudentIdBox, userStudentIdHint, "Exactly 9 digits."); ok = false;
   }
   const isNew = !userEditId.value;
   const pw = userPassword.value;
   if ((isNew || pw) && (pw.length < 8 || !(/[A-Za-z]/.test(pw) && /\d/.test(pw)))) {
-    setError(userPasswordBox, userPasswordHint, isNew ? "At least 8 characters, with letters and digits." : "Leave blank to keep it, or enter 8+ chars with letters and digits.");
-    ok = false;
+    setError(userPasswordBox, userPasswordHint, "8+ characters with letters and digits."); ok = false;
   }
   if (!ok) return;
 
   userSubmit.classList.add("loading");
   userSubmit.disabled = true;
-
-  const body = {
-    name: userName.value.trim(),
-    email: userEmail.value.trim(),
-    role: userRole.value,
-    student_id: isStudent ? userStudentId.value.trim() : null,
-    department_id: userDept.value ? Number(userDept.value) : null,
-    is_active: userActive.checked,
-    password: pw || null,
-  };
-
-  const path = isNew ? "/admin/users" : `/admin/users/${userEditId.value}`;
-  const { ok: success, status, data } = await api(path, {
-    method: isNew ? "POST" : "PUT", token: currentSession.token, body,
+  const { ok: success, status, data } = await api(isNew ? "/admin/users" : `/admin/users/${userEditId.value}`, {
+    method: isNew ? "POST" : "PUT",
+    token: currentSession.token,
+    body: {
+      name: userName.value.trim(),
+      email: userEmail.value.trim(),
+      role: userRole.value,
+      student_id: isStudent ? userStudentId.value.trim() : null,
+      department_id: userDept.value ? Number(userDept.value) : null,
+      password: pw || null,
+    },
   });
-
   userSubmit.classList.remove("loading");
   userSubmit.disabled = false;
 
   if (success) {
-    toast(isNew ? "User created." : "User updated.");
-    userForm.hidden = true;
-    $("newUserBtn").hidden = false;
-    loadUsers();
+    // A password reset revokes every session of that user — including our own if we edited ourselves.
+    if (!isNew && pw && isMe(data)) return signOut("Your password was changed. Please sign in with the new one.");
+    upsertUser(data);
+    closeModal(userModal);
+    toast(isNew ? `${data.name} has been created.`
+      : pw ? "Saved. The user was signed out on all devices." : "Changes saved.");
     return;
   }
+  if (status === 401 || status === 403) return sessionRevoked();
   const detail = typeof data.detail === "string" ? data.detail : null;
-  if (status === 409) showUserAlert(detail || "Email or student ID already in use.");
-  else if (status === 400) showUserAlert(detail || "You cannot remove your own admin access.");
-  else if (status === 422) showUserAlert(detail || "Please check the entered values.");
-  else showUserAlert("Something went wrong. Please try again.");
+  if (status === 422 && pw && /password/i.test(detail || "")) setError(userPasswordBox, userPasswordHint, detail);
+  else if (status === 409 && /email/i.test(detail || "")) setError(userEmailBox, userEmailHint, detail);
+  else if (status === 409 && /student id/i.test(detail || "")) setError(userStudentIdBox, userStudentIdHint, detail);
+  else showUserAlert(detail || "Something went wrong. Please try again.");
 });
 
 /* ---------- backend / database status probe ---------- */

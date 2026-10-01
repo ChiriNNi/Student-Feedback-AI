@@ -11,16 +11,13 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..db import get_db
 from ..models import Department, User
-from ..security import create_token, get_current_user, hash_password, verify_password
+from ..passwords import password_problem
+from ..security import create_token, get_current_user, hash_password, revoke_sessions, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 STUDENT_ID_RE = re.compile(r"^\d{9}$")
-
-
-def _is_strong_password(pw: str) -> bool:
-    return bool(re.search(r"[A-Za-z]", pw) and re.search(r"\d", pw))
 
 
 class LoginIn(BaseModel):
@@ -34,12 +31,13 @@ class RegisterIn(BaseModel):
     student_id: str = Field(min_length=9, max_length=9)
     email: str = Field(min_length=5, max_length=160)
     department_id: int | None = None
-    password: str = Field(min_length=8, max_length=200)
+    password: str = Field(min_length=1, max_length=200)  # strength checked by password_problem()
 
 
 class PasswordChangeIn(BaseModel):
     current_password: str
-    new_password: str = Field(min_length=8, max_length=200)
+    new_password: str = Field(min_length=1, max_length=200)
+    remember: bool = False  # lifetime of the fresh token issued to the current session
 
 
 def user_out(u: User) -> dict:
@@ -69,7 +67,10 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     if not user:
         return _error(404, "USER_NOT_FOUND", "This user does not exist in the system.")
     if not user.is_active:
-        return _error(403, "ACCOUNT_DISABLED", "This account has been disabled.")
+        msg = "This account has been banned."
+        if user.ban_reason:
+            msg += f" Reason: {user.ban_reason}"
+        return _error(403, "ACCOUNT_BANNED", msg)
 
     if not verify_password(body.password, user.password_hash):
         user.failed_attempts += 1
@@ -111,8 +112,9 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
         raise HTTPException(422, "Student ID must be exactly 9 digits.")
     if not EMAIL_RE.match(email):
         raise HTTPException(422, "Please enter a valid email address.")
-    if not _is_strong_password(body.password):
-        raise HTTPException(422, "Password must be at least 8 characters and contain letters and digits.")
+    problem = password_problem(body.password, name=name, email=email, student_id=student_id)
+    if problem:
+        return _error(422, "WEAK_PASSWORD", problem)
     if body.department_id is not None and not db.get(Department, body.department_id):
         raise HTTPException(422, "Unknown department.")
 
@@ -145,12 +147,21 @@ def me(user: User = Depends(get_current_user)):
 @router.post("/change-password")
 def change_password(body: PasswordChangeIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if not verify_password(body.current_password, user.password_hash):
-        raise HTTPException(400, "Current password is incorrect")
-    if not (re.search(r"[A-Za-z]", body.new_password) and re.search(r"\d", body.new_password)):
-        raise HTTPException(400, "Password must contain letters and digits")
+        return _error(400, "WRONG_PASSWORD", "Current password is incorrect.")
+    if verify_password(body.new_password, user.password_hash):
+        return _error(422, "WEAK_PASSWORD", "The new password must be different from the current one.")
+    problem = password_problem(body.new_password, name=user.name, email=user.email, student_id=user.student_id)
+    if problem:
+        return _error(422, "WEAK_PASSWORD", problem)
+
     user.password_hash = hash_password(body.new_password)
+    user.failed_attempts, user.locked_until = 0, None
+    # Every token issued before this moment (other browsers, a stolen session) stops working.
+    revoke_sessions(user)
     db.commit()
-    return {"ok": True}
+    # ...except the session that made the change, which gets a fresh token.
+    token, expires = create_token(user, body.remember)
+    return {"ok": True, "token": token, "expires_at": expires.isoformat()}
 
 
 @router.post("/forgot")

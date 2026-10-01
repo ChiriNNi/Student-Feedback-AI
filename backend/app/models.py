@@ -29,7 +29,11 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(16), index=True)
     password_hash: Mapped[str] = mapped_column(String(200))
     department_id: Mapped[int | None] = mapped_column(ForeignKey("departments.id"), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)  # False = banned
+    ban_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    banned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Embedded in every JWT; bumping it (e.g. on password change) invalidates all issued tokens.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

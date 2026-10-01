@@ -1,13 +1,15 @@
 import re
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import ROLES, Course, Department, Feedback, Service, TopicCategory, User
-from ..security import admin_only, get_current_user, hash_password
+from ..passwords import password_problem
+from ..security import admin_only, get_current_user, hash_password, revoke_sessions
 from ..services import invalidate_topics
 from .auth import user_out
 
@@ -22,15 +24,38 @@ class UserIn(BaseModel):
     role: str
     student_id: str | None = None
     department_id: int | None = None
-    password: str | None = Field(default=None, min_length=8, max_length=200)
+    password: str | None = Field(default=None, max_length=200)  # strength checked by password_problem()
     is_active: bool = True
+
+
+class BanIn(BaseModel):
+    reason: str | None = Field(default=None, max_length=300)
+
+
+def admin_user_out(u: User) -> dict:
+    return {
+        **user_out(u),
+        "is_active": u.is_active,
+        "ban_reason": u.ban_reason,
+        "banned_at": u.banned_at.isoformat() if u.banned_at else None,
+        "last_login": u.last_login.isoformat() if u.last_login else None,
+        "created_at": u.created_at.isoformat() if u.created_at else None,
+    }
+
+
+def _get_other_user(user_id: int, me: User, db: Session, action: str) -> User:
+    u = db.get(User, user_id)
+    if not u:
+        raise HTTPException(404, "User not found")
+    if u.id == me.id:
+        raise HTTPException(400, f"You cannot {action} your own account")
+    return u
 
 
 @router.get("/users")
 def list_users(db: Session = Depends(get_db)):
     users = db.scalars(select(User).order_by(User.role, User.name)).all()
-    return [{**user_out(u), "is_active": u.is_active,
-             "last_login": u.last_login.isoformat() if u.last_login else None} for u in users]
+    return [admin_user_out(u) for u in users]
 
 
 @router.post("/users")
@@ -38,30 +63,72 @@ def create_user(body: UserIn, db: Session = Depends(get_db)):
     _check_user(body, db)
     if not body.password:
         raise HTTPException(422, "Password is required for new users")
+    _check_password(body)
     u = User(email=body.email.lower().strip(), name=body.name.strip(), role=body.role,
              student_id=body.student_id or None, department_id=body.department_id,
-             password_hash=hash_password(body.password), is_active=body.is_active)
+             password_hash=hash_password(body.password), is_active=True)
     db.add(u)
     db.commit()
-    return user_out(u)
+    return admin_user_out(u)
 
 
 @router.put("/users/{user_id}")
 def update_user(user_id: int, body: UserIn, db: Session = Depends(get_db),
                 me: User = Depends(get_current_user)):
+    # Ban status is deliberately NOT editable here — only via /ban and /unban,
+    # so a routine profile edit can never silently lift a ban.
     u = db.get(User, user_id)
     if not u:
         raise HTTPException(404, "User not found")
     _check_user(body, db, u.id)
-    if u.id == me.id and (body.role != "admin" or not body.is_active):
+    if u.id == me.id and body.role != "admin":
         raise HTTPException(400, "You cannot remove your own admin access")
     u.email, u.name, u.role = body.email.lower().strip(), body.name.strip(), body.role
-    u.student_id, u.department_id, u.is_active = body.student_id or None, body.department_id, body.is_active
+    u.student_id, u.department_id = body.student_id or None, body.department_id
     if body.password:
+        _check_password(body)
         u.password_hash = hash_password(body.password)
         u.failed_attempts, u.locked_until = 0, None
+        revoke_sessions(u)  # an admin password reset signs the user out everywhere
     db.commit()
-    return user_out(u)
+    return admin_user_out(u)
+
+
+@router.post("/users/{user_id}/ban")
+def ban_user(user_id: int, body: BanIn, db: Session = Depends(get_db),
+             me: User = Depends(get_current_user)):
+    u = _get_other_user(user_id, me, db, "ban")
+    u.is_active = False
+    u.ban_reason = (body.reason or "").strip() or None
+    u.banned_at = datetime.now(timezone.utc)
+    db.commit()
+    # Existing sessions die immediately: get_current_user rejects inactive accounts.
+    return admin_user_out(u)
+
+
+@router.post("/users/{user_id}/unban")
+def unban_user(user_id: int, db: Session = Depends(get_db), me: User = Depends(get_current_user)):
+    u = _get_other_user(user_id, me, db, "unban")
+    u.is_active, u.ban_reason, u.banned_at = True, None, None
+    u.failed_attempts, u.locked_until = 0, None
+    db.commit()
+    return admin_user_out(u)
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), me: User = Depends(get_current_user)):
+    u = _get_other_user(user_id, me, db, "delete")
+    # Courses reference their instructor without ON DELETE; detach them first.
+    db.execute(update(Course).where(Course.instructor_id == u.id).values(instructor_id=None))
+    db.delete(u)
+    db.commit()
+    return {"ok": True}
+
+
+def _check_password(body: UserIn):
+    problem = password_problem(body.password, name=body.name, email=body.email, student_id=body.student_id)
+    if problem:
+        raise HTTPException(422, problem)
 
 
 def _check_user(body: UserIn, db: Session, own_id: int | None = None):

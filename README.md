@@ -66,12 +66,19 @@ immediately.
 
 ### Admin: managing users
 
-Signed in as `admin`, the success screen has a **"Manage users"** panel:
-lists every account with its role and active/disabled status, and lets you
-create a new account with any role (student/faculty/manager/admin) or edit an
-existing one — change its role, department, active status, or reset its
-password. Disabling an account there takes effect immediately; a disabled
-account can no longer sign in (`403 ACCOUNT_DISABLED`).
+Signed in as `admin`, click **"Open admin panel"** to get a full-page view:
+
+- **Stats** — total / active / banned / staff; click a tile to filter by it.
+- **Search and filters** — by name, email, student ID or department, by
+  role, and by status. Click a column header to sort.
+- **Create / edit** (modal) — any role, department, student ID, password reset.
+- **Ban / unban** — with an optional reason. A ban takes effect immediately:
+  the user's existing sessions stop working and sign-in returns
+  `403 ACCOUNT_BANNED` with the reason. Editing a profile never lifts a ban.
+- **Delete** — permanently removes the account, after a confirmation.
+
+An admin can't ban, delete or demote their own account. Reloading the page
+while in the panel brings you back to it.
 
 ---
 
@@ -149,15 +156,26 @@ that file for the full list and defaults). Notable ones:
 - Role is **never chosen by the client** — the backend resolves it from the
   account record, so the frontend can't claim a different role.
 - Distinct, specific error responses: unknown login (404), wrong password
-  (401, with remaining-attempts count), disabled account (403), temporary
+  (401, with remaining-attempts count), banned account (403, with the reason), temporary
   lock (423).
 - **Change password** flow (current password verified before the change).
+- **Password policy** (`app/passwords.py`, enforced server-side for
+  registration, admin-created accounts and password changes): 8+ characters
+  with letters and digits, and rejects common passwords (incl. leetspeak and
+  "word + digits" like `P@ssw0rd1`, `Qwerty2026`), keyboard/alphabet sequences
+  (`abcd1234`, `zxcv0987`), repetitive strings, and passwords containing the
+  user's own name, email or student ID.
+- **Session revocation on password change** — every JWT carries a
+  `token_version`; changing the password (or an admin resetting it) bumps it,
+  so all previously issued sessions stop working at once. The session that
+  made the change gets a fresh token and stays signed in.
 - **Student self-registration**, scoped to the `student` role only, with
   uniqueness checks on both email and student ID (including a race-safe
   fallback if two requests register the same login at the same time).
 - **Admin user management** (`/api/admin/users`) — create/edit accounts of any
-  role, gated by the `admin` role on the JWT; an admin can't demote or disable
-  their own account.
+  role, ban/unban (`POST .../{id}/ban`, `.../{id}/unban`) and delete
+  (`DELETE .../{id}`), gated by the `admin` role on the JWT; an admin can't
+  ban, delete or demote their own account.
 - The database port is bound to `127.0.0.1` only; the backend port is never
   required to be exposed beyond `nginx`'s proxy in a real deployment.
 
