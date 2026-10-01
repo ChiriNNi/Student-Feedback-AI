@@ -55,6 +55,15 @@ Seeded automatically on first startup (password for all of them: `Pulse#2026`):
 You do **not** select a role when signing in — the backend looks up the
 account by login and returns whatever role it actually has.
 
+### Registration
+
+New **students** can self-register from the sign-in page ("Create an
+account"): full name, 9-digit student ID, university email, optional
+department, and a password. Faculty/manager/admin accounts are not
+self-registrable — they're provisioned by an administrator, like in a real
+university system. A successful registration signs the new account in
+immediately.
+
 ---
 
 ## Stopping / resetting
@@ -134,6 +143,9 @@ that file for the full list and defaults). Notable ones:
   (401, with remaining-attempts count), disabled account (403), temporary
   lock (423).
 - **Change password** flow (current password verified before the change).
+- **Student self-registration**, scoped to the `student` role only, with
+  uniqueness checks on both email and student ID (including a race-safe
+  fallback if two requests register the same login at the same time).
 - The database port is bound to `127.0.0.1` only; the backend port is never
   required to be exposed beyond `nginx`'s proxy in a real deployment.
 

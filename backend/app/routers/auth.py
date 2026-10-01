@@ -5,20 +5,36 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..db import get_db
-from ..models import User
+from ..models import Department, User
 from ..security import create_token, get_current_user, hash_password, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+STUDENT_ID_RE = re.compile(r"^\d{9}$")
+
+
+def _is_strong_password(pw: str) -> bool:
+    return bool(re.search(r"[A-Za-z]", pw) and re.search(r"\d", pw))
 
 
 class LoginIn(BaseModel):
     login: str = Field(min_length=1, max_length=160)
     password: str = Field(min_length=1, max_length=200)
     remember: bool = False
+
+
+class RegisterIn(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    student_id: str = Field(min_length=9, max_length=9)
+    email: str = Field(min_length=5, max_length=160)
+    department_id: int | None = None
+    password: str = Field(min_length=8, max_length=200)
 
 
 class PasswordChangeIn(BaseModel):
@@ -73,6 +89,51 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     user.last_login = now
     db.commit()
     token, expires = create_token(user, body.remember)
+    return {"token": token, "expires_at": expires.isoformat(), "user": user_out(user)}
+
+
+@router.get("/departments")
+def list_departments(db: Session = Depends(get_db)):
+    # Public on purpose — the registration form needs it before the user has an account.
+    depts = db.scalars(select(Department).order_by(Department.name)).all()
+    return [{"id": d.id, "code": d.code, "name": d.name} for d in depts]
+
+
+@router.post("/register")
+def register(body: RegisterIn, db: Session = Depends(get_db)):
+    # Self-registration is for students only. Faculty/manager/admin accounts
+    # are provisioned by an administrator, as in a real university system.
+    name = body.name.strip()
+    email = body.email.strip().lower()
+    student_id = body.student_id.strip()
+
+    if not STUDENT_ID_RE.match(student_id):
+        raise HTTPException(422, "Student ID must be exactly 9 digits.")
+    if not EMAIL_RE.match(email):
+        raise HTTPException(422, "Please enter a valid email address.")
+    if not _is_strong_password(body.password):
+        raise HTTPException(422, "Password must be at least 8 characters and contain letters and digits.")
+    if body.department_id is not None and not db.get(Department, body.department_id):
+        raise HTTPException(422, "Unknown department.")
+
+    if db.scalar(select(User).where(User.student_id == student_id)):
+        return _error(409, "STUDENT_ID_TAKEN", "An account with this student ID already exists.")
+    if db.scalar(select(User).where(func.lower(User.email) == email)):
+        return _error(409, "EMAIL_TAKEN", "An account with this email already exists.")
+
+    user = User(
+        name=name, email=email, student_id=student_id, role="student",
+        department_id=body.department_id, password_hash=hash_password(body.password),
+    )
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two concurrent registrations for the same login — the earlier checks raced.
+        db.rollback()
+        return _error(409, "ALREADY_REGISTERED", "An account with this email or student ID already exists.")
+
+    token, expires = create_token(user, remember=False)
     return {"token": token, "expires_at": expires.isoformat(), "user": user_out(user)}
 
 
