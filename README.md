@@ -1,13 +1,19 @@
-# Pulse — AI Student Feedback Analysis System (Login)
+# Pulse — AI Student Feedback Analysis System
 
-A secure, containerized login stack for the Pulse student feedback platform:
+A secure, containerized stack for the Pulse student feedback platform:
 **PostgreSQL + FastAPI backend + nginx/static frontend**, orchestrated with
 Docker Compose and started with a single PowerShell script.
 
-Current scope: a production-shaped **authentication system** (sign in, roles,
-server-side lockout, password change) backed by a real database. The rest of
-the application (feedback collection, sentiment analysis, dashboards) exists
-in the codebase but is not yet wired into the running stack.
+Implemented so far:
+
+- **Sprint 1** — authentication and roles: sign in, student registration,
+  server-side lockout, password change, admin user management.
+- **Sprint 2** — feedback collection: anonymous course evaluations and service
+  reviews, with personal data removed from comments before they are stored
+  (stories 1.3, 1.4, 2.1, 2.2).
+
+Analysis (sentiment, topics, summaries, dashboards) comes in later sprints; the
+code for it exists in the repository but is not wired into the running stack yet.
 
 ---
 
@@ -79,6 +85,78 @@ Signed in as `admin`, click **"Open admin panel"** to get a full-page view:
 
 An admin can't ban, delete or demote their own account. Reloading the page
 while in the panel brings you back to it.
+
+### Feedback forms (Sprint 2)
+
+**Students** — sign in as `240103083` and click **"Give feedback"**:
+
+- Two forms are open for *Fall 2026*: **Course evaluation** (10 courses, the
+  student's own department listed first) and **Service review** (library,
+  dormitory, cafeteria, …).
+- Each form has 1–5 rating statements (clarity, materials, workload, … /
+  staff, availability, quality, …) and an optional comment.
+- Each course or service can be rated once per survey; submitted items are
+  marked ✓.
+- After submitting, the student sees their comment **exactly as it was
+  stored**, with every removed item highlighted.
+
+**Staff** — sign in as faculty, manager or admin and click **"View
+responses"**. Responses are listed without authors, with per-question ratings,
+the average, and the masked comment. They can be filtered by type, by
+course/service, by text, or to only those where personal data was removed.
+What each role sees is decided by the backend:
+
+| Role | Sees responses for |
+|---|---|
+| Faculty | Only the courses they teach (the demo faculty account teaches CSS 101 and CSS 215) |
+| Manager | Their department's courses + all services (all, if no department is set) |
+| Admin | Everything |
+
+Students can't read responses at all (`403`).
+
+**How anonymity works (story 1.3).** A submission writes two rows that have
+nothing in common except the survey:
+
+- `feedback` — the ratings and the masked comment. There is **no user column**.
+- `submission_receipts` — only *(user, survey, course/service)*, used to block
+  a second submission.
+
+Both store the date only (no time), and receipts have no sequential `id`, so
+the two tables can't be matched up by row order or by timestamp.
+
+**Personal data masking (story 1.4)** — `app/nlp/pii.py` runs before anything
+is saved; the raw comment never reaches the database. It replaces:
+
+| What | Replaced with | Example |
+|---|---|---|
+| Email | `[EMAIL]` | `name@stu.sdu.edu.kz` |
+| Phone (10–15 digits) | `[PHONE]` | `+7 701 123 45 67`, `87011234567` |
+| Student ID / IIN | `[ID]` | `240103083`, `040512501234` |
+| Messenger handle | `[CONTACT]` | `@aigerim_b` |
+| Name after a title | `[NAME]` | `Dr. …`, `teacher …`, `преподаватель …`, `… апай` |
+| Self-introduction | `[NAME]` | `my name is …`, `меня зовут …` |
+| Person with an account | `[NAME]` | Any name of someone in the `users` table, e.g. a bare surname |
+
+Numbers that aren't phone-shaped, such as `2025 2026`, are left alone.
+
+**Demo for a reviewer:**
+
+1. As the student, submit a course evaluation for *CSS 215* with the comment
+   `Nurlanovna explains well, call me 8 701 555 12 34`.
+2. Look at the database:
+   ```sql
+   SELECT id, kind, course_id, service_id, ratings, created_at, text FROM feedback;
+   SELECT * FROM submission_receipts;
+   ```
+   The comment is stored as `[NAME] explains well, call me [PHONE]`.
+   `feedback` has no user column, and the receipt has no link to the feedback row.
+3. Sign in as `faculty@sdu.edu.kz` → **View responses**. The response is shown
+   as *Anonymous*.
+
+Courses, services, rating questions and the two open surveys are seeded on
+startup when their tables are empty (`app/seed.py`). You can also edit them
+directly in the database (tables `courses`, `services`, `survey_questions`,
+`surveys`).
 
 ---
 
@@ -176,6 +254,12 @@ that file for the full list and defaults). Notable ones:
   role, ban/unban (`POST .../{id}/ban`, `.../{id}/unban`) and delete
   (`DELETE .../{id}`), gated by the `admin` role on the JWT; an admin can't
   ban, delete or demote their own account.
+- **Anonymous feedback** (`/api/evaluations`): `GET /forms` (students),
+  `POST /{survey_id}/submit` (students, once per item, `409` on a repeat),
+  `GET /responses` (staff, scoped by role). Answers and participation receipts
+  are stored separately and can't be joined (see *Feedback forms* above).
+- **PII masking** before storage: emails, phones, IDs/IIN, messenger handles and
+  names, including the names of everyone who has an account.
 - The database port is bound to `127.0.0.1` only; the backend port is never
   required to be exposed beyond `nginx`'s proxy in a real deployment.
 
@@ -192,14 +276,16 @@ pulse/
 │   ├── app/
 │   │   ├── routers/auth.py  Login, register, /me, change-password, forgot-password
 │   │   ├── routers/admin.py Admin user management (mounted), topics/catalogue (not yet used by the UI)
+│   │   ├── routers/evaluations.py  Course evaluations & service reviews: forms, anonymous submit, responses
+│   │   ├── nlp/pii.py       Personal data masking for comments
 │   │   ├── models.py        SQLAlchemy models (users, courses, feedback, ...)
 │   │   ├── security.py      JWT + bcrypt helpers
-│   │   ├── seed.py          Demo departments & users (login-focused seed)
-│   │   └── main.py          App entrypoint (mounts `auth` + `admin`)
+│   │   ├── seed.py          Demo departments, users, courses, services, questions, surveys
+│   │   └── main.py          App entrypoint (mounts `auth`, `admin`, `evaluations`)
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
-│   ├── public/index.html    Sign-in / registration / admin user panel (single static file)
+│   ├── public/index.html    Sign-in, registration, feedback forms, responses, admin panel (single static file)
 │   ├── nginx.conf           Proxies /api/* to the backend
 │   └── Dockerfile
 ├── docker-compose.yml
@@ -207,8 +293,8 @@ pulse/
 └── start.ps1
 ```
 
-> Note: a few backend routers and models (surveys, feedback analytics, etc.)
-> exist in the codebase for future use but are intentionally not mounted in
-> `main.py` yet, since the current scope is login + account management. The
+> Note: a few backend routers (`surveys`, `feedback`, `analytics`, `actions`,
+> `reports`) exist in the codebase for later sprints but are intentionally not
+> mounted in `main.py` yet. The
 > `admin` router's topic/course/service endpoints are mounted and usable via
 > the API, but have no UI yet — only user management does.

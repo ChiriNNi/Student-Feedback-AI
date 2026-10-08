@@ -1,7 +1,7 @@
 from datetime import datetime, date
 
 from sqlalchemy import (
-    JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func,
+    JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -70,6 +70,17 @@ class TopicCategory(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class SurveyQuestion(Base):
+    """A 1–5 rating statement shown on every course evaluation or service review form."""
+    __tablename__ = "survey_questions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(16), index=True)  # course | service
+    label: Mapped[str] = mapped_column(String(40))  # short name for result views, e.g. "Clarity"
+    text: Mapped[str] = mapped_column(String(300))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
 class Survey(Base):
     __tablename__ = "surveys"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -91,7 +102,8 @@ class Feedback(Base):
     course_id: Mapped[int | None] = mapped_column(ForeignKey("courses.id", ondelete="SET NULL"), nullable=True, index=True)
     service_id: Mapped[int | None] = mapped_column(ForeignKey("services.id", ondelete="SET NULL"), nullable=True, index=True)
     department_id: Mapped[int | None] = mapped_column(ForeignKey("departments.id"), nullable=True, index=True)
-    rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rating: Mapped[int | None] = mapped_column(Integer, nullable=True)  # rounded mean of `ratings`
+    ratings: Mapped[dict] = mapped_column(JSON, default=dict)  # {question_id: 1..5}
     # Only the anonymized text is stored; the raw submission never reaches the database.
     text: Mapped[str] = mapped_column(Text)
     language: Mapped[str] = mapped_column(String(4), default="en")
@@ -112,13 +124,15 @@ class Feedback(Base):
 
 
 class SubmissionReceipt(Base):
-    """Records THAT a student answered a survey target (to block duplicates) without linking to the answer."""
+    """Records THAT a student answered a survey target (to block duplicates) without linking to the answer.
+
+    There is deliberately no surrogate id: sequential ids on both tables would let
+    someone pair the n-th receipt with the n-th feedback row.
+    """
     __tablename__ = "submission_receipts"
-    __table_args__ = (UniqueConstraint("user_id", "survey_id", "target_key"),)
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    survey_id: Mapped[int] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"))
-    target_key: Mapped[str] = mapped_column(String(40))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    survey_id: Mapped[int] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"), primary_key=True)
+    target_key: Mapped[str] = mapped_column(String(40), primary_key=True)
     # Rounded to the day so the receipt cannot be joined to a feedback row by timestamp
     submitted_on: Mapped[date] = mapped_column(Date, default=date.today)
 

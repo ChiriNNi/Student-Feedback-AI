@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from .config import settings
 from .db import Base, SessionLocal, engine, wait_for_db
-from .routers import admin, auth
+from .routers import admin, auth, evaluations
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("pulse")
@@ -26,6 +26,17 @@ async def lifespan(_: FastAPI):
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason TEXT"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS ratings JSON"))
+            # Receipts used to have a serial id, which would let the n-th receipt be paired
+            # with the n-th feedback row; the (user, survey, target) key replaces it.
+            conn.execute(text("""
+                DO $$ BEGIN
+                  IF EXISTS (SELECT 1 FROM information_schema.columns
+                             WHERE table_name = 'submission_receipts' AND column_name = 'id') THEN
+                    ALTER TABLE submission_receipts DROP COLUMN id;
+                    ALTER TABLE submission_receipts ADD PRIMARY KEY (user_id, survey_id, target_key);
+                  END IF;
+                END $$;"""))
         finally:
             conn.execute(text("SELECT pg_advisory_unlock(424242)"))
     if settings.seed_demo_data:
@@ -37,8 +48,8 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Pulse — Login API",
-    version="1.0.0",
+    title="Pulse API",
+    version="1.1.0",
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url=None,
@@ -54,6 +65,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(evaluations.router)
 
 
 @app.get("/api/health", tags=["system"])

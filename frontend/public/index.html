@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pulse — Sign In</title>
+<title>Pulse — Student Feedback</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -290,7 +290,6 @@
   .role-badge.manager { color: var(--neu); }
   .role-badge.admin { color: var(--pink); }
 
-  .admin-entry { margin-top: 14px; }
   .admin-app { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 24px 32px 48px; min-height: 100vh; }
   .adm-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--glass-border); }
   .adm-brand { display: flex; align-items: center; gap: 12px; }
@@ -494,6 +493,96 @@
   }
   .toast.show { transform: translate(-50%, 0); opacity: 1; }
 
+  /* ---------- sprint 2: feedback forms & responses ---------- */
+  .entry-actions { display: grid; gap: 10px; margin-top: 14px; }
+  .kicker { display: block; font: 500 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--cyan); margin-bottom: 6px; }
+
+  .anon-banner {
+    display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px;
+    padding: 14px 18px; border-radius: 16px; font-size: 13.5px; line-height: 1.55; color: #c9cdf0;
+    border: 1px solid rgba(62, 242, 160, 0.3); background: rgba(62, 242, 160, 0.06);
+  }
+  .anon-banner svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--pos); margin-top: 1px; }
+  .anon-banner b { color: var(--text); font-weight: 500; }
+
+  .fb-tabs { display: inline-flex; margin-bottom: 14px; }
+  .fb-tabs button { padding: 9px 16px; font-size: 13.5px; }
+  .fb-tabs button small { font: 500 11px var(--mono); margin-left: 6px; opacity: 0.8; }
+  .progress { display: flex; align-items: center; gap: 12px; font: 400 12px var(--mono); color: var(--muted); white-space: nowrap; }
+  .progress-bar { width: 140px; height: 6px; border-radius: 6px; background: rgba(140, 160, 255, 0.12); overflow: hidden; }
+  .progress-bar i { display: block; height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, var(--cyan), var(--pos)); transition: width 0.4s; }
+
+  .tgt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; padding: 16px; }
+  .tgt-grid .group-title { grid-column: 1 / -1; font: 500 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+  .tgt-grid .group-title:first-child { margin-top: 0; }
+  .tgt {
+    position: relative; display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer;
+    padding: 16px; border-radius: 16px; font: inherit; color: var(--text);
+    border: 1px solid var(--glass-border); background: rgba(10, 12, 30, 0.55); transition: 0.18s;
+  }
+  .tgt:hover { border-color: rgba(139, 92, 255, 0.6); transform: translateY(-2px); box-shadow: 0 10px 30px -12px rgba(139, 92, 255, 0.6); }
+  .tgt:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .tgt .code { font: 500 11.5px var(--mono); color: var(--cyan); }
+  .tgt b { font-weight: 500; font-size: 15px; line-height: 1.3; }
+  .tgt small { color: var(--muted); font-size: 12.5px; }
+  .tgt .tgt-state { margin-top: auto; padding-top: 8px; font: 500 11px var(--mono); letter-spacing: 0.04em; color: var(--violet); }
+  .tgt.done { cursor: default; border-color: rgba(62, 242, 160, 0.3); background: rgba(62, 242, 160, 0.04); }
+  .tgt.done:hover { transform: none; box-shadow: none; }
+  .tgt.done .tgt-state { color: var(--pos); }
+
+  .q { border: 0; margin: 0 0 16px; padding: 14px 16px; border-radius: 14px; background: var(--field); border: 1px solid var(--glass-border); transition: border-color 0.2s; }
+  .q.invalid { border-color: var(--neg); }
+  .q legend { float: left; width: 100%; font-size: 14px; line-height: 1.45; margin-bottom: 10px; color: #dfe2ff; }
+  .q legend b { display: block; font: 500 10.5px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .likert { clear: both; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .likert label { cursor: pointer; }
+  .likert input { position: absolute; opacity: 0; pointer-events: none; }
+  .likert span {
+    display: grid; place-items: center; height: 40px; border-radius: 10px;
+    border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.02);
+    font: 600 15px var(--mono); color: var(--muted); transition: 0.15s;
+  }
+  .likert label:hover span { border-color: var(--violet); color: var(--text); }
+  .likert input:focus-visible + span { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .likert input:checked + span { color: #05060f; border-color: transparent; background: linear-gradient(135deg, var(--cyan), var(--violet)); box-shadow: 0 6px 18px -6px rgba(139, 92, 255, 0.8); }
+  .likert-ends { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: #6b7099; }
+  .ta-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .ta-foot svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 4px; color: var(--pos); }
+
+  .eval-done { text-align: center; padding: 8px 0 4px; }
+  .eval-done h3 { font-size: 22px; font-weight: 600; }
+  .eval-done > p { color: var(--muted); margin-top: 6px; font-size: 14px; }
+  .masked-box { margin-top: 18px; text-align: left; padding: 14px 16px; border-radius: 14px; background: var(--field); border: 1px solid var(--glass-border); }
+  .masked-box .kicker { color: var(--muted); }
+  .masked-box p { font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .masked-box .removed { margin-top: 10px; font-size: 12.5px; color: var(--pos); }
+  mark.ph { background: rgba(255, 79, 216, 0.14); color: #ff9ee9; border-radius: 5px; padding: 0 4px; font: 500 12px var(--mono); }
+
+  .rsp-list { display: flex; flex-direction: column; }
+  .rsp { padding: 16px 18px; border-bottom: 1px solid rgba(140, 160, 255, 0.08); }
+  .rsp:last-child { border-bottom: 0; }
+  .rsp-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .rsp-head b { font-weight: 500; font-size: 14.5px; }
+  .rsp-head .rsp-meta { margin-left: auto; font: 400 11.5px var(--mono); color: var(--muted); }
+  .kind-badge { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; }
+  .kind-badge.course { color: var(--cyan); }
+  .kind-badge.service { color: var(--neu); }
+  .anon-tag { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+  .anon-tag svg { width: 12px; height: 12px; }
+  .rchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .rchip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 4px 4px 10px; border-radius: 9px; border: 1px solid var(--glass-border); font-size: 12px; color: var(--muted); }
+  .rchip b { font: 600 12px var(--mono); padding: 2px 7px; border-radius: 6px; }
+  .rchip b.r-pos { color: var(--pos); background: rgba(62, 242, 160, 0.1); }
+  .rchip b.r-neu { color: var(--neu); background: rgba(255, 200, 87, 0.1); }
+  .rchip b.r-neg { color: var(--neg); background: rgba(255, 92, 122, 0.1); }
+  .rchip.avg { color: var(--text); border-color: rgba(139, 92, 255, 0.4); }
+  .rsp-text { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #dfe2ff; white-space: pre-wrap; word-break: break-word; }
+  .rsp-text.none { color: #6b7099; font-style: italic; }
+  .pii-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font: 500 10.5px var(--mono); letter-spacing: 0.04em; color: #ff9ee9; }
+  .pii-tag svg { width: 12px; height: 12px; }
+  .adm-toolbar .input.sel { flex: 0 1 280px; }
+  .adm-toolbar .input.sel select { padding: 11px 36px 11px 12px; }
+
   /* ---------- responsive ---------- */
   @media (max-width: 960px) {
     .shell { grid-template-columns: 1fr; gap: 28px; padding: 28px 16px; }
@@ -526,6 +615,12 @@
     .form-grid { grid-template-columns: 1fr; }
     .modal-actions { flex-direction: column-reverse; }
     .modal-actions .btn { width: 100%; }
+    .adm-toolbar .input.sel { flex: 1 1 100%; }
+    .progress { width: 100%; }
+    .progress-bar { flex: 1; }
+    .rsp-head .rsp-meta { margin-left: 0; width: 100%; }
+    .fb-tabs { display: flex; }
+    .fb-tabs button { flex: 1; }
   }
   @media (max-width: 420px) {
     .card { padding: 28px 20px 24px; }
@@ -747,9 +842,11 @@
             </div>
           </div>
 
-          <!-- admin-only entry point; the panel itself is a separate full-page view -->
-          <div class="admin-entry" id="adminEntry" hidden>
-            <button type="button" class="btn" id="openAdmin">Open admin panel &rarr;</button>
+          <!-- role-based entry points; each opens a separate full-page view -->
+          <div class="entry-actions" id="adminEntry" hidden>
+            <button type="button" class="btn" id="openFeedback" hidden>Give feedback &rarr;</button>
+            <button type="button" class="btn" id="openAdmin" hidden>Open admin panel &rarr;</button>
+            <button type="button" class="btn" id="openResponses" hidden>View responses &rarr;</button>
           </div>
 
           <div class="divider">or</div>
@@ -835,6 +932,118 @@
         <div class="adm-empty" id="admEmpty" hidden><b>No users match these filters</b>Try a different search or clear the filters.</div>
       </div>
       <div class="adm-foot" id="admCount"></div>
+    </section>
+  </div>
+
+  <!-- ========== Student: give feedback (full page) ========== -->
+  <div class="admin-app" id="feedbackApp" hidden>
+    <header class="adm-top">
+      <div class="adm-brand">
+        <div class="logo-mark"></div>
+        <div class="logo-text">Pulse<small>Student feedback</small></div>
+      </div>
+      <div class="adm-top-right">
+        <div class="me-chip">
+          <span class="avatar js-me-avatar">S</span>
+          <span class="me-txt"><b class="js-me-name"></b><small class="js-me-email"></small></span>
+        </div>
+        <button type="button" class="btn-sm" data-page-back title="Back to profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <span class="lbl-txt">Profile</span>
+        </button>
+        <button type="button" class="btn-sm danger" data-page-logout title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span class="lbl-txt">Sign out</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="adm-head">
+      <div>
+        <h1>Share your feedback</h1>
+        <p id="fbLead">Rate your courses and university services.</p>
+      </div>
+    </div>
+
+    <div class="anon-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      <div><b>Your answers are anonymous.</b> Responses are saved without your name, student ID or account — we only note <i>that</i> you answered, so each item can be rated once. Names, emails and phone numbers in comments are removed automatically before anything is saved.</div>
+    </div>
+
+    <div class="seg fb-tabs" id="fbTabs" role="tablist" aria-label="Form type"></div>
+
+    <section class="adm-panel">
+      <div class="adm-toolbar">
+        <div class="input">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="fbSearch" type="search" placeholder="Search by course code, title or instructor" autocomplete="off">
+        </div>
+        <div class="progress"><div class="progress-bar"><i id="fbBar"></i></div><span id="fbProgress">0 of 0 done</span></div>
+      </div>
+      <div class="tgt-grid" id="fbTargets"></div>
+      <div class="adm-empty" id="fbEmpty" hidden><b>Nothing matches your search</b>Try another course code or title.</div>
+    </section>
+  </div>
+
+  <!-- ========== Staff: responses (full page) ========== -->
+  <div class="admin-app" id="responsesApp" hidden>
+    <header class="adm-top">
+      <div class="adm-brand">
+        <div class="logo-mark"></div>
+        <div class="logo-text">Pulse<small>Responses</small></div>
+      </div>
+      <div class="adm-top-right">
+        <div class="me-chip">
+          <span class="avatar js-me-avatar">F</span>
+          <span class="me-txt"><b class="js-me-name"></b><small class="js-me-email"></small></span>
+        </div>
+        <button type="button" class="btn-sm" data-page-back title="Back to profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <span class="lbl-txt">Profile</span>
+        </button>
+        <button type="button" class="btn-sm danger" data-page-logout title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span class="lbl-txt">Sign out</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="adm-head">
+      <div>
+        <h1>Responses</h1>
+        <p id="rspScope">Anonymous course evaluations and service reviews.</p>
+      </div>
+      <button type="button" class="btn-sm" id="rspRefresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        Refresh
+      </button>
+    </div>
+
+    <section class="adm-stats" aria-label="Response statistics — click to filter">
+      <button type="button" class="adm-stat" data-kind=""><span>All responses</span><b id="rsTotal">0</b></button>
+      <button type="button" class="adm-stat" data-kind="course"><span>Course evaluations</span><b id="rsCourse" style="color:var(--cyan)">0</b></button>
+      <button type="button" class="adm-stat" data-kind="service"><span>Service reviews</span><b id="rsService" style="color:var(--neu)">0</b></button>
+      <button type="button" class="adm-stat" data-kind="pii"><span>Personal data removed</span><b id="rsPii" style="color:var(--pink)">0</b></button>
+    </section>
+
+    <section class="adm-panel">
+      <div class="adm-toolbar">
+        <div class="input">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="rspSearch" type="search" placeholder="Search comments" autocomplete="off">
+        </div>
+        <div class="seg" id="rspKindSeg" role="group" aria-label="Filter by type">
+          <button type="button" data-kind="" class="on">All</button>
+          <button type="button" data-kind="course">Courses</button>
+          <button type="button" data-kind="service">Services</button>
+        </div>
+        <div class="input sel">
+          <select id="rspTarget" aria-label="Filter by course or service"><option value="">Every course & service</option></select>
+        </div>
+      </div>
+      <div class="rsp-list" id="rspList"></div>
+      <div class="adm-empty" id="rspEmpty" hidden><b>No responses yet</b>Responses appear here as soon as students submit a form.</div>
+      <div class="adm-foot" id="rspCount"></div>
     </section>
   </div>
 
@@ -939,6 +1148,54 @@
       <div class="modal-actions" style="margin-top:20px">
         <button type="button" class="btn secondary" data-cancel>Cancel</button>
         <button type="button" class="btn" id="confirmOk"><span class="spinner"></span><span id="confirmOkText">Confirm</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Evaluation / review form modal ========== -->
+  <div class="modal" id="evalModal" hidden role="dialog" aria-modal="true" aria-labelledby="evalTitle">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span class="kicker" id="evalKicker"></span>
+          <h3 id="evalTitle"></h3>
+          <p id="evalSub"></p>
+        </div>
+        <button type="button" class="icon-btn" data-close aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="evalForm" novalidate style="margin-top:20px">
+        <div id="evalQuestions"></div>
+        <div class="field">
+          <label class="lbl" for="evalComment"><span id="evalPrompt">Comment</span><span>optional</span></label>
+          <textarea class="ta" id="evalComment" maxlength="2000" rows="4" placeholder="Be specific — what should stay, and what should change?"></textarea>
+          <div class="ta-foot">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Names, emails and phone numbers are removed automatically.</span>
+            <span id="evalCount">0 / 2000</span>
+          </div>
+        </div>
+        <div class="alert" id="evalAlert" role="alert"></div>
+        <div class="modal-actions" style="margin-top:18px">
+          <button type="button" class="btn secondary" data-close>Cancel</button>
+          <button type="submit" class="btn" id="evalSubmit"><span class="spinner"></span><span>Submit anonymously</span></button>
+        </div>
+      </form>
+
+      <div class="eval-done" id="evalDone" hidden>
+        <div class="ring"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <h3>Thank you!</h3>
+        <p>Your feedback was saved anonymously.</p>
+        <div class="masked-box" id="evalMasked" hidden>
+          <span class="kicker">Comment as stored</span>
+          <p id="evalMaskedText"></p>
+          <div class="removed" id="evalRemoved"></div>
+        </div>
+        <div class="modal-actions" style="margin-top:20px">
+          <button type="button" class="btn" data-close id="evalDoneBtn">Done</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1214,10 +1471,18 @@ async function showSuccess(session) {
 
   card.classList.add("done");
 
-  const isAdmin = user.role === "admin";
-  $("adminEntry").hidden = !isAdmin;
-  // Reloading the page while in the admin panel brings you back to it.
-  if (isAdmin && store.get("sessionStorage", "pulse.view") === "admin") openAdmin();
+  const role = user.role;
+  $("openFeedback").hidden = role !== "student";
+  $("openAdmin").hidden = role !== "admin";
+  $("openResponses").hidden = !STAFF.includes(role);
+  // Admins get the user panel as the main action; for faculty/managers responses are the main one.
+  $("openResponses").className = role === "admin" ? "btn secondary" : "btn";
+  $("adminEntry").hidden = false;
+  // Reloading the page while in a full-page view brings you back to it (each opener re-checks the role).
+  const view = store.get("sessionStorage", "pulse.view");
+  if (view === "admin") openAdmin();
+  else if (view === "feedback") openFeedback();
+  else if (view === "responses") openResponses();
 }
 function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
@@ -1225,7 +1490,7 @@ function signOut(message = "You have been signed out.") {
   clearSession();
   currentSession = null;
   closeAllModals();
-  closeAdmin();
+  closePages();
   card.classList.remove("done");
   $("pwAccordion").classList.remove("open");
   $("adminEntry").hidden = true;
@@ -1511,19 +1776,11 @@ function openAdmin() {
   $("admMeName").textContent = me.name;
   $("admMeEmail").textContent = me.email || "";
   $("admAvatar").textContent = initials(me.name);
-  shellEl.hidden = true;
-  adminApp.hidden = false;
-  window.scrollTo(0, 0);
-  store.set("sessionStorage", "pulse.view", "admin");
+  showPage("admin");
   loadUsers();
 }
-function closeAdmin() {
-  adminApp.hidden = true;
-  shellEl.hidden = false;
-  store.del("sessionStorage", "pulse.view");
-}
 $("openAdmin").addEventListener("click", openAdmin);
-$("admBack").addEventListener("click", closeAdmin);
+$("admBack").addEventListener("click", () => closePages());
 $("admLogout").addEventListener("click", () => signOut());
 
 /* ---------- data ---------- */
@@ -1609,7 +1866,7 @@ function render() {
   $("stStaff").textContent = usersCache.filter(u => u.role !== "student").length;
 
   // Highlight the stat tile that matches the current filter combination exactly.
-  document.querySelectorAll(".adm-stat").forEach(b => {
+  adminApp.querySelectorAll(".adm-stat").forEach(b => {
     const role = b.dataset.filterRole || "", status = b.dataset.filterStatus || "";
     b.classList.toggle("on", admState.role === role && admState.status === status);
   });
@@ -1637,7 +1894,7 @@ $("statusSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   admState.status = b.dataset.status; render();
 });
-document.querySelectorAll(".adm-stat").forEach(b => b.addEventListener("click", () => {
+adminApp.querySelectorAll(".adm-stat").forEach(b => b.addEventListener("click", () => {
   admState.role = b.dataset.filterRole || "";
   admState.status = b.dataset.filterStatus || "";
   render();
@@ -1665,18 +1922,20 @@ function openModal(m, focusEl) {
 function closeModal(m) {
   if (m.hidden) return;
   m.hidden = true;
-  if (userModal.hidden && confirmModal.hidden) document.body.style.overflow = "";
+  if (!document.querySelector(".modal:not([hidden])")) document.body.style.overflow = "";
   if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
 }
 function closeAllModals() {
   cancelConfirm();
   closeModal(userModal);
+  closeModal(evalModal);
 }
 userModal.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", () => closeModal(userModal)));
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
   if (!confirmModal.hidden) cancelConfirm();
   else if (!userModal.hidden) closeModal(userModal);
+  else if (!evalModal.hidden) closeModal(evalModal);
 });
 
 /* ---------- confirm dialog (returns a promise) ---------- */
@@ -1847,6 +2106,310 @@ userForm.addEventListener("submit", async e => {
   else if (status === 409 && /student id/i.test(detail || "")) setError(userStudentIdBox, userStudentIdHint, detail);
   else showUserAlert(detail || "Something went wrong. Please try again.");
 });
+
+/* =========================================================
+   FULL-PAGE VIEWS — shared plumbing for the admin panel,
+   the student feedback page and the staff responses page
+   ========================================================= */
+const STAFF = ["faculty", "manager", "admin"];
+const PAGES = { admin: adminApp, feedback: $("feedbackApp"), responses: $("responsesApp") };
+
+function showPage(name) {
+  const me = currentSession.user, page = PAGES[name];
+  page.querySelectorAll(".js-me-name").forEach(el => { el.textContent = me.name; });
+  page.querySelectorAll(".js-me-email").forEach(el => { el.textContent = me.email || ""; });
+  page.querySelectorAll(".js-me-avatar").forEach(el => { el.textContent = initials(me.name); el.className = `avatar js-me-avatar role-${me.role}`; });
+  shellEl.hidden = true;
+  Object.entries(PAGES).forEach(([k, el]) => { el.hidden = k !== name; });
+  window.scrollTo(0, 0);
+  // Reloading the page brings you back to the same view.
+  store.set("sessionStorage", "pulse.view", name);
+}
+function closePages() {
+  Object.values(PAGES).forEach(el => { el.hidden = true; });
+  shellEl.hidden = false;
+  store.del("sessionStorage", "pulse.view");
+}
+document.querySelectorAll("[data-page-back]").forEach(b => b.addEventListener("click", closePages));
+document.querySelectorAll("[data-page-logout]").forEach(b => b.addEventListener("click", () => signOut()));
+
+const KIND_LABEL = { course: "Course evaluation", service: "Service review" };
+const PH_RE = /\[(NAME|EMAIL|PHONE|ID|CONTACT)\]/g;
+const PH_LABEL = { NAME: ["name", "names"], EMAIL: ["email", "emails"], PHONE: ["phone number", "phone numbers"], ID: ["ID number", "ID numbers"], CONTACT: ["contact handle", "contact handles"] };
+// Escapes first, then highlights the placeholders the server put in place of personal data.
+const highlightPh = s => escapeHtml(s).replace(PH_RE, '<mark class="ph">$&</mark>');
+const LOCK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
+const SHIELD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+
+/* =========================================================
+   STUDENT — course evaluations & service reviews
+   (stories 1.3, 1.4, 2.1, 2.2)
+   ========================================================= */
+const fbTabs = $("fbTabs"), fbTargets = $("fbTargets"), fbEmpty = $("fbEmpty"), fbSearch = $("fbSearch");
+const evalModal = $("evalModal"), evalForm = $("evalForm"), evalDone = $("evalDone");
+const evalComment = $("evalComment"), evalAlertEl = $("evalAlert"), evalSubmit = $("evalSubmit");
+const fbState = { forms: [], kind: "course", q: "" };
+let evalCtx = null;
+
+async function openFeedback() {
+  if (!currentSession || currentSession.user.role !== "student") return;
+  showPage("feedback");
+  fbTargets.innerHTML = '<div class="adm-empty" style="grid-column:1/-1">Loading forms…</div>';
+  fbEmpty.hidden = true;
+  const { ok, status, data, network } = await api("/evaluations/forms", { token: currentSession.token });
+  if (status === 401 || status === 403) return sessionRevoked();
+  if (!ok) {
+    fbTargets.innerHTML = `<div class="adm-empty" style="grid-column:1/-1">${network ? "Cannot reach the server." : "Could not load the forms."}</div>`;
+    return;
+  }
+  fbState.forms = data;
+  if (!data.some(f => f.kind === fbState.kind) && data[0]) fbState.kind = data[0].kind;
+  renderForms();
+}
+const currentForm = () => fbState.forms.find(f => f.kind === fbState.kind);
+
+function renderForms() {
+  fbTabs.innerHTML = fbState.forms.map(f => {
+    const on = f.kind === fbState.kind, done = f.targets.filter(t => t.done).length;
+    return `<button type="button" role="tab" data-kind="${f.kind}" class="${on ? "on" : ""}" aria-selected="${on}">${KIND_LABEL[f.kind]}<small>${done}/${f.targets.length}</small></button>`;
+  }).join("");
+
+  const form = currentForm();
+  if (!form) {
+    fbTargets.innerHTML = '<div class="adm-empty" style="grid-column:1/-1"><b>No open forms right now</b>Check back later in the semester.</div>';
+    $("fbProgress").textContent = "—"; $("fbBar").style.width = "0";
+    fbEmpty.hidden = true;
+    return;
+  }
+  $("fbLead").textContent = `${form.semester} · ${form.description}`;
+  fbSearch.placeholder = form.kind === "course" ? "Search by course code, title or instructor" : "Search services";
+  const done = form.targets.filter(t => t.done).length, total = form.targets.length;
+  $("fbProgress").textContent = `${done} of ${total} ${form.kind === "course" ? "courses" : "services"} rated`;
+  $("fbBar").style.width = total ? `${(done / total) * 100}%` : "0";
+
+  const q = fbState.q.trim().toLowerCase();
+  const list = form.targets.filter(t => !q || [t.code, t.title, t.department, t.instructor].join(" ").toLowerCase().includes(q));
+  const own = list.filter(t => t.own_department), other = list.filter(t => !t.own_department);
+  // Courses from the student's own department come first; services aren't grouped.
+  fbTargets.innerHTML = form.kind === "course" && own.length
+    ? `<div class="group-title">Your department</div>${own.map(tgtHtml).join("")}`
+      + (other.length ? `<div class="group-title">Other departments</div>${other.map(tgtHtml).join("")}` : "")
+    : list.map(tgtHtml).join("");
+  fbEmpty.hidden = list.length > 0;
+}
+
+function tgtHtml(t) {
+  const meta = t.code ? [t.instructor, t.department].filter(Boolean).join(" · ") : t.department;
+  return `
+    <button type="button" class="tgt${t.done ? " done" : ""}" data-id="${t.id}"${t.done ? ' aria-disabled="true"' : ""}>
+      ${t.code ? `<span class="code">${escapeHtml(t.code)}</span>` : ""}
+      <b>${escapeHtml(t.title)}</b>
+      <small>${escapeHtml(meta || "")}</small>
+      <span class="tgt-state">${t.done ? "✓ Submitted" : "Rate now →"}</span>
+    </button>`;
+}
+
+fbTabs.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  fbState.kind = b.dataset.kind; fbState.q = ""; fbSearch.value = "";
+  renderForms();
+});
+fbSearch.addEventListener("input", () => { fbState.q = fbSearch.value; renderForms(); });
+fbTargets.addEventListener("click", e => {
+  const b = e.target.closest(".tgt"); if (!b) return;
+  const form = currentForm(), t = form?.targets.find(x => x.id === Number(b.dataset.id)); if (!t) return;
+  if (t.done) return toast("You've already submitted feedback for this one.");
+  openEval(form, t);
+});
+
+/* ---------- the form itself ---------- */
+function openEval(form, t) {
+  evalCtx = { form, target: t };
+  $("evalKicker").textContent = `${KIND_LABEL[form.kind]} · ${form.semester}`;
+  $("evalTitle").textContent = t.code ? `${t.code} — ${t.title}` : t.title;
+  $("evalSub").textContent = t.code
+    ? [t.instructor && `Instructor: ${t.instructor}`, t.department].filter(Boolean).join(" · ")
+    : `${t.department} service`;
+  $("evalQuestions").innerHTML =
+    '<p class="cell-muted" style="font-size:13px;margin-bottom:12px">Rate each statement from 1 (strongly disagree) to 5 (strongly agree).</p>'
+    + form.questions.map(q => `
+      <fieldset class="q" data-qid="${q.id}">
+        <legend><b>${escapeHtml(q.label)}</b>${escapeHtml(q.text)}</legend>
+        <div class="likert">${[1, 2, 3, 4, 5].map(v =>
+          `<label><input type="radio" name="q${q.id}" value="${v}" aria-label="${v} of 5"><span>${v}</span></label>`).join("")}</div>
+        <div class="likert-ends"><span>Strongly disagree</span><span>Strongly agree</span></div>
+      </fieldset>`).join("");
+  evalComment.value = "";
+  evalComment.placeholder = form.comment_prompt || "Your comment";
+  updateEvalCount();
+  evalAlertEl.className = "alert";
+  evalForm.hidden = false;
+  evalDone.hidden = true;
+  evalModal.querySelector(".modal-card").scrollTop = 0;
+  openModal(evalModal, evalModal.querySelector(".likert input"));
+}
+function showEvalAlert(msg) { evalAlertEl.className = "alert show"; evalAlertEl.textContent = msg; }
+function updateEvalCount() { $("evalCount").textContent = `${evalComment.value.length} / 2000`; }
+evalComment.addEventListener("input", updateEvalCount);
+$("evalQuestions").addEventListener("change", e => {
+  e.target.closest(".q")?.classList.remove("invalid");
+  if (!evalForm.querySelector(".q.invalid")) evalAlertEl.className = "alert";
+});
+evalModal.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", () => closeModal(evalModal)));
+
+evalForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const { form, target } = evalCtx;
+  const ratings = {};
+  let firstMissing = null;
+  form.questions.forEach(q => {
+    const fs = evalForm.querySelector(`.q[data-qid="${q.id}"]`);
+    const picked = fs.querySelector("input:checked");
+    fs.classList.toggle("invalid", !picked);
+    if (picked) ratings[q.id] = Number(picked.value);
+    else firstMissing ||= fs;
+  });
+  if (firstMissing) {
+    showEvalAlert("Please rate every statement.");
+    firstMissing.scrollIntoView({ block: "center", behavior: "smooth" });
+    firstMissing.querySelector("input").focus({ preventScroll: true });
+    return;
+  }
+
+  evalSubmit.classList.add("loading"); evalSubmit.disabled = true;
+  const { ok, status, data, network } = await api(`/evaluations/${form.id}/submit`, {
+    method: "POST", token: currentSession.token,
+    body: { ratings, comment: evalComment.value.trim(), [form.kind === "course" ? "course_id" : "service_id"]: target.id },
+  });
+  evalSubmit.classList.remove("loading"); evalSubmit.disabled = false;
+
+  if (status === 401 || status === 403) { closeModal(evalModal); return sessionRevoked(); }
+  if (status === 409) {
+    target.done = true; renderForms();
+    return showEvalAlert(data.detail || "You have already submitted feedback for this item.");
+  }
+  if (!ok) return showEvalAlert(network ? "Cannot reach the server." : (typeof data.detail === "string" ? data.detail : "Something went wrong. Please try again."));
+
+  target.done = true;
+  renderForms();
+  // Show the comment exactly as it was stored, so the student can see what was removed.
+  $("evalMasked").hidden = !data.comment;
+  $("evalMaskedText").innerHTML = highlightPh(data.comment || "");
+  const removed = Object.entries(data.removed || {}).map(([k, n]) => `${n} ${PH_LABEL[k]?.[n === 1 ? 0 : 1] || k.toLowerCase()}`);
+  $("evalRemoved").innerHTML = removed.length
+    ? `${SHIELD_ICON.replace("<svg", '<svg style="width:13px;height:13px;vertical-align:-2px;margin-right:4px"')}Removed before saving: ${removed.join(", ")}.`
+    : '<span class="cell-muted">No personal data found in your comment.</span>';
+  evalForm.hidden = true;
+  evalDone.hidden = false;
+  $("evalDoneBtn").focus();
+});
+
+/* =========================================================
+   STAFF — anonymous responses, scoped by role on the server
+   ========================================================= */
+const rspList = $("rspList"), rspEmpty = $("rspEmpty"), rspSearch = $("rspSearch"), rspTarget = $("rspTarget");
+const responsesApp = $("responsesApp");
+const rspState = { data: null, kind: "", pii: false, target: "", q: "" };
+
+async function openResponses() {
+  if (!currentSession || !STAFF.includes(currentSession.user.role)) return;
+  showPage("responses");
+  await loadResponses();
+}
+async function loadResponses() {
+  rspList.innerHTML = '<div class="adm-empty">Loading responses…</div>';
+  rspEmpty.hidden = true;
+  const { ok, status, data, network } = await api("/evaluations/responses", { token: currentSession.token });
+  if (status === 401 || status === 403) return sessionRevoked();
+  if (!ok) {
+    rspList.innerHTML = `<div class="adm-empty">${network ? "Cannot reach the server." : "Could not load responses."}</div>`;
+    return;
+  }
+  rspState.data = data;
+  $("rspScope").textContent = `${data.scope}. Every response is anonymous.`;
+  const targets = new Map();
+  data.items.forEach(r => targets.set(r.course_id ? `course:${r.course_id}` : `service:${r.service_id}`, r.target));
+  const sorted = [...targets].sort((a, b) => a[1].localeCompare(b[1]));
+  rspTarget.innerHTML = '<option value="">Every course & service</option>'
+    + sorted.map(([k, label]) => `<option value="${k}">${escapeHtml(label)}</option>`).join("");
+  if (!targets.has(rspState.target)) rspState.target = "";
+  rspTarget.value = rspState.target;
+  renderResponses();
+}
+
+const ratingClass = v => (v >= 4 ? "r-pos" : v >= 3 ? "r-neu" : "r-neg");
+function rspHtml(r, qLabel) {
+  const vals = Object.values(r.ratings);
+  const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  const chips = Object.entries(r.ratings).map(([id, v]) =>
+    `<span class="rchip">${escapeHtml(qLabel[id] || `Q${id}`)}<b class="${ratingClass(v)}">${v}</b></span>`).join("");
+  const date = r.date ? new Date(`${r.date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+  return `
+    <article class="rsp">
+      <div class="rsp-head">
+        <span class="kind-badge ${r.kind}">${r.kind === "course" ? "Course" : "Service"}</span>
+        <b>${escapeHtml(r.target)}</b>
+        <span class="anon-tag">${LOCK_ICON}Anonymous</span>
+        <span class="rsp-meta">${escapeHtml(r.semester)} · ${date}</span>
+      </div>
+      <div class="rchips">${chips}${avg != null ? `<span class="rchip avg">Average<b class="${ratingClass(avg)}">${avg.toFixed(1)}</b></span>` : ""}</div>
+      ${r.comment ? `<p class="rsp-text">${highlightPh(r.comment)}</p>` : '<p class="rsp-text none">No comment</p>'}
+      ${r.pii_masked ? `<span class="pii-tag">${SHIELD_ICON}Personal data removed before saving</span>` : ""}
+    </article>`;
+}
+
+function renderResponses() {
+  const { data } = rspState; if (!data) return;
+  const items = data.items;
+  $("rsTotal").textContent = items.length;
+  $("rsCourse").textContent = items.filter(r => r.kind === "course").length;
+  $("rsService").textContent = items.filter(r => r.kind === "service").length;
+  $("rsPii").textContent = items.filter(r => r.pii_masked).length;
+  responsesApp.querySelectorAll(".adm-stat").forEach(b => {
+    const k = b.dataset.kind;
+    b.classList.toggle("on", k === "pii" ? rspState.pii : !rspState.pii && rspState.kind === k);
+  });
+  $("rspKindSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.kind === rspState.kind));
+
+  const qLabel = {};
+  Object.values(data.questions).flat().forEach(q => { qLabel[q.id] = q.label; });
+  const q = rspState.q.trim().toLowerCase();
+  const list = items.filter(r => {
+    if (rspState.kind && r.kind !== rspState.kind) return false;
+    if (rspState.pii && !r.pii_masked) return false;
+    if (rspState.target && rspState.target !== (r.course_id ? `course:${r.course_id}` : `service:${r.service_id}`)) return false;
+    if (q && !`${r.comment} ${r.target}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  rspList.innerHTML = list.map(r => rspHtml(r, qLabel)).join("");
+  rspEmpty.hidden = list.length > 0;
+  rspEmpty.innerHTML = items.length
+    ? "<b>No responses match these filters</b>Try a different search or clear the filters."
+    : "<b>No responses yet</b>Responses appear here as soon as students submit a form.";
+  $("rspCount").textContent = `Showing ${list.length} of ${items.length} response${items.length === 1 ? "" : "s"}`;
+}
+
+responsesApp.querySelectorAll(".adm-stat").forEach(b => b.addEventListener("click", () => {
+  rspState.pii = b.dataset.kind === "pii";
+  rspState.kind = rspState.pii ? "" : b.dataset.kind;
+  renderResponses();
+}));
+$("rspKindSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  rspState.kind = b.dataset.kind;
+  if (rspState.target && !rspState.target.startsWith(rspState.kind)) { rspState.target = ""; rspTarget.value = ""; }
+  renderResponses();
+});
+rspTarget.addEventListener("change", () => {
+  rspState.target = rspTarget.value;
+  if (rspState.target) rspState.kind = rspState.target.split(":")[0];
+  renderResponses();
+});
+rspSearch.addEventListener("input", () => { rspState.q = rspSearch.value; renderResponses(); });
+$("rspRefresh").addEventListener("click", loadResponses);
+
+$("openFeedback").addEventListener("click", openFeedback);
+$("openResponses").addEventListener("click", openResponses);
 
 /* ---------- backend / database status probe ---------- */
 async function checkHealth() {
