@@ -71,10 +71,10 @@ QUESTIONS = [
 SEMESTER = "Fall 2026"
 SURVEYS = [
     ("Fall 2026 Course Evaluation", "course",
-     "Rate the courses you took this semester. Your answers are anonymous.",
+     "Rate the courses you took this semester.",
      "What worked well in this course, and what should be improved?"),
     ("Fall 2026 Service Review", "service",
-     "Tell service units how they are doing. Your answers are anonymous.",
+     "Tell university services how they are doing.",
      "What did you like about this service, and what should change?"),
 ]
 

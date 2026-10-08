@@ -581,6 +581,7 @@
   .pii-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font: 500 10.5px var(--mono); letter-spacing: 0.04em; color: #ff9ee9; }
   .pii-tag svg { width: 12px; height: 12px; }
   .adm-toolbar .input.sel { flex: 0 1 280px; }
+  .adm-stats.three { grid-template-columns: repeat(3, 1fr); }
   .adm-toolbar .input.sel select { padding: 11px 36px 11px 12px; }
 
   /* ---------- responsive ---------- */
@@ -599,6 +600,9 @@
     .btn-sm .lbl-txt { display: none; }
     .adm-head { flex-direction: column; align-items: stretch; margin-top: 22px; }
     .adm-head .btn { width: 100%; }
+    .adm-head .btn-sm { align-self: flex-start; }
+    .adm-stats.three { grid-template-columns: repeat(2, 1fr); }
+    .adm-stats.three > :first-child { grid-column: 1 / -1; }
     .adm-stats { grid-template-columns: repeat(2, 1fr); }
     .adm-table thead { display: none; }
     .adm-table, .adm-table tbody, .adm-table tr, .adm-table td { display: block; width: 100%; }
@@ -1215,6 +1219,10 @@ const CONFIG = {
 
 // Display-only labels for the role the backend returns after login.
 // The role itself is never chosen on the frontend — the account record decides it.
+// The UI is in English, so dates are too, whatever the browser's locale.
+const fmtDateTime = iso => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const fmtDate = iso => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
 const ROLE_LABEL = { student: "Student", faculty: "Faculty", manager: "Manager", admin: "Administrator" };
 
 /* ---------------------------------------------------------
@@ -1465,7 +1473,7 @@ async function showSuccess(session) {
     ["user", user.email || user.student_id],
     ["role", ROLE_LABEL[user.role] || user.role],
     user.department ? ["dept", user.department] : null,
-    ["expires", new Date(session.expires_at).toLocaleString()],
+    ["expires", fmtDateTime(session.expires_at)],
     ["verified", ok ? "live from /api/auth/me" : "cached (server unreachable)"],
   ].filter(Boolean).map(([k, v]) => `<div class="row-kv"><span>${k}</span><b>${escapeHtml(v)}</b></div>`).join("");
 
@@ -1491,6 +1499,7 @@ function signOut(message = "You have been signed out.") {
   currentSession = null;
   closeAllModals();
   closePages();
+  resetPages();
   card.classList.remove("done");
   $("pwAccordion").classList.remove("open");
   $("adminEntry").hidden = true;
@@ -1765,7 +1774,7 @@ function timeAgo(iso) {
   if (s < 3600) return `${Math.floor(s / 60)} min ago`;
   if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
   if (s < 86400 * 30) return `${Math.floor(s / 86400)} d ago`;
-  return new Date(iso).toLocaleDateString();
+  return fmtDate(iso);
 }
 const isMe = u => !!currentSession && u.id === currentSession.user.id;
 
@@ -1830,7 +1839,7 @@ function rowHtml(u) {
   const status = u.is_active
     ? '<span class="status active">Active</span>'
     : `<span class="status banned">Banned</span>${u.ban_reason ? `<span class="ban-note" title="${escapeHtml(u.ban_reason)}">${escapeHtml(u.ban_reason)}</span>` : ""}`;
-  const banTitle = u.banned_at ? ` title="Banned ${new Date(u.banned_at).toLocaleString()}"` : "";
+  const banTitle = u.banned_at ? ` title="Banned ${fmtDateTime(u.banned_at)}"` : "";
   const guard = me ? " disabled" : "";
   const banBtn = u.is_active
     ? `<button type="button" class="icon-btn warn" data-act="ban" title="Ban user" aria-label="Ban ${escapeHtml(u.name)}"${guard}>${ICONS.ban}</button>`
@@ -1847,7 +1856,7 @@ function rowHtml(u) {
       <td data-label="Role"><span class="role-badge ${u.role}">${ROLE_LABEL[u.role] || u.role}</span></td>
       <td data-label="Department"><span class="cell-dept" title="${escapeHtml(u.department || "")}">${u.department ? escapeHtml(u.department) : "—"}</span></td>
       <td data-label="Status" class="status-td"${banTitle}><div>${status}</div></td>
-      <td data-label="Last sign-in"><span class="cell-muted" title="${u.last_login ? new Date(u.last_login).toLocaleString() : ""}">${timeAgo(u.last_login)}</span></td>
+      <td data-label="Last sign-in"><span class="cell-muted" title="${u.last_login ? fmtDateTime(u.last_login) : ""}">${timeAgo(u.last_login)}</span></td>
       <td>
         <div class="row-actions">
           <button type="button" class="icon-btn" data-act="edit" title="Edit user" aria-label="Edit ${escapeHtml(u.name)}">${ICONS.edit}</button>
@@ -2130,6 +2139,19 @@ function closePages() {
   shellEl.hidden = false;
   store.del("sessionStorage", "pulse.view");
 }
+// Filters, searches and loaded data belong to the signed-in user; drop them on sign-out.
+function resetPages() {
+  Object.assign(admState, { q: "", role: "", status: "", sort: "name", dir: 1 });
+  usersCache = [];
+  admSearch.value = "";
+  Object.assign(fbState, { forms: [], kind: "course", q: "" });
+  fbSearch.value = "";
+  fbTabs.innerHTML = fbTargets.innerHTML = "";
+  Object.assign(rspState, { data: null, kind: "", pii: false, target: "", q: "" });
+  rspSearch.value = "";
+  rspList.innerHTML = "";
+  evalCtx = null;
+}
 document.querySelectorAll("[data-page-back]").forEach(b => b.addEventListener("click", closePages));
 document.querySelectorAll("[data-page-logout]").forEach(b => b.addEventListener("click", () => signOut()));
 
@@ -2181,10 +2203,11 @@ function renderForms() {
     fbEmpty.hidden = true;
     return;
   }
-  $("fbLead").textContent = `${form.semester} · ${form.description}`;
+  $("fbLead").textContent = `${form.title} · ${form.description}`;
   fbSearch.placeholder = form.kind === "course" ? "Search by course code, title or instructor" : "Search services";
   const done = form.targets.filter(t => t.done).length, total = form.targets.length;
-  $("fbProgress").textContent = `${done} of ${total} ${form.kind === "course" ? "courses" : "services"} rated`;
+  const noun = form.kind === "course" ? "courses" : "services";
+  $("fbProgress").textContent = total && done === total ? `All ${total} ${noun} rated — thank you!` : `${done} of ${total} ${noun} rated`;
   $("fbBar").style.width = total ? `${(done / total) * 100}%` : "0";
 
   const q = fbState.q.trim().toLowerCase();
@@ -2196,6 +2219,9 @@ function renderForms() {
       + (other.length ? `<div class="group-title">Other departments</div>${other.map(tgtHtml).join("")}` : "")
     : list.map(tgtHtml).join("");
   fbEmpty.hidden = list.length > 0;
+  fbEmpty.innerHTML = form.kind === "course"
+    ? "<b>Nothing matches your search</b>Try another course code, title or instructor."
+    : "<b>Nothing matches your search</b>Try another service name.";
 }
 
 function tgtHtml(t) {
@@ -2243,6 +2269,7 @@ function openEval(form, t) {
   evalComment.placeholder = form.comment_prompt || "Your comment";
   updateEvalCount();
   evalAlertEl.className = "alert";
+  evalSubmit.classList.remove("loading"); evalSubmit.disabled = false;
   evalForm.hidden = false;
   evalDone.hidden = true;
   evalModal.querySelector(".modal-card").scrollTop = 0;
@@ -2259,6 +2286,7 @@ evalModal.querySelectorAll("[data-close]").forEach(el => el.addEventListener("cl
 
 evalForm.addEventListener("submit", async e => {
   e.preventDefault();
+  if (!currentSession || !evalCtx || evalSubmit.disabled) return;
   const { form, target } = evalCtx;
   const ratings = {};
   let firstMissing = null;
@@ -2277,16 +2305,23 @@ evalForm.addEventListener("submit", async e => {
   }
 
   evalSubmit.classList.add("loading"); evalSubmit.disabled = true;
-  const { ok, status, data, network } = await api(`/evaluations/${form.id}/submit`, {
-    method: "POST", token: currentSession.token,
-    body: { ratings, comment: evalComment.value.trim(), [form.kind === "course" ? "course_id" : "service_id"]: target.id },
-  });
-  evalSubmit.classList.remove("loading"); evalSubmit.disabled = false;
+  let res;
+  try {
+    res = await api(`/evaluations/${form.id}/submit`, {
+      method: "POST", token: currentSession.token,
+      body: { ratings, comment: evalComment.value.trim(), [form.kind === "course" ? "course_id" : "service_id"]: target.id },
+    });
+  } finally {
+    evalSubmit.classList.remove("loading"); evalSubmit.disabled = false;
+  }
+  const { ok, status, data, network } = res;
 
   if (status === 401 || status === 403) { closeModal(evalModal); return sessionRevoked(); }
   if (status === 409) {
+    // Answered meanwhile in another tab — nothing left to do in this form.
     target.done = true; renderForms();
-    return showEvalAlert(data.detail || "You have already submitted feedback for this item.");
+    closeModal(evalModal);
+    return toast("You've already submitted feedback for this one.");
   }
   if (!ok) return showEvalAlert(network ? "Cannot reach the server." : (typeof data.detail === "string" ? data.detail : "Something went wrong. Please try again."));
 
@@ -2326,11 +2361,15 @@ async function loadResponses() {
     return;
   }
   rspState.data = data;
+  const coursesOnly = currentSession.user.role === "faculty";
+  responsesApp.querySelectorAll('[data-kind="service"]').forEach(el => { el.hidden = coursesOnly; });
+  $("rspKindSeg").hidden = coursesOnly;  // "All" and "Courses" would be the same list
+  responsesApp.querySelector(".adm-stats").classList.toggle("three", coursesOnly);
   $("rspScope").textContent = `${data.scope}. Every response is anonymous.`;
   const targets = new Map();
   data.items.forEach(r => targets.set(r.course_id ? `course:${r.course_id}` : `service:${r.service_id}`, r.target));
   const sorted = [...targets].sort((a, b) => a[1].localeCompare(b[1]));
-  rspTarget.innerHTML = '<option value="">Every course & service</option>'
+  rspTarget.innerHTML = `<option value="">${coursesOnly ? "Every course" : "Every course &amp; service"}</option>`
     + sorted.map(([k, label]) => `<option value="${k}">${escapeHtml(label)}</option>`).join("");
   if (!targets.has(rspState.target)) rspState.target = "";
   rspTarget.value = rspState.target;
@@ -2343,7 +2382,7 @@ function rspHtml(r, qLabel) {
   const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
   const chips = Object.entries(r.ratings).map(([id, v]) =>
     `<span class="rchip">${escapeHtml(qLabel[id] || `Q${id}`)}<b class="${ratingClass(v)}">${v}</b></span>`).join("");
-  const date = r.date ? new Date(`${r.date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+  const date = r.date ? fmtDate(`${r.date}T00:00:00`) : "";
   return `
     <article class="rsp">
       <div class="rsp-head">
