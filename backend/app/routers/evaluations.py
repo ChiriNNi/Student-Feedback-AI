@@ -7,7 +7,6 @@ but the survey —
 Both carry day-level dates at most, and receipts have no sequential id, so the
 two tables can't be joined back together by id order or by timestamp.
 """
-import time
 from datetime import date, datetime, time as dtime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -44,15 +43,10 @@ def _question_out(q: SurveyQuestion) -> dict:
     return {"id": q.id, "label": q.label, "text": q.text}
 
 
-# Names of everyone with an account, refreshed at most once a minute.
-_names_cache: dict = {"at": 0.0, "rx": None}
-
-
 def _known_names(db: Session):
-    if time.monotonic() - _names_cache["at"] > 60:
-        _names_cache["rx"] = names_pattern(db.scalars(select(User.name)))
-        _names_cache["at"] = time.monotonic()
-    return _names_cache["rx"]
+    # Resolve at submission time so a newly added student or instructor is
+    # protected immediately rather than waiting for a cache refresh.
+    return names_pattern(db.scalars(select(User.name)))
 
 
 # ------------------------------------------------------------------ student

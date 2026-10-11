@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pulse — Student Feedback</title>
+<title>SDU Feedback</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #05060f;
@@ -633,6 +633,7 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 </style>
+<link rel="stylesheet" href="/university.css">
 </head>
 <body>
   <canvas id="net" aria-hidden="true"></canvas>
@@ -644,10 +645,10 @@
     <section class="brand">
       <div class="logo">
         <div class="logo-mark"></div>
-        <div class="logo-text">Pulse<small>Student Feedback AI</small></div>
+        <div class="logo-text">SDU University</div>
       </div>
-      <h1>Hear every student.<br><span class="grad">Act on what matters.</span></h1>
-      <p class="lead">AI-powered sentiment analysis, topic detection and trend insights from course evaluations, surveys and service reviews.</p>
+      <h1 data-i18n="hero_title">Your feedback improves the university</h1>
+      <p class="lead" data-i18n="hero_lead">Evaluate courses and university services in a few clear steps. Your answers are anonymous.</p>
 
       <div class="status-panel" aria-hidden="true">
         <div class="status-head">
@@ -669,16 +670,17 @@
 
     <!-- ========== Login card ========== -->
     <section class="card-wrap">
+      <div class="ui-tools login-ui-tools" data-ui-tools></div>
       <div class="card" id="card">
         <div class="view-signin" id="signinView">
         <div class="head">
-          <h2>Sign in</h2>
-          <p class="sub">Use your university account to continue.</p>
+          <h2 data-i18n="sign_in">Sign in</h2>
+          <p class="sub" data-i18n="sign_in_sub">Use your university account to continue.</p>
         </div>
 
         <form id="form" novalidate>
           <div class="field">
-            <label class="lbl" for="login"><span>Student ID or email</span></label>
+            <label class="lbl" for="login"><span data-i18n="login_label">Student ID or email</span></label>
             <div class="input" id="loginBox">
               <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
               <input id="login" name="login" type="text" autocomplete="username" placeholder="240103083 or name@sdu.edu.kz" spellcheck="false">
@@ -687,7 +689,7 @@
           </div>
 
           <div class="field">
-            <label class="lbl" for="password"><span>Password</span></label>
+            <label class="lbl" for="password"><span data-i18n="password">Password</span></label>
             <div class="input" id="passBox">
               <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
               <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
@@ -699,19 +701,19 @@
           </div>
 
           <div class="row">
-            <label class="check"><input type="checkbox" id="remember"> Remember me</label>
-            <button type="button" class="link" id="forgot">Forgot password?</button>
+            <label class="check"><input type="checkbox" id="remember"> <span data-i18n="remember">Remember me</span></label>
+            <button type="button" class="link" id="forgot" data-i18n="forgot">Forgot password?</button>
           </div>
 
           <button type="submit" class="btn" id="submit">
-            <span class="spinner"></span><span id="submitText">Sign in</span>
+            <span class="spinner"></span><span id="submitText" data-i18n="sign_in">Sign in</span>
           </button>
 
           <div class="alert" id="alert" role="alert"></div>
 
           <div class="foot">
-            All feedback is anonymized before analysis.<br>Access is limited by your role.
-            <p class="switch-line">New student? <button type="button" class="link" id="toRegister">Create an account</button></p>
+            <span data-i18n="privacy_short">All feedback is anonymized before analysis. Access is limited by your role.</span>
+            <p class="switch-line"><span data-i18n="new_student">New student?</span> <button type="button" class="link" id="toRegister" data-i18n="create_account">Create an account</button></p>
             <div class="demo">
               Demo accounts (password <b>Pulse#2026</b>) — click to fill:<br>
               <button type="button" data-demo="240103083">student · 240103083</button><br>
@@ -865,9 +867,10 @@
     <header class="adm-top">
       <div class="adm-brand">
         <div class="logo-mark"></div>
-        <div class="logo-text">Pulse<small>Admin panel</small></div>
+        <div class="logo-text">SDU University</div>
       </div>
       <div class="adm-top-right">
+        <div class="ui-tools" data-ui-tools></div>
         <div class="me-chip">
           <span class="avatar role-admin" id="admAvatar">A</span>
           <span class="me-txt"><b id="admMeName">Admin</b><small id="admMeEmail"></small></span>
@@ -944,9 +947,10 @@
     <header class="adm-top">
       <div class="adm-brand">
         <div class="logo-mark"></div>
-        <div class="logo-text">Pulse<small>Student feedback</small></div>
+        <div class="logo-text">SDU University</div>
       </div>
       <div class="adm-top-right">
+        <div class="ui-tools" data-ui-tools></div>
         <div class="me-chip">
           <span class="avatar js-me-avatar">S</span>
           <span class="me-txt"><b class="js-me-name"></b><small class="js-me-email"></small></span>
@@ -964,14 +968,14 @@
 
     <div class="adm-head">
       <div>
-        <h1>Share your feedback</h1>
+        <h1 data-i18n="share_feedback">Share your feedback</h1>
         <p id="fbLead">Rate your courses and university services.</p>
       </div>
     </div>
 
     <div class="anon-banner">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-      <div><b>Your answers are anonymous.</b> Responses are saved without your name, student ID or account — we only note <i>that</i> you answered, so each item can be rated once. Names, emails and phone numbers in comments are removed automatically before anything is saved.</div>
+      <div><b data-i18n="anonymous_title">Anonymous feedback</b><span data-i18n="anonymous_text"> Names, IDs, email addresses and phone numbers are removed before a response is saved.</span></div>
     </div>
 
     <div class="seg fb-tabs" id="fbTabs" role="tablist" aria-label="Form type"></div>
@@ -994,9 +998,10 @@
     <header class="adm-top">
       <div class="adm-brand">
         <div class="logo-mark"></div>
-        <div class="logo-text">Pulse<small>Responses</small></div>
+        <div class="logo-text">SDU University</div>
       </div>
       <div class="adm-top-right">
+        <div class="ui-tools" data-ui-tools></div>
         <div class="me-chip">
           <span class="avatar js-me-avatar">F</span>
           <span class="me-txt"><b class="js-me-name"></b><small class="js-me-email"></small></span>
@@ -1171,20 +1176,31 @@
         </button>
       </div>
 
-      <form id="evalForm" novalidate style="margin-top:20px">
-        <div id="evalQuestions"></div>
-        <div class="field">
-          <label class="lbl" for="evalComment"><span id="evalPrompt">Comment</span><span>optional</span></label>
-          <textarea class="ta" id="evalComment" maxlength="2000" rows="4" placeholder="Be specific — what should stay, and what should change?"></textarea>
-          <div class="ta-foot">
-            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Names, emails and phone numbers are removed automatically.</span>
-            <span id="evalCount">0 / 2000</span>
+      <form id="evalForm" novalidate>
+        <div class="eval-progress-head">
+          <div class="eval-progress-meta"><span id="evalStepLabel">Question 1</span><span id="evalStepHint"></span></div>
+          <div class="eval-stepbar" aria-hidden="true"><i id="evalStepBar"></i></div>
+        </div>
+        <div class="eval-stage">
+          <div id="evalQuestions"></div>
+          <div class="field" id="evalCommentStep" hidden>
+            <label class="lbl" for="evalComment"><span id="evalPrompt">Comment</span><span data-i18n="optional">optional</span></label>
+            <textarea class="ta" id="evalComment" maxlength="2000" rows="5" placeholder="Be specific — what should stay, and what should change?"></textarea>
+            <div class="ta-foot">
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span data-i18n="pii_note">Names, emails and phone numbers are removed automatically.</span></span>
+              <span id="evalCount">0 / 2000</span>
+            </div>
           </div>
         </div>
-        <div class="alert" id="evalAlert" role="alert"></div>
-        <div class="modal-actions" style="margin-top:18px">
-          <button type="button" class="btn secondary" data-close>Cancel</button>
-          <button type="submit" class="btn" id="evalSubmit"><span class="spinner"></span><span>Submit anonymously</span></button>
+        <div class="eval-footer">
+          <div class="eval-footer-inner">
+            <div class="alert" id="evalAlert" role="alert"></div>
+            <div class="eval-actions">
+              <button type="button" class="btn secondary" id="evalPrev" data-i18n="back">Back</button>
+              <button type="button" class="btn" id="evalNext" data-i18n="continue">Continue</button>
+              <button type="submit" class="btn" id="evalSubmit" hidden><span class="spinner"></span><span data-i18n="submit_anonymous">Submit anonymously</span></button>
+            </div>
+          </div>
         </div>
       </form>
 
@@ -1216,6 +1232,8 @@ const CONFIG = {
   apiBase: "/api",
   storageKey: "pulse.session",
 };
+const tr = (key, vars = {}) => typeof window.uiText === "function" ? window.uiText(key, vars) : key;
+const trContent = value => typeof window.uiContent === "function" ? window.uiContent(value) : value;
 
 // Display-only labels for the role the backend returns after login.
 // The role itself is never chosen on the frontend — the account record decides it.
@@ -1303,12 +1321,12 @@ const STUDENT_ID_RE = /^\d{9}$/;
 
 function validateLogin() {
   const v = loginEl.value.trim();
-  if (!v) return setError(loginBox, loginHint, "Please enter your login.");
+  if (!v) return setError(loginBox, loginHint, tr("login_required"));
   if (STUDENT_ID_RE.test(v) || EMAIL_RE.test(v)) return clearError(loginBox, loginHint);
-  return setError(loginBox, loginHint, "Enter a 9-digit student ID or a valid email.");
+  return setError(loginBox, loginHint, tr("login_invalid"));
 }
 function validatePassword() {
-  if (!passEl.value) return setError(passBox, passHint, "Please enter your password.");
+  if (!passEl.value) return setError(passBox, passHint, tr("password_required"));
   return clearError(passBox, passHint);
 }
 function setError(box, hint, msg) { box.classList.add("invalid"); hint.className = "hint"; hint.textContent = msg; return false; }
@@ -1491,10 +1509,11 @@ async function showSuccess(session) {
   if (view === "admin") openAdmin();
   else if (view === "feedback") openFeedback();
   else if (view === "responses") openResponses();
+  else if (role === "student") openFeedback();
 }
 function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
-function signOut(message = "You have been signed out.") {
+function signOut(message = null) {
   clearSession();
   currentSession = null;
   closeAllModals();
@@ -1503,7 +1522,7 @@ function signOut(message = "You have been signed out.") {
   card.classList.remove("done");
   $("pwAccordion").classList.remove("open");
   $("adminEntry").hidden = true;
-  toast(message);
+  toast(message || tr("signed_out"));
   loginEl.focus();
 }
 // Admin calls that come back 401/403 mean the session is no longer valid (expired, banned, demoted).
@@ -2172,6 +2191,7 @@ const evalModal = $("evalModal"), evalForm = $("evalForm"), evalDone = $("evalDo
 const evalComment = $("evalComment"), evalAlertEl = $("evalAlert"), evalSubmit = $("evalSubmit");
 const fbState = { forms: [], kind: "course", q: "" };
 let evalCtx = null;
+let evalStep = 0;
 
 async function openFeedback() {
   if (!currentSession || currentSession.user.role !== "student") return;
@@ -2193,21 +2213,23 @@ const currentForm = () => fbState.forms.find(f => f.kind === fbState.kind);
 function renderForms() {
   fbTabs.innerHTML = fbState.forms.map(f => {
     const on = f.kind === fbState.kind, done = f.targets.filter(t => t.done).length;
-    return `<button type="button" role="tab" data-kind="${f.kind}" class="${on ? "on" : ""}" aria-selected="${on}">${KIND_LABEL[f.kind]}<small>${done}/${f.targets.length}</small></button>`;
+    const label = tr(f.kind === "course" ? "kind_course" : "kind_service");
+    return `<button type="button" role="tab" data-kind="${f.kind}" class="${on ? "on" : ""}" aria-selected="${on}">${label}<small>${done}/${f.targets.length}</small></button>`;
   }).join("");
 
   const form = currentForm();
   if (!form) {
-    fbTargets.innerHTML = '<div class="adm-empty" style="grid-column:1/-1"><b>No open forms right now</b>Check back later in the semester.</div>';
+    fbTargets.innerHTML = `<div class="adm-empty" style="grid-column:1/-1"><b>${tr("no_open_forms")}</b></div>`;
     $("fbProgress").textContent = "—"; $("fbBar").style.width = "0";
     fbEmpty.hidden = true;
     return;
   }
-  $("fbLead").textContent = `${form.title} · ${form.description}`;
-  fbSearch.placeholder = form.kind === "course" ? "Search by course code, title or instructor" : "Search services";
+  fbSearch.placeholder = tr(form.kind === "course" ? "search_courses" : "search_services");
   const done = form.targets.filter(t => t.done).length, total = form.targets.length;
-  const noun = form.kind === "course" ? "courses" : "services";
-  $("fbProgress").textContent = total && done === total ? `All ${total} ${noun} rated — thank you!` : `${done} of ${total} ${noun} rated`;
+  $("fbLead").textContent = `${trContent(form.semester)} · ${tr("rated_progress", { done, total })}`;
+  $("fbProgress").textContent = total && done === total
+    ? tr("all_rated", { total })
+    : tr("rated_progress", { done, total });
   $("fbBar").style.width = total ? `${(done / total) * 100}%` : "0";
 
   const q = fbState.q.trim().toLowerCase();
@@ -2215,13 +2237,11 @@ function renderForms() {
   const own = list.filter(t => t.own_department), other = list.filter(t => !t.own_department);
   // Courses from the student's own department come first; services aren't grouped.
   fbTargets.innerHTML = form.kind === "course" && own.length
-    ? `<div class="group-title">Your department</div>${own.map(tgtHtml).join("")}`
-      + (other.length ? `<div class="group-title">Other departments</div>${other.map(tgtHtml).join("")}` : "")
+    ? `<div class="group-title">${tr("your_department")}</div>${own.map(tgtHtml).join("")}`
+      + (other.length ? `<details class="other-courses"${q ? " open" : ""}><summary>${tr("other_departments")} <span>${other.length}</span></summary><div class="tgt-subgrid">${other.map(tgtHtml).join("")}</div></details>` : "")
     : list.map(tgtHtml).join("");
   fbEmpty.hidden = list.length > 0;
-  fbEmpty.innerHTML = form.kind === "course"
-    ? "<b>Nothing matches your search</b>Try another course code, title or instructor."
-    : "<b>Nothing matches your search</b>Try another service name.";
+  fbEmpty.innerHTML = `<b>${tr("no_results")}</b>`;
 }
 
 function tgtHtml(t) {
@@ -2229,9 +2249,9 @@ function tgtHtml(t) {
   return `
     <button type="button" class="tgt${t.done ? " done" : ""}" data-id="${t.id}"${t.done ? ' aria-disabled="true"' : ""}>
       ${t.code ? `<span class="code">${escapeHtml(t.code)}</span>` : ""}
-      <b>${escapeHtml(t.title)}</b>
+      <b>${escapeHtml(trContent(t.title))}</b>
       <small>${escapeHtml(meta || "")}</small>
-      <span class="tgt-state">${t.done ? "✓ Submitted" : "Rate now →"}</span>
+      <span class="tgt-state">${t.done ? `✓ ${tr("submitted")}` : `${tr("rate_now")} →`}</span>
     </button>`;
 }
 
@@ -2251,32 +2271,90 @@ fbTargets.addEventListener("click", e => {
 /* ---------- the form itself ---------- */
 function openEval(form, t) {
   evalCtx = { form, target: t };
-  $("evalKicker").textContent = `${KIND_LABEL[form.kind]} · ${form.semester}`;
-  $("evalTitle").textContent = t.code ? `${t.code} — ${t.title}` : t.title;
+  $("evalKicker").textContent = `${tr(form.kind === "course" ? "kind_course" : "kind_service")} · ${trContent(form.semester)}`;
+  $("evalTitle").textContent = t.code ? `${t.code} — ${trContent(t.title)}` : trContent(t.title);
   $("evalSub").textContent = t.code
-    ? [t.instructor && `Instructor: ${t.instructor}`, t.department].filter(Boolean).join(" · ")
-    : `${t.department} service`;
+    ? [t.instructor && `${tr("instructor")}: ${t.instructor}`, t.department].filter(Boolean).join(" · ")
+    : t.department;
   $("evalQuestions").innerHTML =
-    '<p class="cell-muted" style="font-size:13px;margin-bottom:12px">Rate each statement from 1 (strongly disagree) to 5 (strongly agree).</p>'
-    + form.questions.map(q => `
+    form.questions.map(q => `
       <fieldset class="q" data-qid="${q.id}">
-        <legend><b>${escapeHtml(q.label)}</b>${escapeHtml(q.text)}</legend>
+        <legend><b data-source="${escapeHtml(q.label)}">${escapeHtml(trContent(q.label))}</b><span class="q-text" data-source="${escapeHtml(q.text)}">${escapeHtml(trContent(q.text))}</span></legend>
         <div class="likert">${[1, 2, 3, 4, 5].map(v =>
-          `<label><input type="radio" name="q${q.id}" value="${v}" aria-label="${v} of 5"><span>${v}</span></label>`).join("")}</div>
-        <div class="likert-ends"><span>Strongly disagree</span><span>Strongly agree</span></div>
+          `<label><input type="radio" name="q${q.id}" value="${v}" aria-label="${escapeHtml(tr(`rating_${v}`))}"><span><b>${v}</b><small data-rating-label="${v}">${escapeHtml(tr(`rating_${v}`))}</small></span></label>`).join("")}</div>
       </fieldset>`).join("");
   evalComment.value = "";
-  evalComment.placeholder = form.comment_prompt || "Your comment";
+  $("evalPrompt").textContent = tr("comment");
+  evalComment.placeholder = tr("comment_hint");
   updateEvalCount();
   evalAlertEl.className = "alert";
   evalSubmit.classList.remove("loading"); evalSubmit.disabled = false;
   evalForm.hidden = false;
   evalDone.hidden = true;
-  evalModal.querySelector(".modal-card").scrollTop = 0;
+  evalStep = 0;
+  renderEvalStep(false);
   openModal(evalModal, evalModal.querySelector(".likert input"));
 }
 function showEvalAlert(msg) { evalAlertEl.className = "alert show"; evalAlertEl.textContent = msg; }
 function updateEvalCount() { $("evalCount").textContent = `${evalComment.value.length} / 2000`; }
+
+function renderEvalStep(focus = true) {
+  if (!evalCtx) return;
+  const questions = [...evalForm.querySelectorAll(".q")];
+  const onComment = evalStep === questions.length;
+  questions.forEach((question, index) => { question.hidden = index !== evalStep; });
+  $("evalCommentStep").hidden = !onComment;
+  $("evalPrev").hidden = evalStep === 0;
+  $("evalNext").hidden = onComment;
+  evalSubmit.hidden = !onComment;
+  const total = questions.length + 1;
+  $("evalStepLabel").textContent = onComment
+    ? tr("comment_step")
+    : tr("question_of", { current: evalStep + 1, total: questions.length });
+  $("evalStepHint").textContent = onComment ? tr("optional") : "";
+  $("evalStepBar").style.width = `${((evalStep + 1) / total) * 100}%`;
+  evalAlertEl.className = "alert";
+  if (focus) {
+    const target = onComment ? evalComment : questions[evalStep]?.querySelector("input:checked") || questions[evalStep]?.querySelector("input");
+    requestAnimationFrame(() => target?.focus({ preventScroll: true }));
+  }
+}
+
+function refreshEvalLanguage() {
+  if (!evalCtx) return;
+  const { form, target } = evalCtx;
+  $("evalKicker").textContent = `${tr(form.kind === "course" ? "kind_course" : "kind_service")} · ${trContent(form.semester)}`;
+  $("evalTitle").textContent = target.code ? `${target.code} — ${trContent(target.title)}` : trContent(target.title);
+  $("evalSub").textContent = target.code
+    ? [target.instructor && `${tr("instructor")}: ${target.instructor}`, target.department].filter(Boolean).join(" · ")
+    : target.department;
+  evalForm.querySelectorAll("[data-source]").forEach(el => { el.textContent = trContent(el.dataset.source); });
+  evalForm.querySelectorAll("[data-rating-label]").forEach(el => { el.textContent = tr(`rating_${el.dataset.ratingLabel}`); });
+  $("evalPrompt").textContent = tr("comment");
+  evalComment.placeholder = tr("comment_hint");
+  renderEvalStep(false);
+}
+
+$("evalNext").addEventListener("click", () => {
+  const questions = [...evalForm.querySelectorAll(".q")];
+  const current = questions[evalStep];
+  if (!current) return;
+  if (!current.querySelector("input:checked")) {
+    current.classList.add("invalid");
+    showEvalAlert(tr("choose_answer"));
+    current.querySelector("input")?.focus({ preventScroll: true });
+    return;
+  }
+  current.classList.remove("invalid");
+  evalStep += 1;
+  renderEvalStep();
+});
+
+$("evalPrev").addEventListener("click", () => {
+  if (evalStep > 0) evalStep -= 1;
+  renderEvalStep();
+});
+
 evalComment.addEventListener("input", updateEvalCount);
 $("evalQuestions").addEventListener("change", e => {
   e.target.closest(".q")?.classList.remove("invalid");
@@ -2298,8 +2376,9 @@ evalForm.addEventListener("submit", async e => {
     else firstMissing ||= fs;
   });
   if (firstMissing) {
-    showEvalAlert("Please rate every statement.");
-    firstMissing.scrollIntoView({ block: "center", behavior: "smooth" });
+    evalStep = [...evalForm.querySelectorAll(".q")].indexOf(firstMissing);
+    renderEvalStep(false);
+    showEvalAlert(tr("choose_answer"));
     firstMissing.querySelector("input").focus({ preventScroll: true });
     return;
   }
@@ -2450,6 +2529,11 @@ $("rspRefresh").addEventListener("click", loadResponses);
 $("openFeedback").addEventListener("click", openFeedback);
 $("openResponses").addEventListener("click", openResponses);
 
+window.addEventListener("ui-language-change", () => {
+  if (fbState.forms.length) renderForms();
+  refreshEvalLanguage();
+});
+
 /* ---------- backend / database status probe ---------- */
 async function checkHealth() {
   const { ok, data, network } = await api("/health");
@@ -2492,5 +2576,6 @@ async function checkHealth() {
   }
 })();
 </script>
+<script src="/university-ui.js"></script>
 </body>
 </html>
