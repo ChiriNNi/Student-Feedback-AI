@@ -51,5 +51,40 @@ class PiiMaskingTests(unittest.TestCase):
         self.assertEqual(masked, "The material was clear in 2025 and 2026.")
 
 
+class LookAlikeWordTests(unittest.TestCase):
+    """Short names must not eat everyday words that are one typo away from them."""
+
+    def setUp(self):
+        self.names = names_pattern(["Dana Akhmetova", "Bolat Serikov", "Mark Lee", "Grace Kim"])
+
+    def test_everyday_words_survive(self):
+        for text in (
+            "The data was fine, but the bolt in the lab was broken.",
+            "Data was fine. Bolt was broken.",
+            "The market analysis task was good; mark distribution was fair.",
+            "Market research was the best part.",
+            "Danger: the dates for the exam changed twice.",
+            "Grace period for deadlines would help.",
+        ):
+            with self.subTest(text=text):
+                masked, removed = mask_pii_report(text, self.names)
+                self.assertEqual(masked, text)
+                self.assertFalse(removed)
+
+    def test_names_are_still_removed(self):
+        for text in (
+            "Dana explained everything.",
+            "I asked Dana for help.",
+            "Bolat was always on time.",
+            "Our TA Bolatt was great.",
+            "Thanks to Mark and Grace for the labs.",
+            "Марка все уважают.",
+            "Akhmetova grades fairly.",
+        ):
+            with self.subTest(text=text):
+                masked, removed = mask_pii_report(text, self.names)
+                self.assertGreaterEqual(removed["NAME"], 1, masked)
+
+
 if __name__ == "__main__":
     unittest.main()

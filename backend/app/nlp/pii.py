@@ -4,6 +4,8 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from .lexicons import LEXICON, STOPWORDS
+
 UPPER = "A-ZА-ЯЁӘҒҚҢӨҰҮҺІ"
 NAME = rf"[{UPPER}][\w\-']+"
 
@@ -41,6 +43,34 @@ _NOT_NAMES = {
     "demo", "test", "student", "faculty", "manager", "admin", "administrator", "system", "user",
     "quality", "assurance", "office", "department", "university", "dr", "prof", "mr", "mrs", "ms",
 }
+
+
+# Everyday words that a name can resemble once case and small typos are tolerated
+# ("data" ~ Dana, "bolt" ~ Bolat, "mark" / "market" ~ Mark). These are never masked
+# by the fuzzy rules; only an exact, capitalised, mid-sentence match still counts.
+_COMMON_WORDS = frozenset(STOPWORDS) | frozenset(LEXICON) | frozenset("""
+    able access account answer answers april area art assignment assignments attendance august
+    back bad bank bill bolt book books bright brown building bus campus card care case center
+    chair change chat check class classes clear code color cost credit credits dark data date
+    dates day days dean deadline deadline deadlines desk dorm dormitory door due early exam exams
+    fair faith fall field file final fine floor food frank free fresh full fun game gate given
+    gold grace grade grades grant green group groups hall hard help hope hour hours idea info
+    internet joy june just lab labs land late lead lecture lectures less level library light line
+    list long lot main major mark marks market material materials may mean media meet middle mile
+    miles mind money month more much name near need net new news note notes number office online
+    open order page paper park part pass past path pay plan point power press price print project
+    projects question questions quiz rain rate read rest review rich right ring river road room rose
+    rule rules run sale salt same save score season seat set ship short side sign size skill skills
+    slide slides small smart snow sound space spring staff star start state step stone store study
+    style summer sun system table task tasks teach team term test tests text theory time topic
+    topics total town track train tree trust type unit view wall water way week weeks west white
+    will win window winter wood word words work world year years young
+""".split())
+_SENTENCE_END = re.compile(r"(?:^|[.!?\n])\s*$")
+
+
+def _is_cyrillic(token: str) -> bool:
+    return any("Ѐ" <= ch <= "ӿ" for ch in token)
 
 
 _WORD = re.compile(r"(?<![\w\[])[^\W\d_][\w\-']{2,}(?!\w)", re.UNICODE)
@@ -100,21 +130,38 @@ class KnownNameMatcher:
 
     names: tuple[str, ...]
 
-    def _is_name(self, token: str) -> bool:
+    def _is_name(self, token: str, sentence_start: bool = False) -> bool:
         candidate = _normalise_name(token)
         if len(candidate) < 4:
             return False
+        capitalised = token[0].isupper()
+        if token.casefold() in _COMMON_WORDS:
+            # "Grace helped me" is a name, "Grace periods…" / "the data…" are not.
+            return capitalised and not sentence_start and candidate in self.names
+        # The first word of a sentence is capitalised anyway, so it says nothing about being a name.
+        name_like = capitalised and not sentence_start
         for known in self.names:
-            # Common Russian/Kazakh inflections may append up to three letters.
-            if candidate.startswith(known) and len(candidate) - len(known) <= 3:
+            if candidate == known:
                 return True
-            limit = 1 if max(len(candidate), len(known)) <= 6 else 2
-            if _edit_distance_within(candidate, known, limit):
+            # Russian/Kazakh endings ("Ерланом", "Марка") append up to three letters.
+            # Short Latin names would otherwise swallow words like "Market".
+            if (candidate.startswith(known) and len(candidate) - len(known) <= 3
+                    and (len(known) >= 5 or (capitalised and _is_cyrillic(token)))):
                 return True
+            # Typos and obfuscation ("Aigerm", "Нурлановнa"): only for names long enough
+            # that a one-letter difference is still distinctive.
+            if len(known) >= 5 and (name_like or len(known) >= 7):
+                limit = 1 if max(len(candidate), len(known)) <= 6 else 2
+                if _edit_distance_within(candidate, known, limit):
+                    return True
         return False
 
     def sub(self, replacement: str, text: str) -> str:
-        masked = _WORD.sub(lambda match: replacement if self._is_name(match.group(0)) else match.group(0), text)
+        def mask(match: re.Match) -> str:
+            at_start = bool(_SENTENCE_END.search(text, 0, match.start()))
+            return replacement if self._is_name(match.group(0), at_start) else match.group(0)
+
+        masked = _WORD.sub(mask, text)
         # A first name and surname should appear as one removed item in the receipt.
         return re.sub(r"\[NAME\](?:\s+\[NAME\])+", replacement, masked)
 
