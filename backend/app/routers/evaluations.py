@@ -17,10 +17,9 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Course, Feedback, Service, SubmissionReceipt, Survey, SurveyQuestion, User
-from ..nlp.analyzer import detect_language
 from ..nlp.pii import mask_pii_report, names_pattern
 from ..security import staff_only, student_only
-from ..services import scope_query, semester_key
+from ..services import analyze_into, get_matchers, scope_query, semester_key
 
 router = APIRouter(prefix="/api/evaluations", tags=["evaluations"])
 
@@ -119,7 +118,10 @@ def submit(survey_id: int, body: SubmitIn, user: User = Depends(student_only), d
     masked, removed = mask_pii_report(raw, _known_names(db)) if raw else ("", {})
     fb.text = masked
     fb.pii_masked = bool(removed)
-    fb.language = detect_language(masked) if masked else "en"
+    # Sprint 3: the stored, anonymized text (never the raw comment) is passed
+    # through sentiment, topic and aspect analysis before the transaction is
+    # committed.  The numeric rating provides a signal for empty comments.
+    analyze_into(fb, masked, get_matchers(db))
 
     db.add(SubmissionReceipt(user_id=user.id, survey_id=survey.id, target_key=target))
     db.add(fb)
@@ -162,6 +164,9 @@ def responses(
             "department": fb.department.name if fb.department else None,
             "ratings": fb.ratings or {}, "rating": fb.rating,
             "comment": fb.text, "pii_masked": fb.pii_masked, "language": fb.language,
+            "sentiment": fb.sentiment, "sentiment_score": fb.sentiment_score,
+            "confidence": fb.confidence, "topics": fb.topics or [],
+            "aspects": fb.aspects or {}, "keywords": fb.keywords or [],
         } for fb in items],
     }
 

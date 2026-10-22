@@ -10,7 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .models import Course, Department, Service, Survey, SurveyQuestion, User
+from .models import Course, Department, Feedback, Service, Survey, SurveyQuestion, TopicCategory, User
+from .nlp.lexicons import DEFAULT_TOPICS
 from .security import hash_password
 
 log = logging.getLogger("pulse.seed")
@@ -79,9 +80,12 @@ SURVEYS = [
 ]
 
 
-def seed(db: Session) -> None:
-    _seed_users(db)
-    _seed_catalogue(db)
+def seed(db: Session, *, include_demo: bool = True) -> None:
+    if include_demo:
+        _seed_users(db)
+        _seed_catalogue(db)
+    _seed_topics(db)
+    _backfill_sprint3(db)
 
 
 def _seed_users(db: Session) -> None:
@@ -127,3 +131,26 @@ def _seed_catalogue(db: Session) -> None:
     if added:
         db.commit()
         log.info("Seeded %s", ", ".join(added))
+
+
+def _seed_topics(db: Session) -> None:
+    """Install the editable Sprint 3 taxonomy into new and upgraded databases."""
+    if db.scalar(select(TopicCategory).limit(1)):
+        return
+    db.add_all(TopicCategory(**topic) for topic in DEFAULT_TOPICS)
+    db.commit()
+    log.info("Seeded %d topic categories", len(DEFAULT_TOPICS))
+
+
+def _backfill_sprint3(db: Session) -> None:
+    """Analyze Sprint 2 rows once after an existing database is upgraded."""
+    from .services import analyze_into, get_matchers
+
+    rows = db.scalars(select(Feedback).where(Feedback.confidence == 0)).all()
+    if not rows:
+        return
+    matchers = get_matchers(db)
+    for feedback in rows:
+        analyze_into(feedback, feedback.text, matchers)
+    db.commit()
+    log.info("Analyzed %d existing feedback rows for Sprint 3", len(rows))

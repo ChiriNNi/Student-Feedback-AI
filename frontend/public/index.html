@@ -580,6 +580,39 @@
   .rsp-text.none { color: #6b7099; font-style: italic; }
   .pii-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font: 500 10.5px var(--mono); letter-spacing: 0.04em; color: #ff9ee9; }
   .pii-tag svg { width: 12px; height: 12px; }
+  .analysis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .analysis-card { border: 1px solid var(--glass-border); border-radius: 16px; background: rgba(10, 12, 30, 0.52); padding: 18px; min-height: 164px; }
+  .analysis-card h2 { font-size: 16px; font-weight: 600; }
+  .analysis-card .kicker { margin-bottom: 5px; }
+  .analysis-card > p { color: var(--muted); font-size: 12.5px; line-height: 1.45; margin-top: 4px; }
+  .sentiment-bar { display: flex; height: 13px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.04); margin: 22px 0 12px; }
+  .sentiment-bar i { display: block; min-width: 0; transition: width .3s; }
+  .sentiment-bar .positive { background: var(--pos); }
+  .sentiment-bar .neutral { background: var(--neu); }
+  .sentiment-bar .negative { background: var(--neg); }
+  .sentiment-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font: 500 11px var(--mono); color: var(--muted); }
+  .sentiment-legend span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: currentColor; }
+  .sentiment-legend .positive { color: var(--pos); }
+  .sentiment-legend .neutral { color: var(--neu); }
+  .sentiment-legend .negative { color: var(--neg); }
+  .analysis-list { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+  .analysis-row { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(100px, 1.35fr) auto; align-items: center; gap: 10px; font-size: 12.5px; }
+  .analysis-row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini-bar { height: 7px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,.06); }
+  .mini-bar i { display: block; height: 100%; border-radius: inherit; background: var(--violet); }
+  .analysis-row b { min-width: 34px; text-align: right; font: 600 11px var(--mono); color: var(--muted); }
+  .problem-row { padding: 10px 12px; border-radius: 11px; background: rgba(255,92,122,.06); border: 1px solid rgba(255,92,122,.16); }
+  .problem-row b { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--text); }
+  .problem-row b span { color: var(--neg); font: 600 11px var(--mono); }
+  .problem-row small { display: block; margin-top: 4px; color: var(--muted); }
+  .sentiment-tag { font: 600 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; border: 1px solid currentColor; }
+  .sentiment-tag.positive { color: var(--pos); background: rgba(62,242,160,.06); }
+  .sentiment-tag.neutral { color: var(--neu); background: rgba(255,200,87,.06); }
+  .sentiment-tag.negative { color: var(--neg); background: rgba(255,92,122,.06); }
+  .topic-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .topic-tag { font-size: 11px; color: #cbd0f8; padding: 4px 8px; border-radius: 8px; background: rgba(139,92,255,.09); border: 1px solid rgba(139,92,255,.22); }
+  .topic-tag.positive { border-color: rgba(62,242,160,.32); }
+  .topic-tag.negative { border-color: rgba(255,92,122,.36); }
   .adm-toolbar .input.sel { flex: 0 1 280px; }
   .adm-stats.three { grid-template-columns: repeat(3, 1fr); }
   .adm-toolbar .input.sel select { padding: 11px 36px 11px 12px; }
@@ -623,6 +656,7 @@
     .progress { width: 100%; }
     .progress-bar { flex: 1; }
     .rsp-head .rsp-meta { margin-left: 0; width: 100%; }
+    .analysis-grid { grid-template-columns: 1fr; }
     .fb-tabs { display: flex; }
     .fb-tabs button { flex: 1; }
   }
@@ -1019,14 +1053,42 @@
 
     <div class="adm-head">
       <div>
-        <h1>Responses</h1>
-        <p id="rspScope">Anonymous course evaluations and service reviews.</p>
+        <h1>Sprint 3 analytics</h1>
+        <p id="rspScope">Sentiment, topics, aspects and recurring problems in anonymous feedback.</p>
       </div>
       <button type="button" class="btn-sm" id="rspRefresh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
         Refresh
       </button>
     </div>
+
+    <section class="analysis-grid" aria-label="Sprint 3 feedback analysis">
+      <article class="analysis-card">
+        <div class="kicker">3.1 Sentiment analysis</div>
+        <h2>Overall response sentiment</h2>
+        <p>Text and 1–5 ratings are combined into positive, neutral and negative classifications.</p>
+        <div class="sentiment-bar" id="sentimentBar" aria-label="Sentiment distribution"></div>
+        <div class="sentiment-legend" id="sentimentLegend"></div>
+      </article>
+      <article class="analysis-card">
+        <div class="kicker">3.2 Topic detection</div>
+        <h2>Most discussed topics</h2>
+        <p>Keyword matching supports English, Russian and Kazakh comments.</p>
+        <div class="analysis-list" id="topicAnalysis"></div>
+      </article>
+      <article class="analysis-card">
+        <div class="kicker">3.3 Aspect-based sentiment</div>
+        <h2>Sentiment by topic</h2>
+        <p>One comment can praise teaching while criticizing workload.</p>
+        <div class="analysis-list" id="aspectAnalysis"></div>
+      </article>
+      <article class="analysis-card">
+        <div class="kicker">3.4 Common problem detection</div>
+        <h2>Recurring negative themes</h2>
+        <p>A problem appears after at least three negative mentions in the selected scope.</p>
+        <div class="analysis-list" id="problemAnalysis"></div>
+      </article>
+    </section>
 
     <section class="adm-stats" aria-label="Response statistics — click to filter">
       <button type="button" class="adm-stat" data-kind=""><span>All responses</span><b id="rsTotal">0</b></button>
@@ -2166,7 +2228,7 @@ function resetPages() {
   Object.assign(fbState, { forms: [], kind: "course", q: "" });
   fbSearch.value = "";
   fbTabs.innerHTML = fbTargets.innerHTML = "";
-  Object.assign(rspState, { data: null, kind: "", pii: false, target: "", q: "" });
+  Object.assign(rspState, { data: null, analytics: null, kind: "", pii: false, target: "", q: "" });
   rspSearch.value = "";
   rspList.innerHTML = "";
   evalCtx = null;
@@ -2423,7 +2485,7 @@ evalForm.addEventListener("submit", async e => {
    ========================================================= */
 const rspList = $("rspList"), rspEmpty = $("rspEmpty"), rspSearch = $("rspSearch"), rspTarget = $("rspTarget");
 const responsesApp = $("responsesApp");
-const rspState = { data: null, kind: "", pii: false, target: "", q: "" };
+const rspState = { data: null, analytics: null, kind: "", pii: false, target: "", q: "" };
 
 async function openResponses() {
   if (!currentSession || !STAFF.includes(currentSession.user.role)) return;
@@ -2433,13 +2495,18 @@ async function openResponses() {
 async function loadResponses() {
   rspList.innerHTML = '<div class="adm-empty">Loading responses…</div>';
   rspEmpty.hidden = true;
-  const { ok, status, data, network } = await api("/evaluations/responses", { token: currentSession.token });
+  const [responsesResult, analyticsResult] = await Promise.all([
+    api("/evaluations/responses", { token: currentSession.token }),
+    api("/analytics/overview", { token: currentSession.token }),
+  ]);
+  const { ok, status, data, network } = responsesResult;
   if (status === 401 || status === 403) return sessionRevoked();
   if (!ok) {
     rspList.innerHTML = `<div class="adm-empty">${network ? "Cannot reach the server." : "Could not load responses."}</div>`;
     return;
   }
   rspState.data = data;
+  rspState.analytics = analyticsResult.ok ? analyticsResult.data : null;
   const coursesOnly = currentSession.user.role === "faculty";
   responsesApp.querySelectorAll('[data-kind="service"]').forEach(el => { el.hidden = coursesOnly; });
   $("rspKindSeg").hidden = coursesOnly;  // "All" and "Courses" would be the same list
@@ -2452,7 +2519,53 @@ async function loadResponses() {
     + sorted.map(([k, label]) => `<option value="${k}">${escapeHtml(label)}</option>`).join("");
   if (!targets.has(rspState.target)) rspState.target = "";
   rspTarget.value = rspState.target;
+  renderAnalytics();
   renderResponses();
+}
+
+function emptyAnalysis(message) {
+  return `<p style="color:var(--muted);font-size:12.5px">${escapeHtml(message)}</p>`;
+}
+
+function renderAnalytics() {
+  const a = rspState.analytics;
+  if (!a) {
+    $("sentimentBar").innerHTML = "";
+    $("sentimentLegend").innerHTML = "Analytics are temporarily unavailable.";
+    $("topicAnalysis").innerHTML = $("aspectAnalysis").innerHTML = $("problemAnalysis").innerHTML
+      = emptyAnalysis("Analytics are temporarily unavailable.");
+    return;
+  }
+  const total = a.total || 0;
+  const sentiments = [
+    ["positive", a.positive || 0], ["neutral", a.neutral || 0], ["negative", a.negative || 0],
+  ];
+  $("sentimentBar").innerHTML = sentiments.map(([label, count]) =>
+    `<i class="${label}" style="width:${total ? count / total * 100 : 0}%" title="${label}: ${count}"></i>`).join("");
+  $("sentimentLegend").innerHTML = sentiments.map(([label, count]) =>
+    `<span class="${label}">${label[0].toUpperCase() + label.slice(1)} ${count}${total ? ` (${Math.round(count / total * 100)}%)` : ""}</span>`).join("");
+
+  const topics = (a.topics || []).slice(0, 6);
+  const maxMentions = Math.max(1, ...topics.map(t => t.total));
+  $("topicAnalysis").innerHTML = topics.length ? topics.map(t => `
+    <div class="analysis-row">
+      <span title="${escapeHtml(t.topic)}">${escapeHtml(t.topic)}</span>
+      <span class="mini-bar"><i style="width:${Math.round(t.total / maxMentions * 100)}%;background:${escapeHtml(t.color || "#8b5cff")}"></i></span>
+      <b>${t.total}</b>
+    </div>`).join("") : emptyAnalysis(total ? "No topics were detected in these comments." : "No feedback has been submitted yet.");
+
+  $("aspectAnalysis").innerHTML = topics.length ? topics.map(t => {
+    const pos = Math.round((t.positive_share || 0) * 100), neg = Math.round((t.negative_share || 0) * 100);
+    return `<div class="analysis-row"><span title="${escapeHtml(t.topic)}">${escapeHtml(t.topic)}</span>
+      <span class="mini-bar" title="${pos}% positive, ${neg}% negative"><i style="width:${pos}%;background:var(--pos)"></i></span>
+      <b style="color:${neg > pos ? "var(--neg)" : "var(--pos)"}">${pos}% / ${neg}%</b></div>`;
+  }).join("") : emptyAnalysis("Aspect sentiment appears when comments mention a known topic.");
+
+  const problems = a.problems || [];
+  $("problemAnalysis").innerHTML = problems.length ? problems.map(p => `
+    <div class="problem-row"><b>${escapeHtml(p.topic)}<span>${Math.round(p.negative_share * 100)}% negative</span></b>
+      <small>${p.negative} negative mentions out of ${p.total}</small></div>`).join("")
+    : emptyAnalysis(total ? "No recurring problem has reached the three-mention threshold." : "No feedback has been submitted yet.");
 }
 
 const ratingClass = v => (v >= 4 ? "r-pos" : v >= 3 ? "r-neu" : "r-neg");
@@ -2466,12 +2579,16 @@ function rspHtml(r, qLabel) {
     <article class="rsp">
       <div class="rsp-head">
         <span class="kind-badge ${r.kind}">${r.kind === "course" ? "Course" : "Service"}</span>
+        <span class="sentiment-tag ${r.sentiment || "neutral"}">${escapeHtml(r.sentiment || "neutral")}</span>
         <b>${escapeHtml(r.target)}</b>
         <span class="anon-tag">${LOCK_ICON}Anonymous</span>
         <span class="rsp-meta">${escapeHtml(r.semester)} · ${date}</span>
       </div>
       <div class="rchips">${chips}${avg != null ? `<span class="rchip avg">Average<b class="${ratingClass(avg)}">${avg.toFixed(1)}</b></span>` : ""}</div>
       ${r.comment ? `<p class="rsp-text">${highlightPh(r.comment)}</p>` : '<p class="rsp-text none">No comment</p>'}
+      ${(r.topics || []).length ? `<div class="topic-tags">${r.topics.map(topic =>
+        `<span class="topic-tag ${escapeHtml((r.aspects || {})[topic] || "neutral")}" title="Aspect sentiment: ${escapeHtml((r.aspects || {})[topic] || "neutral")}">${escapeHtml(topic)} · ${escapeHtml((r.aspects || {})[topic] || "neutral")}</span>`
+      ).join("")}</div>` : ""}
       ${r.pii_masked ? `<span class="pii-tag">${SHIELD_ICON}Personal data removed before saving</span>` : ""}
     </article>`;
 }

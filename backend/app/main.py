@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from .config import settings
 from .db import Base, SessionLocal, engine, wait_for_db
-from .routers import admin, auth, evaluations
+from .routers import admin, analytics, auth, evaluations
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("pulse")
@@ -27,6 +27,19 @@ async def lifespan(_: FastAPI):
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"))
             conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS ratings JSON"))
+            # Sprint 3 analytics columns.  Keep this idempotent upgrade path for
+            # databases created by Sprint 1/2; create_all() only creates missing
+            # tables and never adds columns to an existing feedback table.
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS language VARCHAR(4) NOT NULL DEFAULT 'en'"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS sentiment VARCHAR(16) NOT NULL DEFAULT 'neutral'"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS sentiment_score DOUBLE PRECISION NOT NULL DEFAULT 0"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS confidence DOUBLE PRECISION NOT NULL DEFAULT 0"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS topics JSON NOT NULL DEFAULT '[]'::json"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS aspects JSON NOT NULL DEFAULT '{}'::json"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS keywords JSON NOT NULL DEFAULT '[]'::json"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS pii_masked BOOLEAN NOT NULL DEFAULT FALSE"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS is_corrected BOOLEAN NOT NULL DEFAULT FALSE"))
+            conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS source VARCHAR(16) NOT NULL DEFAULT 'form'"))
             # Receipts used to have a serial id, which would let the n-th receipt be paired
             # with the n-th feedback row; the (user, survey, target) key replaces it.
             conn.execute(text("""
@@ -39,17 +52,18 @@ async def lifespan(_: FastAPI):
                 END $$;"""))
         finally:
             conn.execute(text("SELECT pg_advisory_unlock(424242)"))
-    if settings.seed_demo_data:
-        from .seed import seed
-        with SessionLocal() as db:
-            seed(db)
+    # Topic categories are application configuration, not demo content, so
+    # Sprint 3 initialization also runs when demo accounts are disabled.
+    from .seed import seed
+    with SessionLocal() as db:
+        seed(db, include_demo=settings.seed_demo_data)
     log.info("Pulse API ready")
     yield
 
 
 app = FastAPI(
     title="Pulse API",
-    version="1.1.0",
+    version="1.2.0",
     lifespan=lifespan,
     docs_url="/api/docs",
     redoc_url=None,
@@ -66,6 +80,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(evaluations.router)
+app.include_router(analytics.router)
 
 
 @app.get("/api/health", tags=["system"])

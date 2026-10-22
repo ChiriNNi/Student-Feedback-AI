@@ -11,9 +11,9 @@ Implemented so far:
 - **Sprint 2** — feedback collection: anonymous course evaluations and service
   reviews, with personal data removed from comments before they are stored
   (stories 1.3, 1.4, 2.1, 2.2).
-
-Analysis (sentiment, topics, summaries, dashboards) comes in later sprints; the
-code for it exists in the repository but is not wired into the running stack yet.
+- **Sprint 3** — multilingual feedback analysis: sentiment classification,
+  topic detection, aspect-based sentiment, and recurring-problem detection
+  (stories 3.1–3.4).
 
 ---
 
@@ -101,8 +101,9 @@ while in the panel brings you back to it.
   stored**, with every removed item highlighted.
 
 **Staff** — sign in as faculty, manager or admin and click **"View
-responses"**. Responses are listed without authors, with per-question ratings,
-the average, and the masked comment. They can be filtered by type, by
+responses"**. The page begins with the Sprint 3 analytics dashboard, then lists
+responses without authors, with per-question ratings, the average, NLP labels,
+and the masked comment. They can be filtered by type, by
 course/service, by text, or to only those where personal data was removed.
 What each role sees is decided by the backend:
 
@@ -157,6 +158,31 @@ Courses, services, rating questions and the two open surveys are seeded on
 startup when their tables are empty (`app/seed.py`). You can also edit them
 directly in the database (tables `courses`, `services`, `survey_questions`,
 `surveys`).
+
+### Feedback analysis (Sprint 3)
+
+Every new comment is analyzed only **after** personal data is removed. The raw
+comment is never passed to the analytics layer or stored. Existing Sprint 2
+feedback is analyzed once when an upgraded database starts.
+
+The local, dependency-free analyzer supports English, Russian and Kazakh:
+
+| Story | Result |
+|---|---|
+| 3.1 Sentiment analysis | `positive`, `neutral` or `negative`, with a score and confidence; the written comment and average rating are combined. |
+| 3.2 Topic detection | One or more editable university topics such as Teaching Quality, Workload, Assessment, Facilities or Digital Resources. |
+| 3.3 Aspect-based sentiment | A separate sentiment per detected topic, so mixed comments such as “great instructor, but terrible workload” preserve both opinions. |
+| 3.4 Common problem detection | Staff see recurring aspects with at least three negative mentions, ranked by frequency and negative share. |
+
+Staff analytics remain role-scoped on the server: faculty see only their own
+courses, department managers see their department plus university services,
+and administrators see the university-wide view. `GET /api/analytics/overview`
+returns the aggregate dashboard, while `GET /api/evaluations/responses` includes
+the sentiment, topics and aspects for each response.
+
+The default topic taxonomy is seeded from `app/nlp/lexicons.py` and can be
+edited through the existing admin topic API. Analysis is deterministic and
+runs offline; no student text is sent to an external AI service.
 
 ---
 

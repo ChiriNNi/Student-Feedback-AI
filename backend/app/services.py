@@ -54,7 +54,10 @@ def analyze_into(fb: Feedback, raw_text: str, matchers) -> Feedback:
     fb.topics = a.topics
     fb.aspects = a.aspects
     fb.keywords = a.keywords
-    fb.pii_masked = a.pii_masked
+    # A form submission is already masked with the live user-name list before
+    # it reaches the analyzer.  Do not lose that evidence when the analyzer's
+    # second, generic PII pass finds nothing else.
+    fb.pii_masked = fb.pii_masked or a.pii_masked
     return fb
 
 
