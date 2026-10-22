@@ -154,10 +154,12 @@ Numbers that aren't phone-shaped, such as `2025 2026`, are left alone.
 3. Sign in as `faculty@sdu.edu.kz` → **View responses**. The response is shown
    as *Anonymous*.
 
-Courses, services, rating questions and the two open surveys are seeded on
-startup when their tables are empty (`app/seed.py`). You can also edit them
+Courses, services, rating questions, the two open surveys and 17 analyzed
+sample responses are seeded on startup when their tables are empty
+(`app/seed.py`). Sample responses are marked with `source = seed`, so they are
+easy to distinguish from student submissions. You can also edit the catalogue
 directly in the database (tables `courses`, `services`, `survey_questions`,
-`surveys`).
+`surveys`). Set `SEED_DEMO_DATA=false` outside local demonstration environments.
 
 ### Feedback analysis (Sprint 3)
 
@@ -219,6 +221,20 @@ SELECT * FROM users;
 \q
 ```
 
+**Browser database viewer (recommended for a Sprint demo):** open
+`http://localhost:8081` and sign in with:
+
+| Field | Value |
+|---|---|
+| System | PostgreSQL |
+| Server | `db` |
+| Username | `pulse` |
+| Password | `pulse` |
+| Database | `pulse` |
+
+Open the `feedback` table and choose **Select data** to show the stored
+sentiment, topic, aspect and language analysis without using the terminal.
+
 **GUI client** (e.g. [DBeaver](https://dbeaver.io/), pgAdmin, TablePlus) —
 connect with:
 
@@ -244,7 +260,7 @@ that file for the full list and defaults). Notable ones:
 | `JWT_SECRET` | Signs login session tokens. `start.ps1` generates a random one automatically. |
 | `MAX_LOGIN_ATTEMPTS` / `LOCK_SECONDS` | Server-side brute-force lockout (default: 5 attempts, 30s lock). |
 | `JWT_HOURS` / `JWT_REMEMBER_HOURS` | Session length — normal vs. "Remember me". |
-| `SEED_DEMO_DATA` / `DEMO_PASSWORD` | Controls the demo accounts above. Set `SEED_DEMO_DATA=false` once you add real users. |
+| `SEED_DEMO_DATA` / `DEMO_PASSWORD` | Controls the demo accounts, catalogue and sample feedback. Set `SEED_DEMO_DATA=false` once you add real users. |
 | `BACKEND_PORT` / `FRONTEND_PORT` / `DB_PORT` | Host ports, in case the defaults (8000 / 8080 / 5433) conflict with something else running on your machine. |
 
 `.env` is git-ignored — never commit it.

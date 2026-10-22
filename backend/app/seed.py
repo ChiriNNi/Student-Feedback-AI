@@ -1,8 +1,9 @@
-"""Creates demo departments, one user per role, and the catalogue the feedback forms need.
+"""Creates a complete, presentation-ready local demo dataset.
 
 Each part is seeded independently and only when its table is empty, so a
 database created by an earlier version picks up the newer parts on restart.
-No feedback is generated — every response in the system comes from a real form.
+Synthetic feedback is clearly marked with ``source=seed`` and is only created
+when demo data is enabled and the feedback table is empty.
 """
 import logging
 
@@ -79,12 +80,37 @@ SURVEYS = [
      "What did you like about this service, and what should change?"),
 ]
 
+# (kind, course code or service name, ratings in question order, comment)
+# The comments deliberately cover every Sprint 3 capability: three languages,
+# mixed/aspect sentiment, multiple topics, and recurring negative problems.
+DEMO_FEEDBACK = [
+    ("course", "CSS 101", [4, 4, 4, 4, 4], "The instructor explains complex ideas very clearly and the lectures are engaging."),
+    ("course", "CSS 215", [5, 4, 1, 3, 3], "The instructor was excellent, but the workload was terrible and deadlines were stressful."),
+    ("course", "INF 318", [3, 3, 1, 2, 2], "Too many assignments every week and the workload is overwhelming."),
+    ("course", "MAT 152", [3, 3, 1, 2, 2], "Homework takes too much time and deadlines overlap with other courses."),
+    ("course", "MGT 201", [4, 4, 4, 4, 4], "The course content is relevant and the practical examples are useful."),
+    ("course", "FIN 210", [3, 3, 3, 1, 2], "Grading criteria are unclear and the exam was unfair."),
+    ("course", "ENG 105", [4, 4, 4, 4, 4], "Преподаватель очень понятно объясняет материал, лекции интересные."),
+    ("course", "PED 220", [3, 3, 3, 3, 3], "The lectures were okay and the syllabus covers the standard topics."),
+    ("course", "LAW 110", [3, 3, 3, 1, 2], "Бағалау критерийі түсініксіз, емтихан әділетсіз болды."),
+    ("course", "POL 230", [4, 4, 4, 4, 4], "Everything is well organized and announcements come on time."),
+    ("service", "Library", [3, 2, 2, 2], "There are not enough seats in the library during exams and weekend hours are limited."),
+    ("service", "Dormitory", [3, 2, 1, 2], "В общежитии холодно, душ сломан и кухня грязная."),
+    ("service", "Cafeteria", [3, 3, 1, 2], "Food prices in the cafeteria are too expensive and the lunch queue is very long."),
+    ("service", "Sports Center", [4, 4, 4, 4], "The sports facilities are modern and the staff are friendly and helpful."),
+    ("service", "IT Help Desk", [4, 2, 2, 2], "The Wi-Fi is very slow and the online portal keeps disconnecting."),
+    ("service", "Registrar's Office", [2, 2, 2, 2], "The staff are rude and the waiting time is too long. There are long queues."),
+    ("service", "Career Center", [4, 4, 4, 4], "Support staff solved my problem quickly and were very professional."),
+]
+
 
 def seed(db: Session, *, include_demo: bool = True) -> None:
     if include_demo:
         _seed_users(db)
         _seed_catalogue(db)
     _seed_topics(db)
+    if include_demo:
+        _seed_feedback(db)
     _backfill_sprint3(db)
 
 
@@ -140,6 +166,54 @@ def _seed_topics(db: Session) -> None:
     db.add_all(TopicCategory(**topic) for topic in DEFAULT_TOPICS)
     db.commit()
     log.info("Seeded %d topic categories", len(DEFAULT_TOPICS))
+
+
+def _seed_feedback(db: Session) -> None:
+    """Add analyzed sample responses to an otherwise empty demo database."""
+    if db.scalar(select(Feedback.id).limit(1)):
+        return
+
+    from .services import analyze_into, get_matchers
+
+    courses = {course.code: course for course in db.scalars(select(Course))}
+    services = {service.name: service for service in db.scalars(select(Service))}
+    surveys = {survey.kind: survey for survey in db.scalars(select(Survey))}
+    questions = {
+        kind: db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind)
+                         .order_by(SurveyQuestion.position, SurveyQuestion.id)).all()
+        for kind in ("course", "service")
+    }
+    matchers = get_matchers(db)
+    added = 0
+
+    for kind, target_name, values, comment in DEMO_FEEDBACK:
+        target = courses.get(target_name) if kind == "course" else services.get(target_name)
+        survey = surveys.get(kind)
+        target_questions = questions[kind]
+        if not target or not survey or len(values) != len(target_questions):
+            log.warning("Skipping demo feedback for missing or incomplete target %s", target_name)
+            continue
+
+        ratings = {str(question.id): value for question, value in zip(target_questions, values)}
+        feedback = Feedback(
+            survey_id=survey.id,
+            kind=kind,
+            semester=survey.semester,
+            course_id=target.id if kind == "course" else None,
+            service_id=target.id if kind == "service" else None,
+            department_id=target.department_id if kind == "course" else None,
+            rating=round(sum(values) / len(values)),
+            ratings=ratings,
+            text="",
+            source="seed",
+        )
+        analyze_into(feedback, comment, matchers)
+        db.add(feedback)
+        added += 1
+
+    if added:
+        db.commit()
+        log.info("Seeded %d analyzed demo feedback rows", added)
 
 
 def _backfill_sprint3(db: Session) -> None:
