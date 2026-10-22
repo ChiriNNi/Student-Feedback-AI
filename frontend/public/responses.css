@@ -1,0 +1,337 @@
+/* Feedback analytics — the staff responses page (#responsesApp).
+   Overview metrics, the four analytics cards and the feedback explorer.
+   Built only on the university.css theme tokens, so light and dark both work.
+   Spacing follows an 8px grid. */
+
+#responsesApp {
+  --fa-border: var(--glass-border);
+  --fa-border-strong: color-mix(in srgb, var(--glass-border) 55%, var(--text));
+  --fa-radius: 8px;
+  --fa-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+/* Semantic tones: sentiment (positive / neutral / negative) and rating bands (pos / mid / neg). */
+#responsesApp .is-positive, #responsesApp .is-pos { --fa-tone: var(--pos); }
+#responsesApp .is-neutral, #responsesApp .is-mid { --fa-tone: var(--neu); }
+#responsesApp .is-negative, #responsesApp .is-neg { --fa-tone: var(--neg); }
+
+.fx-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.fa-dot { flex: none; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--fa-tone, var(--muted)); }
+
+#responsesApp :is(.fa-kpi, .fa-sentiment, .fa-rank-row, .fa-aspect, .fa-issue, .fa-more,
+  .fx-seg button, .fx-chip, .fx-clear, .fx-topic, .fx-more):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+#rspHeading:focus { outline: none; }
+
+/* ---------- page header ---------- */
+#responsesApp .adm-head { margin: 32px 0 24px; align-items: flex-end; }
+#responsesApp .adm-head h1 { font-size: 34px; letter-spacing: -0.02em; }
+#responsesApp .adm-head p { margin-top: 4px; font-size: 17px; }
+#responsesApp .adm-head .fa-context { margin-top: 4px; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+#rspRefresh:disabled { opacity: 0.6; cursor: progress; }
+
+/* ---------- overview metrics ---------- */
+.fa-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.fa-kpis.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fa-kpi {
+  display: grid; align-content: start; gap: 4px; min-width: 0;
+  padding: 16px 20px; text-align: left; cursor: pointer;
+  border: 1px solid var(--fa-border); border-radius: var(--fa-radius);
+  background: var(--surface); color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.fa-kpi[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.fa-kpi-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; font-weight: 600; line-height: 1.3; }
+.fa-kpi-label svg { flex: none; width: 16px; height: 16px; }
+.fa-kpi[aria-pressed="true"] .fa-kpi-label { color: var(--primary); }
+.fa-kpi b { font-size: 32px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.fa-kpi small { min-height: 20px; color: var(--muted); font-size: 14px; line-height: 1.4; }
+
+/* ---------- analytics cards ---------- */
+.fa-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; margin-bottom: 48px; }
+.fa-card { min-width: 0; padding: 24px; border: 1px solid var(--fa-border); border-radius: var(--fa-radius); background: var(--surface); }
+.fa-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.fa-card-head > div { display: grid; gap: 2px; min-width: 0; }
+.fa-kicker { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.fa-card h2 { color: var(--text); font-size: 18px; font-weight: 700; line-height: 1.3; }
+.fa-card-head p { color: var(--muted); font-size: 14px; line-height: 1.45; }
+.fa-badge {
+  flex: none; padding: 2px 10px; border-radius: 999px; white-space: nowrap;
+  color: var(--neg); background: color-mix(in srgb, var(--neg) 10%, var(--surface));
+  font-size: 13px; font-weight: 700;
+}
+.fa-empty { color: var(--muted); font-size: 15px; line-height: 1.5; }
+.fa-empty-ok { display: flex; align-items: center; gap: 8px; }
+.fa-empty-ok svg { flex: none; width: 20px; height: 20px; color: var(--pos); }
+.fa-more {
+  margin-top: 8px; padding: 4px 0; border: 0; background: none; cursor: pointer;
+  color: var(--primary); font-size: 14px; font-weight: 600;
+}
+.fa-skeleton { display: grid; gap: 12px; }
+.fa-skeleton i, .fx-skeleton i {
+  display: block; height: 12px; border-radius: 6px; background: var(--surface-soft);
+  animation: fa-pulse 1.4s ease-in-out infinite;
+}
+.fa-skeleton i:nth-child(1) { width: 100%; }
+.fa-skeleton i:nth-child(2) { width: 80%; }
+.fa-skeleton i:nth-child(3) { width: 55%; }
+@keyframes fa-pulse { 50% { opacity: 0.45; } }
+
+/* Stacked proportion bar (sentiment overview, and thinner per topic). */
+.fa-stack { display: flex; gap: 2px; height: 12px; overflow: hidden; border-radius: 6px; background: var(--surface-soft); }
+.fa-stack > span { min-width: 4px; background: var(--fa-tone); transition: opacity 0.15s; }
+.fa-stack > span[data-sentiment] { cursor: pointer; }
+.fa-stack.is-thin { height: 8px; border-radius: 4px; }
+
+/* 3.1 sentiment overview */
+.fa-sentiments { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px -8px 0; }
+.fa-sentiment {
+  display: grid; align-content: start; gap: 2px; min-width: 0; padding: 8px; text-align: left; cursor: pointer;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+}
+.fa-sentiment[aria-pressed="true"] { border-color: var(--fa-tone); background: color-mix(in srgb, var(--fa-tone) 8%, var(--surface)); }
+.fa-sentiment:disabled { cursor: default; opacity: 0.6; }
+.fa-sentiment-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.fa-sentiment b { font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.fa-sentiment small { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.fa-note { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--fa-border); color: var(--muted); font-size: 14px; line-height: 1.5; }
+.fa-note b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* 3.2 ranked topics */
+.fa-rank, .fa-aspects, .fa-issues, .fa-legend { margin: 0; padding: 0; list-style: none; }
+.fa-rank, .fa-aspects { display: grid; gap: 2px; margin: 0 -8px; }
+.fa-rank-row {
+  width: 100%; display: grid; align-items: center; gap: 12px;
+  grid-template-columns: 20px minmax(0, 1fr) minmax(72px, 38%) 32px;
+  padding: 8px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--text); text-align: left; font-size: 15px; cursor: pointer;
+  transition: background 0.15s;
+}
+.fa-rank-row[aria-pressed="true"], .fa-aspect[aria-pressed="true"] { background: var(--primary-soft); }
+.fa-rank-n { color: var(--muted); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fa-rank-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.fa-bar { height: 8px; overflow: hidden; border-radius: 4px; background: var(--surface-soft); }
+.fa-rank-row[aria-pressed="true"] .fa-bar { background: var(--surface); }
+.fa-bar i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+.fa-rank-row b { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 3.3 sentiment by topic */
+.fa-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: -4px 0 8px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.fa-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.fa-aspect {
+  width: 100%; display: grid; gap: 6px; padding: 8px; text-align: left; cursor: pointer;
+  border: 0; border-radius: 6px; background: transparent; color: var(--text);
+  transition: background 0.15s;
+}
+.fa-aspect-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; font-size: 15px; }
+.fa-aspect-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.fa-aspect-top small { flex: none; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.fa-aspect[aria-pressed="true"] .fa-stack { background: var(--surface); }
+.fa-aspect-split { display: flex; flex-wrap: wrap; gap: 0 12px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fa-aspect-split > span { color: var(--fa-tone); }
+
+/* 3.4 recurring negative themes — the actionable list */
+.fa-issues { display: grid; gap: 8px; }
+.fa-issue {
+  width: 100%; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: baseline;
+  gap: 2px 12px; padding: 12px 16px 12px 12px; text-align: left; cursor: pointer;
+  border: 1px solid var(--fa-border); border-left: 3px solid var(--neg); border-radius: 6px;
+  background: var(--surface); color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+}
+.fa-issue[aria-pressed="true"] { border-color: var(--neg); background: color-mix(in srgb, var(--neg) 5%, var(--surface)); }
+.fa-issue-rank { grid-row: span 2; color: var(--neg); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fa-issue-title { min-width: 0; overflow-wrap: anywhere; font-size: 16px; font-weight: 700; line-height: 1.35; }
+.fa-issue-share { color: var(--neg); font-size: 15px; font-weight: 700; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fa-issue-meta { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.fa-issue-link { color: var(--primary); font-size: 14px; font-weight: 600; text-align: right; white-space: nowrap; }
+
+/* ---------- feedback explorer ---------- */
+.fx-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 16px; }
+.fx-head h2 { color: var(--text); font-size: 24px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
+.fx-count-line { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+
+.fx-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fx-search {
+  flex: 1 1 320px; min-width: 0; height: 44px; display: flex; align-items: center;
+  border: 1px solid var(--fa-border); border-radius: var(--fa-radius); background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.fx-search:focus-within { border-color: var(--primary); box-shadow: var(--fa-ring); }
+.fx-search svg { flex: none; width: 18px; height: 18px; margin-left: 14px; color: var(--muted); }
+.fx-search input {
+  flex: 1; min-width: 0; height: 100%; padding: 0 14px 0 10px;
+  border: 0; outline: 0; background: transparent; color: var(--text); font-size: 16px;
+}
+.fx-search input::placeholder { color: var(--muted); opacity: 0.85; }
+
+.fx-seg {
+  flex: none; display: inline-flex; gap: 2px; height: 44px; padding: 3px;
+  border: 1px solid var(--fa-border); border-radius: var(--fa-radius); background: var(--surface-soft);
+}
+.fx-seg button {
+  display: inline-flex; align-items: center; justify-content: center; height: 100%; padding: 0 16px;
+  border: 0; border-radius: 5px; background: transparent; color: var(--muted);
+  font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.fx-seg button.on { background: var(--surface); color: var(--primary); box-shadow: 0 1px 2px rgba(15, 30, 50, 0.12), 0 0 0 1px var(--fa-border); }
+
+.fx-select { position: relative; flex: 0 1 280px; min-width: 0; }
+.fx-select select {
+  width: 100%; height: 44px; padding: 0 40px 0 14px; appearance: none; cursor: pointer;
+  border: 1px solid var(--fa-border); border-radius: var(--fa-radius); background: var(--surface);
+  color: var(--text); font-size: 15px; font-weight: 600; text-overflow: ellipsis;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.fx-select select:focus-visible { outline: 0; border-color: var(--primary); box-shadow: var(--fa-ring); }
+.fx-select select option { background: var(--surface); color: var(--text); }
+.fx-select svg { position: absolute; top: 50%; right: 14px; width: 16px; height: 16px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+
+.fx-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.fx-filters-label { color: var(--muted); font-size: 14px; font-weight: 600; }
+.fx-chips { display: contents; }
+.fx-chip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 32px; padding: 0 8px 0 12px;
+  border: 1px solid var(--fa-border); border-radius: 999px; background: var(--surface);
+  color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; transition: border-color 0.15s;
+}
+.fx-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-chip svg { flex: none; width: 14px; height: 14px; color: var(--muted); }
+.fx-clear { padding: 4px; border: 0; background: none; color: var(--primary); font-size: 14px; font-weight: 600; cursor: pointer; }
+
+.fx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 16px; align-items: start; margin-top: 24px; }
+
+/* Response card */
+.fx-card {
+  display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 24px;
+  border: 1px solid var(--fa-border); border-radius: var(--fa-radius); background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.fx-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.fx-card-heading { display: grid; gap: 4px; min-width: 0; }
+.fx-kind { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.fx-kind svg { flex: none; width: 14px; height: 14px; }
+.fx-card h3 { color: var(--text); font-size: 19px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.fx-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 2px; color: var(--muted); font-size: 14px; }
+.fx-meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.fx-meta svg { flex: none; width: 14px; height: 14px; }
+.fx-meta .fx-pii { color: var(--pink); font-weight: 600; }
+.fx-sentiment {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border-radius: 999px; color: var(--fa-tone); background: color-mix(in srgb, var(--fa-tone) 10%, var(--surface));
+  font-size: 14px; font-weight: 700;
+}
+
+.fx-text { color: var(--text); font-size: 17px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fx-text.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden; }
+.fx-text.is-empty { color: var(--muted); font-size: 15px; font-style: italic; }
+.fx-more { align-self: flex-start; margin-top: -8px; padding: 2px 0; border: 0; background: none; color: var(--primary); font-size: 14px; font-weight: 600; cursor: pointer; }
+
+.fx-ratings { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px 24px; padding-top: 16px; border-top: 1px solid var(--fa-border); }
+.fx-score { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: start; column-gap: 4px; padding-right: 24px; border-right: 1px solid var(--fa-border); }
+.fx-score b { color: var(--fa-tone); font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.fx-score span { color: var(--muted); font-size: 15px; font-weight: 600; }
+.fx-score small { grid-column: 1 / -1; margin-top: 6px; color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.fx-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 8px 24px; margin: 0; }
+.fx-metric { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.fx-metric dt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 14px; }
+.fx-metric dd { flex: none; display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.fx-metric dd b { min-width: 10px; color: var(--text); font-size: 15px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.fx-pips { display: inline-flex; gap: 2px; }
+.fx-pips i { width: 8px; height: 4px; border-radius: 2px; background: var(--bg-2); }
+.fx-pips i.on { background: var(--fa-tone); }
+
+.fx-topics { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fx-topics li { max-width: 100%; }
+.fx-topic {
+  max-width: 100%; padding: 4px 10px; text-align: left; cursor: pointer;
+  border: 1px solid transparent; border-radius: 6px; background: var(--surface-soft);
+  color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere;
+  transition: border-color 0.15s;
+}
+.fx-topic .fa-dot { margin-right: 6px; vertical-align: 1px; }
+.fx-topic-tone { margin-left: 6px; color: var(--fa-tone); font-weight: 600; }
+
+.fx-skeleton { gap: 12px; }
+.fx-skeleton i:nth-child(1) { width: 30%; }
+.fx-skeleton i:nth-child(2) { width: 55%; height: 18px; }
+.fx-skeleton i:nth-child(3) { width: 100%; height: 56px; }
+.fx-skeleton i:nth-child(4) { width: 70%; }
+
+.fx-state {
+  display: grid; justify-items: center; gap: 8px; margin-top: 24px; padding: 56px 24px; text-align: center;
+  border: 1px dashed var(--fa-border); border-radius: var(--fa-radius); background: var(--surface);
+}
+.fx-state b { color: var(--text); font-size: 18px; font-weight: 700; }
+.fx-state p { max-width: 420px; color: var(--muted); font-size: 15px; }
+.fx-state .btn-sm { margin-top: 8px; }
+
+/* Hover feedback only where a pointer can hover, so a tap never leaves a "selected" look behind.
+   Selected (aria-pressed) and focused controls keep their own styling. */
+@media (hover: hover) {
+  .fa-kpi:not([aria-pressed="true"]):hover { border-color: var(--fa-border-strong); }
+  .fa-stack > span[data-sentiment]:hover { opacity: 0.8; }
+  .fa-sentiment:not(:disabled):not([aria-pressed="true"]):hover,
+  .fa-rank-row:not([aria-pressed="true"]):hover,
+  .fa-aspect:not([aria-pressed="true"]):hover { background: var(--surface-soft); }
+  .fa-issue:not([aria-pressed="true"]):hover { border-color: color-mix(in srgb, var(--neg) 45%, var(--fa-border)); border-left-color: var(--neg); }
+  .fa-issue:hover .fa-issue-link, .fa-more:hover, .fx-clear:hover, .fx-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .fx-search:not(:focus-within):hover, .fx-select select:not(:focus-visible):hover { border-color: var(--fa-border-strong); }
+  .fx-seg button:not(.on):hover { color: var(--text); }
+  .fx-chip:hover { border-color: var(--primary); }
+  .fx-chip:hover svg { color: var(--text); }
+  .fx-card:hover { border-color: var(--fa-border-strong); box-shadow: 0 4px 16px rgba(17, 35, 58, 0.06); }
+  html[data-theme="dark"] .fx-card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); }
+  .fx-topic:hover { border-color: var(--fa-border-strong); }
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1000px) {
+  /* The header stacks here; keep the title left-aligned. */
+  #responsesApp .adm-head { margin-top: 24px; align-items: stretch; }
+  #responsesApp .adm-head h1 { font-size: 30px; }
+  .fa-grid { grid-template-columns: minmax(0, 1fr); margin-bottom: 40px; }
+}
+@media (max-width: 860px) {
+  .fa-kpis, .fa-kpis.is-three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fa-kpis.is-three > :first-child { grid-column: 1 / -1; }
+  .fx-select { flex: 1 1 240px; }
+}
+@media (max-width: 640px) {
+  #responsesApp .adm-head h1 { font-size: 27px; }
+  #responsesApp .adm-head p { font-size: 16px; }
+  .fa-kpis { gap: 8px; }
+  .fa-kpi { padding: 12px 16px; }
+  .fa-kpi b { font-size: 26px; }
+  .fa-card, .fx-card { padding: 16px; }
+  /* Sentiment breakdown becomes a list: label, count, share. */
+  .fa-sentiments { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .fa-sentiment { grid-template-columns: minmax(0, 1fr) auto 48px; align-items: baseline; column-gap: 12px; }
+  .fa-sentiment b { font-size: 20px; }
+  .fa-sentiment small { text-align: right; }
+  .fa-sentiment-of { display: none; }
+  /* Long topic names get their own line above the bar instead of being cut. */
+  .fa-rank-row { grid-template-columns: 20px minmax(0, 1fr) 32px; row-gap: 6px; }
+  .fa-rank-name { white-space: normal; overflow-wrap: anywhere; }
+  .fa-rank-row .fa-bar { grid-column: 2; grid-row: 2; }
+  .fa-issue { padding: 12px; }
+  .fa-issue-share, .fa-issue-link { grid-column: 2 / -1; text-align: left; }
+  .fa-issue-rank { grid-row: span 4; }
+  .fx-toolbar > * { flex: 1 1 100%; }
+  .fx-seg button { flex: 1; padding: 0 8px; }
+  .fx-text { font-size: 16px; }
+  .fx-ratings { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .fx-score { display: flex; align-items: baseline; gap: 4px; padding: 0; border: 0; }
+  .fx-score small { margin: 0 0 0 8px; }
+  .fx-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
+  .fx-pips i { width: 6px; }
+}

@@ -101,11 +101,17 @@ while in the panel brings you back to it.
   stored**, with every removed item highlighted.
 
 **Staff** — sign in as faculty, manager or admin and click **"View
-responses"**. The page begins with the Sprint 3 analytics dashboard, then lists
-responses without authors, with per-question ratings, the average, NLP labels,
-and the masked comment. They can be filtered by type, by
-course/service, by text, or to only those where personal data was removed.
-What each role sees is decided by the backend:
+responses"** to open **Feedback analytics**. It starts with overview metrics
+(responses, course evaluations, service reviews, personal data removed), then
+the four Sprint 3 cards — Sentiment overview (story 3.1), Most discussed topics
+(3.2), Sentiment by topic (3.3) and Recurring negative themes (3.4) — and ends
+with the **Feedback explorer**: one card per response, without authors, with
+the masked comment, overall sentiment, per-question ratings and their average,
+and each detected topic with its own sentiment. Responses can be filtered by
+type, by course/service, by text, by sentiment, by topic, or to only those
+where personal data was removed. Clicking a metric, a sentiment, a topic or a
+recurring problem applies that filter to the explorer, and the active filters
+are shown as removable chips. What each role sees is decided by the backend:
 
 | Role | Sees responses for |
 |---|---|

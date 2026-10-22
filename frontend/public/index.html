@@ -558,64 +558,6 @@
   .masked-box .removed { margin-top: 10px; font-size: 12.5px; color: var(--pos); }
   mark.ph { background: rgba(255, 79, 216, 0.14); color: #ff9ee9; border-radius: 5px; padding: 0 4px; font: 500 12px var(--mono); }
 
-  .rsp-list { display: flex; flex-direction: column; }
-  .rsp { padding: 16px 18px; border-bottom: 1px solid rgba(140, 160, 255, 0.08); }
-  .rsp:last-child { border-bottom: 0; }
-  .rsp-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
-  .rsp-head b { font-weight: 500; font-size: 14.5px; }
-  .rsp-head .rsp-meta { margin-left: auto; font: 400 11.5px var(--mono); color: var(--muted); }
-  .kind-badge { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; }
-  .kind-badge.course { color: var(--cyan); }
-  .kind-badge.service { color: var(--neu); }
-  .anon-tag { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
-  .anon-tag svg { width: 12px; height: 12px; }
-  .rchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .rchip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 4px 4px 10px; border-radius: 9px; border: 1px solid var(--glass-border); font-size: 12px; color: var(--muted); }
-  .rchip b { font: 600 12px var(--mono); padding: 2px 7px; border-radius: 6px; }
-  .rchip b.r-pos { color: var(--pos); background: rgba(62, 242, 160, 0.1); }
-  .rchip b.r-neu { color: var(--neu); background: rgba(255, 200, 87, 0.1); }
-  .rchip b.r-neg { color: var(--neg); background: rgba(255, 92, 122, 0.1); }
-  .rchip.avg { color: var(--text); border-color: rgba(139, 92, 255, 0.4); }
-  .rsp-text { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #dfe2ff; white-space: pre-wrap; word-break: break-word; }
-  .rsp-text.none { color: #6b7099; font-style: italic; }
-  .pii-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font: 500 10.5px var(--mono); letter-spacing: 0.04em; color: #ff9ee9; }
-  .pii-tag svg { width: 12px; height: 12px; }
-  .analysis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
-  .analysis-card { border: 1px solid var(--glass-border); border-radius: 16px; background: rgba(10, 12, 30, 0.52); padding: 18px; min-height: 164px; }
-  .analysis-card h2 { font-size: 16px; font-weight: 600; }
-  .analysis-card .kicker { margin-bottom: 5px; }
-  .analysis-card > p { color: var(--muted); font-size: 12.5px; line-height: 1.45; margin-top: 4px; }
-  .sentiment-bar { display: flex; height: 13px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.04); margin: 22px 0 12px; }
-  .sentiment-bar i { display: block; min-width: 0; transition: width .3s; }
-  .sentiment-bar .positive { background: var(--pos); }
-  .sentiment-bar .neutral { background: var(--neu); }
-  .sentiment-bar .negative { background: var(--neg); }
-  .sentiment-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font: 500 11px var(--mono); color: var(--muted); }
-  .sentiment-legend span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: currentColor; }
-  .sentiment-legend .positive { color: var(--pos); }
-  .sentiment-legend .neutral { color: var(--neu); }
-  .sentiment-legend .negative { color: var(--neg); }
-  .analysis-list { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
-  .analysis-row { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(100px, 1.35fr) auto; align-items: center; gap: 10px; font-size: 12.5px; }
-  .analysis-row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mini-bar { height: 7px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,.06); }
-  .mini-bar i { display: block; height: 100%; border-radius: inherit; background: var(--violet); }
-  .analysis-row b { min-width: 34px; text-align: right; font: 600 11px var(--mono); color: var(--muted); }
-  .problem-row { padding: 10px 12px; border-radius: 11px; background: rgba(255,92,122,.06); border: 1px solid rgba(255,92,122,.16); }
-  .problem-row b { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--text); }
-  .problem-row b span { color: var(--neg); font: 600 11px var(--mono); }
-  .problem-row small { display: block; margin-top: 4px; color: var(--muted); }
-  .sentiment-tag { font: 600 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; border: 1px solid currentColor; }
-  .sentiment-tag.positive { color: var(--pos); background: rgba(62,242,160,.06); }
-  .sentiment-tag.neutral { color: var(--neu); background: rgba(255,200,87,.06); }
-  .sentiment-tag.negative { color: var(--neg); background: rgba(255,92,122,.06); }
-  .topic-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
-  .topic-tag { font-size: 11px; color: #cbd0f8; padding: 4px 8px; border-radius: 8px; background: rgba(139,92,255,.09); border: 1px solid rgba(139,92,255,.22); }
-  .topic-tag.positive { border-color: rgba(62,242,160,.32); }
-  .topic-tag.negative { border-color: rgba(255,92,122,.36); }
-  .adm-toolbar .input.sel { flex: 0 1 280px; }
-  .adm-stats.three { grid-template-columns: repeat(3, 1fr); }
-  .adm-toolbar .input.sel select { padding: 11px 36px 11px 12px; }
 
   /* ---------- responsive ---------- */
   @media (max-width: 960px) {
@@ -634,8 +576,6 @@
     .adm-head { flex-direction: column; align-items: stretch; margin-top: 22px; }
     .adm-head .btn { width: 100%; }
     .adm-head .btn-sm { align-self: flex-start; }
-    .adm-stats.three { grid-template-columns: repeat(2, 1fr); }
-    .adm-stats.three > :first-child { grid-column: 1 / -1; }
     .adm-stats { grid-template-columns: repeat(2, 1fr); }
     .adm-table thead { display: none; }
     .adm-table, .adm-table tbody, .adm-table tr, .adm-table td { display: block; width: 100%; }
@@ -652,11 +592,8 @@
     .form-grid { grid-template-columns: 1fr; }
     .modal-actions { flex-direction: column-reverse; }
     .modal-actions .btn { width: 100%; }
-    .adm-toolbar .input.sel { flex: 1 1 100%; }
     .progress { width: 100%; }
     .progress-bar { flex: 1; }
-    .rsp-head .rsp-meta { margin-left: 0; width: 100%; }
-    .analysis-grid { grid-template-columns: 1fr; }
     .fb-tabs { display: flex; }
     .fb-tabs button { flex: 1; }
   }
@@ -668,6 +605,7 @@
   }
 </style>
 <link rel="stylesheet" href="/university.css">
+<link rel="stylesheet" href="/responses.css">
 </head>
 <body>
   <canvas id="net" aria-hidden="true"></canvas>
@@ -1053,8 +991,9 @@
 
     <div class="adm-head">
       <div>
-        <h1>Sprint 3 analytics</h1>
-        <p id="rspScope">Sentiment, topics, aspects and recurring problems in anonymous feedback.</p>
+        <h1>Feedback analytics</h1>
+        <p id="rspScope">What students say about courses and services. Every response is anonymous.</p>
+        <p class="fa-context" id="rspContext"></p>
       </div>
       <button type="button" class="btn-sm" id="rspRefresh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
@@ -1062,59 +1001,97 @@
       </button>
     </div>
 
-    <section class="analysis-grid" aria-label="Sprint 3 feedback analysis">
-      <article class="analysis-card">
-        <div class="kicker">3.1 Sentiment analysis</div>
-        <h2>Overall response sentiment</h2>
-        <p>Text and 1–5 ratings are combined into positive, neutral and negative classifications.</p>
-        <div class="sentiment-bar" id="sentimentBar" aria-label="Sentiment distribution"></div>
-        <div class="sentiment-legend" id="sentimentLegend"></div>
+    <!-- Overview metrics. Each one also sets the scope of the feedback explorer below. -->
+    <section class="fa-kpis" id="rspKpis" aria-label="Overview — select a metric to filter the responses">
+      <button type="button" class="fa-kpi" data-kpi="all" aria-pressed="true">
+        <span class="fa-kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Total responses</span>
+        <b id="rsTotal">—</b><small id="rsTotalNote"></small>
+      </button>
+      <button type="button" class="fa-kpi" data-kpi="course" aria-pressed="false">
+        <span class="fa-kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Course evaluations</span>
+        <b id="rsCourse">—</b><small id="rsCourseNote"></small>
+      </button>
+      <button type="button" class="fa-kpi" data-kpi="service" aria-pressed="false">
+        <span class="fa-kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>Service reviews</span>
+        <b id="rsService">—</b><small id="rsServiceNote"></small>
+      </button>
+      <button type="button" class="fa-kpi" data-kpi="pii" aria-pressed="false">
+        <span class="fa-kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Personal data removed</span>
+        <b id="rsPii">—</b><small id="rsPiiNote"></small>
+      </button>
+    </section>
+
+    <section class="fa-grid" aria-label="Feedback insights">
+      <!-- Story 3.1 — sentiment analysis -->
+      <article class="fa-card" aria-labelledby="faSentimentTitle">
+        <header class="fa-card-head"><div>
+          <span class="fa-kicker">Sentiment analysis</span>
+          <h2 id="faSentimentTitle">Sentiment overview</h2>
+          <p>Comment text and 1–5 ratings, combined into one classification per response.</p>
+        </div></header>
+        <div id="sentimentAnalysis"></div>
       </article>
-      <article class="analysis-card">
-        <div class="kicker">3.2 Topic detection</div>
-        <h2>Most discussed topics</h2>
-        <p>Keyword matching supports English, Russian and Kazakh comments.</p>
-        <div class="analysis-list" id="topicAnalysis"></div>
+      <!-- Story 3.2 — topic detection -->
+      <article class="fa-card" aria-labelledby="faTopicsTitle">
+        <header class="fa-card-head"><div>
+          <span class="fa-kicker">Topic detection</span>
+          <h2 id="faTopicsTitle">Most discussed topics</h2>
+          <p>Mentions per topic, detected in English, Russian and Kazakh comments.</p>
+        </div></header>
+        <div id="topicAnalysis"></div>
       </article>
-      <article class="analysis-card">
-        <div class="kicker">3.3 Aspect-based sentiment</div>
-        <h2>Sentiment by topic</h2>
-        <p>One comment can praise teaching while criticizing workload.</p>
-        <div class="analysis-list" id="aspectAnalysis"></div>
+      <!-- Story 3.3 — aspect-based sentiment -->
+      <article class="fa-card" aria-labelledby="faAspectsTitle">
+        <header class="fa-card-head"><div>
+          <span class="fa-kicker">Aspect-based sentiment</span>
+          <h2 id="faAspectsTitle">Sentiment by topic</h2>
+          <p>How each topic is mentioned: one comment can praise teaching and criticise workload.</p>
+        </div></header>
+        <div id="aspectAnalysis"></div>
       </article>
-      <article class="analysis-card">
-        <div class="kicker">3.4 Common problem detection</div>
-        <h2>Recurring negative themes</h2>
-        <p>A problem appears after at least three negative mentions in the selected scope.</p>
-        <div class="analysis-list" id="problemAnalysis"></div>
+      <!-- Story 3.4 — common problem detection -->
+      <article class="fa-card" aria-labelledby="faProblemsTitle">
+        <header class="fa-card-head"><div>
+          <span class="fa-kicker">Common problem detection</span>
+          <h2 id="faProblemsTitle">Recurring negative themes</h2>
+          <p>Topics with at least three negative mentions, ranked by count and share.</p>
+        </div><span class="fa-badge" id="problemCount" hidden></span></header>
+        <div id="problemAnalysis"></div>
       </article>
     </section>
 
-    <section class="adm-stats" aria-label="Response statistics — click to filter">
-      <button type="button" class="adm-stat" data-kind=""><span>All responses</span><b id="rsTotal">0</b></button>
-      <button type="button" class="adm-stat" data-kind="course"><span>Course evaluations</span><b id="rsCourse" style="color:var(--cyan)">0</b></button>
-      <button type="button" class="adm-stat" data-kind="service"><span>Service reviews</span><b id="rsService" style="color:var(--neu)">0</b></button>
-      <button type="button" class="adm-stat" data-kind="pii"><span>Personal data removed</span><b id="rsPii" style="color:var(--pink)">0</b></button>
-    </section>
+    <!-- Feedback explorer: every response as a card, filtered on the client -->
+    <section class="fx" aria-labelledby="rspHeading">
+      <div class="fx-head">
+        <h2 id="rspHeading" tabindex="-1">Feedback explorer</h2>
+        <p class="fx-count-line" id="rspCount" aria-live="polite"></p>
+      </div>
 
-    <section class="adm-panel">
-      <div class="adm-toolbar">
-        <div class="input">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input id="rspSearch" type="search" placeholder="Search comments" autocomplete="off">
+      <div class="fx-toolbar">
+        <label class="fx-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span class="fx-sr">Search feedback</span>
+          <input id="rspSearch" type="search" placeholder="Search comments, courses or topics" autocomplete="off">
+        </label>
+        <div class="fx-seg" id="rspKindSeg" role="group" aria-label="Filter by type">
+          <button type="button" data-kind="" class="on" aria-pressed="true">All</button>
+          <button type="button" data-kind="course" aria-pressed="false">Courses</button>
+          <button type="button" data-kind="service" aria-pressed="false">Services</button>
         </div>
-        <div class="seg" id="rspKindSeg" role="group" aria-label="Filter by type">
-          <button type="button" data-kind="" class="on">All</button>
-          <button type="button" data-kind="course">Courses</button>
-          <button type="button" data-kind="service">Services</button>
-        </div>
-        <div class="input sel">
-          <select id="rspTarget" aria-label="Filter by course or service"><option value="">Every course & service</option></select>
+        <div class="fx-select">
+          <select id="rspTarget" aria-label="Filter by course or service"><option value="">Every course &amp; service</option></select>
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 7.5 5 5 5-5"/></svg>
         </div>
       </div>
-      <div class="rsp-list" id="rspList"></div>
-      <div class="adm-empty" id="rspEmpty" hidden><b>No responses yet</b>Responses appear here as soon as students submit a form.</div>
-      <div class="adm-foot" id="rspCount"></div>
+
+      <div class="fx-filters" id="rspFilters" hidden>
+        <span class="fx-filters-label">Filtered by</span>
+        <div class="fx-chips" id="rspChips"></div>
+        <button type="button" class="fx-clear" data-rsp-clear>Clear filters</button>
+      </div>
+
+      <div class="fx-grid" id="rspList"></div>
+      <div class="fx-state" id="rspEmpty" hidden></div>
     </section>
   </div>
 
@@ -2228,9 +2205,14 @@ function resetPages() {
   Object.assign(fbState, { forms: [], kind: "course", q: "" });
   fbSearch.value = "";
   fbTabs.innerHTML = fbTargets.innerHTML = "";
-  Object.assign(rspState, { data: null, analytics: null, kind: "", pii: false, target: "", q: "" });
+  Object.assign(rspState, {
+    data: null, analytics: null, kind: "", pii: false, target: "", q: "",
+    sentiment: "", topic: "", tone: "", expanded: { topics: false, aspects: false },
+  });
   rspSearch.value = "";
   rspList.innerHTML = "";
+  rspEmpty.hidden = true;
+  $("rspFilters").hidden = true;
   evalCtx = null;
 }
 document.querySelectorAll("[data-page-back]").forEach(b => b.addEventListener("click", closePages));
@@ -2484,8 +2466,34 @@ evalForm.addEventListener("submit", async e => {
    STAFF — anonymous responses, scoped by role on the server
    ========================================================= */
 const rspList = $("rspList"), rspEmpty = $("rspEmpty"), rspSearch = $("rspSearch"), rspTarget = $("rspTarget");
-const responsesApp = $("responsesApp");
-const rspState = { data: null, analytics: null, kind: "", pii: false, target: "", q: "" };
+const responsesApp = $("responsesApp"), rspCount = $("rspCount"), rspKpis = $("rspKpis");
+// sentiment filters by overall response sentiment; topic (+ optional tone) by a topic's aspect sentiment.
+const rspState = {
+  data: null, analytics: null, kind: "", pii: false, target: "", q: "",
+  sentiment: "", topic: "", tone: "", expanded: { topics: false, aspects: false },
+};
+const SENTIMENTS = ["positive", "neutral", "negative"];
+const SENTIMENT_LABEL = { positive: "Positive", neutral: "Neutral", negative: "Negative" };
+const LANGUAGE_LABEL = { en: "English", ru: "Russian", kk: "Kazakh" };
+const TOPIC_LIMIT = 6;
+const pct = (n, total) => (total ? Math.round(n / total * 100) : 0);
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const ratingBand = v => (v >= 4 ? "pos" : v >= 3 ? "mid" : "neg");
+const toneOf = value => (SENTIMENT_LABEL[value] ? value : "neutral");
+const targetKey = r => (r.course_id ? `course:${r.course_id}` : `service:${r.service_id}`);
+const RSP_ICONS = {
+  course: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  service: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>',
+  date: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>',
+  language: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.5 2.5L16 9.5"/></svg>',
+};
+// Placeholders while the requests are in flight.
+const RSP_SKELETON = '<div class="fx-card fx-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div>'.repeat(4);
+const FA_SKELETON = '<div class="fa-skeleton" aria-hidden="true"><i></i><i></i><i></i></div>';
+const FA_CARDS = ["sentimentAnalysis", "topicAnalysis", "aspectAnalysis", "problemAnalysis"];
+const rspStateHtml = (title, text, action = "") => `<b>${title}</b><p>${text}</p>${action}`;
 
 async function openResponses() {
   if (!currentSession || !STAFF.includes(currentSession.user.role)) return;
@@ -2493,27 +2501,48 @@ async function openResponses() {
   await loadResponses();
 }
 async function loadResponses() {
-  rspList.innerHTML = '<div class="adm-empty">Loading responses…</div>';
+  const refresh = $("rspRefresh");
+  refresh.disabled = true;
+  rspList.innerHTML = RSP_SKELETON;
+  rspList.setAttribute("aria-busy", "true");
+  FA_CARDS.forEach(id => { $(id).innerHTML = FA_SKELETON; });
   rspEmpty.hidden = true;
+  rspCount.textContent = "Loading responses…";
   const [responsesResult, analyticsResult] = await Promise.all([
     api("/evaluations/responses", { token: currentSession.token }),
     api("/analytics/overview", { token: currentSession.token }),
   ]);
+  refresh.disabled = false;
+  rspList.removeAttribute("aria-busy");
+  if (!currentSession) return;  // signed out while the requests were in flight
   const { ok, status, data, network } = responsesResult;
   if (status === 401 || status === 403) return sessionRevoked();
+  rspState.analytics = analyticsResult.ok ? analyticsResult.data : null;
   if (!ok) {
-    rspList.innerHTML = `<div class="adm-empty">${network ? "Cannot reach the server." : "Could not load responses."}</div>`;
+    rspState.data = null;
+    rspList.innerHTML = "";
+    rspCount.textContent = "";
+    $("rspContext").textContent = "";
+    rspEmpty.hidden = false;
+    rspEmpty.innerHTML = rspStateHtml(
+      network ? "Cannot reach the server" : "Could not load responses",
+      "Check that the backend is running, then try again.",
+      '<button type="button" class="btn-sm" data-rsp-retry>Try again</button>');
+    renderKpis();
+    renderAnalytics();
     return;
   }
   rspState.data = data;
-  rspState.analytics = analyticsResult.ok ? analyticsResult.data : null;
   const coursesOnly = currentSession.user.role === "faculty";
-  responsesApp.querySelectorAll('[data-kind="service"]').forEach(el => { el.hidden = coursesOnly; });
   $("rspKindSeg").hidden = coursesOnly;  // "All" and "Courses" would be the same list
-  responsesApp.querySelector(".adm-stats").classList.toggle("three", coursesOnly);
+  rspKpis.querySelector('[data-kpi="service"]').hidden = coursesOnly;
+  rspKpis.classList.toggle("is-three", coursesOnly);
   $("rspScope").textContent = `${data.scope}. Every response is anonymous.`;
+  const semesters = [...new Set(data.items.map(r => r.semester))];
+  const updated = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  $("rspContext").textContent = [semesters.join(", "), `Updated ${updated}`].filter(Boolean).join(" · ");
   const targets = new Map();
-  data.items.forEach(r => targets.set(r.course_id ? `course:${r.course_id}` : `service:${r.service_id}`, r.target));
+  data.items.forEach(r => targets.set(targetKey(r), r.target));
   const sorted = [...targets].sort((a, b) => a[1].localeCompare(b[1]));
   rspTarget.innerHTML = `<option value="">${coursesOnly ? "Every course" : "Every course &amp; service"}</option>`
     + sorted.map(([k, label]) => `<option value="${k}">${escapeHtml(label)}</option>`).join("");
@@ -2523,116 +2552,335 @@ async function loadResponses() {
   renderResponses();
 }
 
+/* ---------- overview metrics ---------- */
+function renderKpis() {
+  const items = rspState.data?.items, a = rspState.analytics;
+  const total = items ? items.length : 0;
+  const count = test => (items ? items.filter(test).length : null);
+  const share = n => (total ? `${pct(n, total)}% of responses` : "");
+  const set = (id, n, note) => { $(id).textContent = n ?? "—"; $(`${id}Note`).textContent = n == null ? "" : note; };
+  const course = count(r => r.kind === "course"), service = count(r => r.kind === "service"), pii = count(r => r.pii_masked);
+  set("rsTotal", items ? total : null, a && a.avg_rating != null ? `Average rating ${a.avg_rating.toFixed(1)} / 5` : "");
+  set("rsCourse", course, share(course));
+  set("rsService", service, share(service));
+  set("rsPii", pii, share(pii));
+}
+
+/* ---------- analytics cards (stories 3.1–3.4) ---------- */
 function emptyAnalysis(message) {
-  return `<p style="color:var(--muted);font-size:12.5px">${escapeHtml(message)}</p>`;
+  return `<p class="fa-empty">${escapeHtml(message)}</p>`;
+}
+// Most discussed first; ties alphabetically so the order is stable between refreshes.
+const rankedTopics = a => [...(a.topics || [])].sort((x, y) => y.total - x.total || x.topic.localeCompare(y.topic));
+function showAllToggle(key, count) {
+  if (count <= TOPIC_LIMIT) return "";
+  const open = rspState.expanded[key];
+  return `<button type="button" class="fa-more" data-expand="${key}" aria-expanded="${open}">${open ? "Show fewer topics" : `Show all ${count} topics`}</button>`;
+}
+
+function sentimentHtml(a) {
+  const total = a.total || 0;
+  if (!total) return emptyAnalysis("No feedback has been submitted yet.");
+  const counts = SENTIMENTS.map(s => [s, a[s] || 0]);
+  const index = a.satisfaction_index;
+  const net = typeof index === "number"
+    ? `<p class="fa-note">Net sentiment <b>${index > 0 ? "+" : index < 0 ? "−" : ""}${Math.abs(index)}</b>: the positive share minus the negative share, in percentage points.</p>`
+    : "";
+  return `
+    <div class="fa-stack" aria-hidden="true">${counts.filter(([, n]) => n).map(([s, n]) =>
+      `<span class="is-${s}" data-sentiment="${s}" style="width:${n / total * 100}%" title="${SENTIMENT_LABEL[s]}: ${n} (${pct(n, total)}%)"></span>`).join("")}</div>
+    <div class="fa-sentiments">${counts.map(([s, n]) => `
+      <button type="button" class="fa-sentiment is-${s}" data-sentiment="${s}" aria-pressed="false"${n ? "" : " disabled"}
+        aria-label="${SENTIMENT_LABEL[s]}: ${n} of ${plural(total, "response")}, ${pct(n, total)}%. Show these responses">
+        <span class="fa-sentiment-label"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]}</span>
+        <b>${n}</b><small>${pct(n, total)}%<span class="fa-sentiment-of"> of responses</span></small>
+      </button>`).join("")}</div>${net}`;
+}
+
+function topicsHtml(a) {
+  const topics = rankedTopics(a);
+  if (!topics.length) return emptyAnalysis(a.total ? "No topics were detected in these comments." : "No feedback has been submitted yet.");
+  const max = topics[0].total || 1;
+  const shown = rspState.expanded.topics ? topics : topics.slice(0, TOPIC_LIMIT);
+  // Equal counts share a rank (1, 1, 1, 4 …) instead of implying an order between them.
+  const rankOf = t => topics.findIndex(x => x.total === t.total) + 1;
+  return `<ol class="fa-rank">${shown.map(t => `
+    <li><button type="button" class="fa-rank-row" data-topic="${escapeHtml(t.topic)}" aria-pressed="false"
+      aria-label="${escapeHtml(t.topic)}: ${plural(t.total, "mention")}. Show these responses">
+      <span class="fa-rank-n">${rankOf(t)}</span>
+      <span class="fa-rank-name" title="${escapeHtml(t.topic)}">${escapeHtml(t.topic)}</span>
+      <span class="fa-bar"><i style="width:${t.total / max * 100}%"></i></span>
+      <b>${t.total}</b>
+    </button></li>`).join("")}</ol>${showAllToggle("topics", topics.length)}`;
+}
+
+function aspectsHtml(a) {
+  const topics = rankedTopics(a);
+  if (!topics.length) return emptyAnalysis(a.total ? "Aspect sentiment appears once comments mention a known topic." : "No feedback has been submitted yet.");
+  const shown = rspState.expanded.aspects ? topics : topics.slice(0, TOPIC_LIMIT);
+  const legend = `<ul class="fa-legend">${SENTIMENTS.map(s => `<li class="is-${s}"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]}</li>`).join("")}</ul>`;
+  return `${legend}<ul class="fa-aspects">${shown.map(t => {
+    const parts = SENTIMENTS.map(s => [s, t[s] || 0]).filter(([, n]) => n);
+    return `<li><button type="button" class="fa-aspect" data-topic="${escapeHtml(t.topic)}" aria-pressed="false"
+      aria-label="${escapeHtml(t.topic)}: ${parts.map(([s, n]) => `${n} ${s}`).join(", ")} of ${plural(t.total, "mention")}. Show these responses">
+      <span class="fa-aspect-top"><span class="fa-aspect-name" title="${escapeHtml(t.topic)}">${escapeHtml(t.topic)}</span><small>${plural(t.total, "mention")}</small></span>
+      <span class="fa-stack is-thin" aria-hidden="true">${parts.map(([s, n]) => `<span class="is-${s}" style="width:${n / t.total * 100}%"></span>`).join("")}</span>
+      <span class="fa-aspect-split">${parts.map(([s, n]) => `<span class="is-${s}">${pct(n, t.total)}% ${s}</span>`).join("")}</span>
+    </button></li>`;
+  }).join("")}</ul>${showAllToggle("aspects", topics.length)}`;
+}
+
+function problemsHtml(a) {
+  const problems = a.problems || [];
+  const badge = $("problemCount");
+  badge.hidden = !problems.length;
+  badge.textContent = plural(problems.length, "issue");
+  if (!problems.length) {
+    return a.total
+      ? `<p class="fa-empty fa-empty-ok">${RSP_ICONS.check}No topic has reached three negative mentions.</p>`
+      : emptyAnalysis("No feedback has been submitted yet.");
+  }
+  return `<ol class="fa-issues">${problems.map((p, i) => {
+    const share = Math.round(p.negative_share * 100);
+    return `<li><button type="button" class="fa-issue" data-topic="${escapeHtml(p.topic)}" data-tone="negative" aria-pressed="false"
+      aria-label="${escapeHtml(p.topic)}: ${p.negative} negative of ${plural(p.total, "mention")}, ${share}% negative. Show the negative responses">
+      <span class="fa-issue-rank">${i + 1}</span>
+      <span class="fa-issue-title">${escapeHtml(p.topic)}</span>
+      <span class="fa-issue-share">${share}% negative</span>
+      <span class="fa-issue-meta">${plural(p.negative, "negative mention")} / ${p.total} total</span>
+      <span class="fa-issue-link">View feedback →</span>
+    </button></li>`;
+  }).join("")}</ol>`;
 }
 
 function renderAnalytics() {
   const a = rspState.analytics;
   if (!a) {
-    $("sentimentBar").innerHTML = "";
-    $("sentimentLegend").innerHTML = "Analytics are temporarily unavailable.";
-    $("topicAnalysis").innerHTML = $("aspectAnalysis").innerHTML = $("problemAnalysis").innerHTML
-      = emptyAnalysis("Analytics are temporarily unavailable.");
+    $("problemCount").hidden = true;
+    FA_CARDS.forEach(id => { $(id).innerHTML = emptyAnalysis("Analytics are temporarily unavailable. Use Refresh to try again."); });
     return;
   }
-  const total = a.total || 0;
-  const sentiments = [
-    ["positive", a.positive || 0], ["neutral", a.neutral || 0], ["negative", a.negative || 0],
-  ];
-  $("sentimentBar").innerHTML = sentiments.map(([label, count]) =>
-    `<i class="${label}" style="width:${total ? count / total * 100 : 0}%" title="${label}: ${count}"></i>`).join("");
-  $("sentimentLegend").innerHTML = sentiments.map(([label, count]) =>
-    `<span class="${label}">${label[0].toUpperCase() + label.slice(1)} ${count}${total ? ` (${Math.round(count / total * 100)}%)` : ""}</span>`).join("");
-
-  const topics = (a.topics || []).slice(0, 6);
-  const maxMentions = Math.max(1, ...topics.map(t => t.total));
-  $("topicAnalysis").innerHTML = topics.length ? topics.map(t => `
-    <div class="analysis-row">
-      <span title="${escapeHtml(t.topic)}">${escapeHtml(t.topic)}</span>
-      <span class="mini-bar"><i style="width:${Math.round(t.total / maxMentions * 100)}%;background:${escapeHtml(t.color || "#8b5cff")}"></i></span>
-      <b>${t.total}</b>
-    </div>`).join("") : emptyAnalysis(total ? "No topics were detected in these comments." : "No feedback has been submitted yet.");
-
-  $("aspectAnalysis").innerHTML = topics.length ? topics.map(t => {
-    const pos = Math.round((t.positive_share || 0) * 100), neg = Math.round((t.negative_share || 0) * 100);
-    return `<div class="analysis-row"><span title="${escapeHtml(t.topic)}">${escapeHtml(t.topic)}</span>
-      <span class="mini-bar" title="${pos}% positive, ${neg}% negative"><i style="width:${pos}%;background:var(--pos)"></i></span>
-      <b style="color:${neg > pos ? "var(--neg)" : "var(--pos)"}">${pos}% / ${neg}%</b></div>`;
-  }).join("") : emptyAnalysis("Aspect sentiment appears when comments mention a known topic.");
-
-  const problems = a.problems || [];
-  $("problemAnalysis").innerHTML = problems.length ? problems.map(p => `
-    <div class="problem-row"><b>${escapeHtml(p.topic)}<span>${Math.round(p.negative_share * 100)}% negative</span></b>
-      <small>${p.negative} negative mentions out of ${p.total}</small></div>`).join("")
-    : emptyAnalysis(total ? "No recurring problem has reached the three-mention threshold." : "No feedback has been submitted yet.");
+  $("sentimentAnalysis").innerHTML = sentimentHtml(a);
+  $("topicAnalysis").innerHTML = topicsHtml(a);
+  $("aspectAnalysis").innerHTML = aspectsHtml(a);
+  $("problemAnalysis").innerHTML = problemsHtml(a);
+  syncSelection();
 }
 
-const ratingClass = v => (v >= 4 ? "r-pos" : v >= 3 ? "r-neu" : "r-neg");
-function rspHtml(r, qLabel) {
-  const vals = Object.values(r.ratings);
-  const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-  const chips = Object.entries(r.ratings).map(([id, v]) =>
-    `<span class="rchip">${escapeHtml(qLabel[id] || `Q${id}`)}<b class="${ratingClass(v)}">${v}</b></span>`).join("");
-  const date = r.date ? fmtDate(`${r.date}T00:00:00`) : "";
+// Mirrors the active filters on every control that can set them.
+function syncSelection() {
+  const press = (el, on) => el.setAttribute("aria-pressed", String(on));
+  rspKpis.querySelectorAll("[data-kpi]").forEach(b => {
+    const k = b.dataset.kpi;
+    press(b, k === "pii" ? rspState.pii : k === "all" ? !rspState.kind : rspState.kind === k);
+  });
+  responsesApp.querySelectorAll(".fa-grid button[data-sentiment]").forEach(b => press(b, rspState.sentiment === b.dataset.sentiment));
+  responsesApp.querySelectorAll(".fa-grid button[data-topic]").forEach(b =>
+    press(b, rspState.topic === b.dataset.topic && rspState.tone === (b.dataset.tone || "")));
+  $("rspKindSeg").querySelectorAll("button").forEach(b => {
+    const on = b.dataset.kind === rspState.kind;
+    b.classList.toggle("on", on);
+    press(b, on);
+  });
+}
+
+/* ---------- feedback explorer ---------- */
+// Every rating of the response, in the order the survey asks them.
+function ratingsHtml(r, qLabel) {
+  const order = (rspState.data.questions[r.kind] || []).map(q => String(q.id));
+  const rank = id => (order.includes(id) ? order.indexOf(id) : order.length);
+  const rows = Object.entries(r.ratings || {}).sort(([a], [b]) => rank(a) - rank(b) || a - b);
+  if (!rows.length) return "";
+  const avg = rows.reduce((sum, [, v]) => sum + v, 0) / rows.length;
+  const pips = v => [1, 2, 3, 4, 5].map(n => `<i${n <= v ? ' class="on"' : ""}></i>`).join("");
   return `
-    <article class="rsp">
-      <div class="rsp-head">
-        <span class="kind-badge ${r.kind}">${r.kind === "course" ? "Course" : "Service"}</span>
-        <span class="sentiment-tag ${r.sentiment || "neutral"}">${escapeHtml(r.sentiment || "neutral")}</span>
-        <b>${escapeHtml(r.target)}</b>
-        <span class="anon-tag">${LOCK_ICON}Anonymous</span>
-        <span class="rsp-meta">${escapeHtml(r.semester)} · ${date}</span>
-      </div>
-      <div class="rchips">${chips}${avg != null ? `<span class="rchip avg">Average<b class="${ratingClass(avg)}">${avg.toFixed(1)}</b></span>` : ""}</div>
-      ${r.comment ? `<p class="rsp-text">${highlightPh(r.comment)}</p>` : '<p class="rsp-text none">No comment</p>'}
-      ${(r.topics || []).length ? `<div class="topic-tags">${r.topics.map(topic =>
-        `<span class="topic-tag ${escapeHtml((r.aspects || {})[topic] || "neutral")}" title="Aspect sentiment: ${escapeHtml((r.aspects || {})[topic] || "neutral")}">${escapeHtml(topic)} · ${escapeHtml((r.aspects || {})[topic] || "neutral")}</span>`
-      ).join("")}</div>` : ""}
-      ${r.pii_masked ? `<span class="pii-tag">${SHIELD_ICON}Personal data removed before saving</span>` : ""}
+    <div class="fx-ratings">
+      <div class="fx-score is-${ratingBand(avg)}"><b>${avg.toFixed(1)}</b><span>/ 5</span><small>Average rating</small></div>
+      <dl class="fx-metrics">${rows.map(([id, v]) => `
+        <div class="fx-metric is-${ratingBand(v)}">
+          <dt>${escapeHtml(qLabel[id] || `Q${id}`)}</dt>
+          <dd><span class="fx-pips" aria-hidden="true">${pips(v)}</span><b>${v}<span class="fx-sr"> out of 5</span></b></dd>
+        </div>`).join("")}
+      </dl>
+    </div>`;
+}
+
+function rspHtml(r, qLabel) {
+  // Course targets arrive as "CODE — Title"; the code becomes a quiet label above the title.
+  const course = r.kind === "course" && r.target.match(/^(.+?) — (.+)$/);
+  const kindLabel = r.kind === "course" ? `Course${course ? ` · ${course[1]}` : ""}` : "Service";
+  const sentiment = toneOf(r.sentiment);
+  const confidence = r.confidence ? `, ${Math.round(r.confidence * 100)}% confidence` : "";
+  const meta = [
+    `<span>${RSP_ICONS.date}<span>${escapeHtml(r.semester)}${r.date ? ` · <time datetime="${escapeHtml(r.date)}">${fmtDate(`${r.date}T00:00:00`)}</time>` : ""}</span></span>`,
+    `<span>${LOCK_ICON}Anonymous</span>`,
+    r.comment && LANGUAGE_LABEL[r.language] ? `<span>${RSP_ICONS.language}${LANGUAGE_LABEL[r.language]}</span>` : "",
+    r.pii_masked ? `<span class="fx-pii">${SHIELD_ICON}Personal data removed</span>` : "",
+  ].join("");
+  const topics = (r.topics || []).map(topic => {
+    const tone = toneOf((r.aspects || {})[topic]);
+    return `<li><button type="button" class="fx-topic is-${tone}" data-topic="${escapeHtml(topic)}"
+      aria-label="${escapeHtml(topic)}, ${tone}. Show all responses about this topic"><i class="fa-dot"></i>${escapeHtml(topic)}<span class="fx-topic-tone">${tone}</span></button></li>`;
+  }).join("");
+  return `
+    <article class="fx-card" aria-labelledby="rsp-title-${r.id}">
+      <header class="fx-card-head">
+        <div class="fx-card-heading">
+          <span class="fx-kind">${RSP_ICONS[r.kind] || ""}${escapeHtml(kindLabel)}</span>
+          <h3 id="rsp-title-${r.id}">${escapeHtml(course ? course[2] : r.target)}</h3>
+          <div class="fx-meta">${meta}</div>
+        </div>
+        <span class="fx-sentiment is-${sentiment}" title="Overall sentiment${confidence}"><i class="fa-dot"></i><span class="fx-sr">Overall sentiment: </span>${SENTIMENT_LABEL[sentiment]}</span>
+      </header>
+      ${r.comment
+        ? `<p class="fx-text is-clamped" id="rsp-text-${r.id}">${highlightPh(r.comment)}</p>`
+        : '<p class="fx-text is-empty">No written comment, ratings only.</p>'}
+      ${ratingsHtml(r, qLabel)}
+      ${topics ? `<ul class="fx-topics" aria-label="Detected topics and their sentiment">${topics}</ul>` : ""}
     </article>`;
 }
 
+// Comments start clamped; only the ones that actually overflow get a "Show more" toggle.
+function markLongComments() {
+  rspList.querySelectorAll(".fx-text.is-clamped").forEach(p => {
+    if (p.scrollHeight - p.clientHeight > 1) {
+      p.insertAdjacentHTML("afterend", `<button type="button" class="fx-more" aria-expanded="false" aria-controls="${p.id}">Show more</button>`);
+    } else {
+      p.classList.remove("is-clamped");
+    }
+  });
+}
+
+function activeFilters() {
+  const q = rspState.q.trim(), filters = [];
+  if (rspState.kind) filters.push(["kind", rspState.kind === "course" ? "Course evaluations" : "Service reviews"]);
+  if (rspState.target) filters.push(["target", rspTarget.selectedOptions[0]?.textContent || rspState.target]);
+  if (rspState.sentiment) filters.push(["sentiment", `${SENTIMENT_LABEL[rspState.sentiment]} sentiment`]);
+  if (rspState.topic) filters.push(["topic", rspState.tone ? `${rspState.topic} · ${rspState.tone} mentions` : `Topic: ${rspState.topic}`]);
+  if (rspState.pii) filters.push(["pii", "Personal data removed"]);
+  if (q) filters.push(["q", `“${q}”`]);
+  return filters;
+}
+function renderChips() {
+  const filters = activeFilters();
+  $("rspFilters").hidden = !filters.length;
+  $("rspChips").innerHTML = filters.map(([key, label]) =>
+    `<button type="button" class="fx-chip" data-chip="${key}" aria-label="Remove filter: ${escapeHtml(label)}"><span>${escapeHtml(label)}</span>${RSP_ICONS.close}</button>`).join("");
+}
+
 function renderResponses() {
+  renderKpis();
+  syncSelection();
   const { data } = rspState; if (!data) return;
   const items = data.items;
-  $("rsTotal").textContent = items.length;
-  $("rsCourse").textContent = items.filter(r => r.kind === "course").length;
-  $("rsService").textContent = items.filter(r => r.kind === "service").length;
-  $("rsPii").textContent = items.filter(r => r.pii_masked).length;
-  responsesApp.querySelectorAll(".adm-stat").forEach(b => {
-    const k = b.dataset.kind;
-    b.classList.toggle("on", k === "pii" ? rspState.pii : !rspState.pii && rspState.kind === k);
-  });
-  $("rspKindSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.kind === rspState.kind));
-
   const qLabel = {};
   Object.values(data.questions).flat().forEach(q => { qLabel[q.id] = q.label; });
   const q = rspState.q.trim().toLowerCase();
   const list = items.filter(r => {
     if (rspState.kind && r.kind !== rspState.kind) return false;
     if (rspState.pii && !r.pii_masked) return false;
-    if (rspState.target && rspState.target !== (r.course_id ? `course:${r.course_id}` : `service:${r.service_id}`)) return false;
-    if (q && !`${r.comment} ${r.target}`.toLowerCase().includes(q)) return false;
+    if (rspState.target && rspState.target !== targetKey(r)) return false;
+    if (rspState.sentiment && r.sentiment !== rspState.sentiment) return false;
+    if (rspState.topic) {
+      // Same basis as the topic statistics: the topic's aspect sentiment in this comment.
+      const tone = (r.aspects || {})[rspState.topic];
+      if (!tone && !(r.topics || []).includes(rspState.topic)) return false;
+      if (rspState.tone && tone !== rspState.tone) return false;
+    }
+    if (q && !`${r.comment} ${r.target} ${(r.topics || []).join(" ")}`.toLowerCase().includes(q)) return false;
     return true;
   });
   rspList.innerHTML = list.map(r => rspHtml(r, qLabel)).join("");
+  markLongComments();
+  renderChips();
   rspEmpty.hidden = list.length > 0;
   rspEmpty.innerHTML = items.length
-    ? "<b>No responses match these filters</b>Try a different search or clear the filters."
-    : "<b>No responses yet</b>Responses appear here as soon as students submit a form.";
-  $("rspCount").textContent = `Showing ${list.length} of ${items.length} response${items.length === 1 ? "" : "s"}`;
+    ? rspStateHtml("No responses match these filters", "Try a different search, or clear the filters to see every response.",
+      '<button type="button" class="btn-sm" data-rsp-clear>Clear filters</button>')
+    : rspStateHtml("No responses yet", "Responses appear here as soon as students submit a form.");
+  rspCount.textContent = `Showing ${list.length} of ${plural(items.length, "response")}`;
 }
 
-responsesApp.querySelectorAll(".adm-stat").forEach(b => b.addEventListener("click", () => {
-  rspState.pii = b.dataset.kind === "pii";
-  rspState.kind = rspState.pii ? "" : b.dataset.kind;
+/* ---------- filters: explorer controls, chips, and the analytics above ---------- */
+function setKind(kind) {
+  rspState.kind = kind;
+  if (rspState.target && !rspState.target.startsWith(kind)) { rspState.target = ""; rspTarget.value = ""; }
+}
+function removeFilter(key) {
+  if (key === "kind") rspState.kind = "";
+  if (key === "target") { rspState.target = ""; rspTarget.value = ""; }
+  if (key === "sentiment") rspState.sentiment = "";
+  if (key === "topic") rspState.topic = rspState.tone = "";
+  if (key === "pii") rspState.pii = false;
+  if (key === "q") { rspState.q = ""; rspSearch.value = ""; }
   renderResponses();
-}));
+}
+function clearResponseFilters() {
+  Object.assign(rspState, { kind: "", pii: false, target: "", q: "", sentiment: "", topic: "", tone: "" });
+  rspSearch.value = "";
+  rspTarget.value = "";
+  renderResponses();
+}
+function scrollToExplorer() {
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  $("rspHeading").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+}
+
+responsesApp.addEventListener("click", e => {
+  const el = e.target.closest("[data-kpi], [data-sentiment], [data-topic], [data-expand], [data-chip], [data-rsp-clear], [data-rsp-retry]");
+  if (!el || el.disabled) return;
+  if (el.hasAttribute("data-rsp-retry")) return loadResponses();
+  if (el.hasAttribute("data-rsp-clear")) {
+    clearResponseFilters();
+    $("rspHeading").focus({ preventScroll: true });
+    return;
+  }
+  if (el.dataset.chip) {
+    removeFilter(el.dataset.chip);
+    ($("rspChips").querySelector(".fx-chip") || $("rspHeading")).focus({ preventScroll: true });
+    return;
+  }
+  if (el.dataset.expand) {
+    const key = el.dataset.expand;
+    rspState.expanded[key] = !rspState.expanded[key];
+    renderAnalytics();
+    responsesApp.querySelector(`[data-expand="${key}"]`)?.focus();
+    return;
+  }
+  let reveal = true;
+  if (el.dataset.kpi) {
+    const k = el.dataset.kpi;
+    if (k === "pii") {
+      rspState.pii = !rspState.pii;
+      reveal = rspState.pii;
+    } else {
+      setKind(k === "all" ? "" : k);
+      if (k === "all") { rspState.pii = false; reveal = false; }
+    }
+  } else if (el.dataset.sentiment) {
+    rspState.sentiment = rspState.sentiment === el.dataset.sentiment ? "" : el.dataset.sentiment;
+    reveal = !!rspState.sentiment;
+  } else {
+    const topic = el.dataset.topic, tone = el.dataset.tone || "";
+    // Chart rows toggle; a topic tag on a response card always narrows the list to that topic.
+    const off = !el.closest(".fx-card") && rspState.topic === topic && rspState.tone === tone;
+    rspState.topic = off ? "" : topic;
+    rspState.tone = off ? "" : tone;
+    reveal = !off;
+  }
+  renderResponses();
+  if (reveal) scrollToExplorer();
+});
+rspList.addEventListener("click", e => {
+  const more = e.target.closest(".fx-more"); if (!more) return;
+  const text = $(more.getAttribute("aria-controls"));
+  const expanded = !text.classList.toggle("is-clamped");
+  more.setAttribute("aria-expanded", String(expanded));
+  more.textContent = expanded ? "Show less" : "Show more";
+});
 $("rspKindSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
-  rspState.kind = b.dataset.kind;
-  if (rspState.target && !rspState.target.startsWith(rspState.kind)) { rspState.target = ""; rspTarget.value = ""; }
+  setKind(b.dataset.kind);
   renderResponses();
 });
 rspTarget.addEventListener("change", () => {
