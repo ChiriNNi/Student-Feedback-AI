@@ -78,6 +78,7 @@ class Filters:
     department_id: int | None = None
     course_id: int | None = None
     service_id: int | None = None
+    instructor_id: int | None = None
     kind: str | None = None
     sentiment: str | None = None
     topic: str | None = None
@@ -110,6 +111,8 @@ def apply_filters(stmt: Select, f: Filters) -> Select:
         stmt = stmt.where(Feedback.course_id == f.course_id)
     if f.service_id:
         stmt = stmt.where(Feedback.service_id == f.service_id)
+    if f.instructor_id:
+        stmt = stmt.where(Feedback.course_id.in_(select(Course.id).where(Course.instructor_id == f.instructor_id)))
     if f.kind:
         stmt = stmt.where(Feedback.kind == f.kind)
     if f.sentiment:
@@ -147,6 +150,8 @@ def scope_label(db: Session, f: Filters) -> str:
         bits.append(s.name)
     if f.department_id and (d := db.get(Department, f.department_id)):
         bits.append(d.name)
+    if f.instructor_id and (u := db.get(User, f.instructor_id)):
+        bits.append(f"Instructor: {u.name}")
     if f.kind and not (f.course_id or f.service_id):
         bits.append({"course": "course evaluations", "service": "service reviews", "survey": "general surveys"}[f.kind])
     if f.topic:

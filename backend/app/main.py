@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from .config import settings
 from .db import Base, SessionLocal, engine, wait_for_db
-from .routers import admin, analytics, auth, evaluations
+from .routers import actions, admin, analytics, auth, evaluations, reports, management
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("pulse")
@@ -81,6 +81,9 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(evaluations.router)
 app.include_router(analytics.router)
+app.include_router(actions.router)
+app.include_router(reports.router)
+app.include_router(management.router)
 
 
 @app.get("/api/health", tags=["system"])

@@ -18,6 +18,7 @@ def filters_dep(
     department_id: int | None = None,
     course_id: int | None = None,
     service_id: int | None = None,
+    instructor_id: int | None = None,
     kind: str | None = None,
     sentiment: str | None = None,
     topic: str | None = None,
@@ -26,7 +27,7 @@ def filters_dep(
     survey_id: int | None = None,
 ) -> Filters:
     return Filters(semester or None, department_id or None, course_id or None, service_id or None,
-                   kind or None, sentiment or None, topic or None, language or None, q or None,
+                   instructor_id or None, kind or None, sentiment or None, topic or None, language or None, q or None,
                    survey_id or None)
 
 
@@ -73,13 +74,16 @@ def meta(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         own = {c.department_id for c in courses}
         depts = [d for d in depts if d.id in own]
     services = [] if user.role == "faculty" else db.scalars(select(Service).order_by(Service.name)).all()
+    instructors = sorted({c.instructor for c in courses if c.instructor}, key=lambda u: u.name)
     sems = _all_semesters(db, user) if user.role != "student" else []
     return {
         "semesters": sems,
         "current_semester": sems[-1] if sems else None,
         "departments": [{"id": d.id, "code": d.code, "name": d.name} for d in depts],
         "courses": [{"id": c.id, "code": c.code, "title": c.title, "department_id": c.department_id,
-                     "instructor": c.instructor.name if c.instructor else None} for c in courses],
+                     "instructor": c.instructor.name if c.instructor else None,
+                     "instructor_id": c.instructor_id} for c in courses],
+        "instructors": [{"id": u.id, "name": u.name} for u in instructors],
         "services": [{"id": s.id, "name": s.name, "category": s.category} for s in services],
         "topics": [{"id": t.id, "name": t.name, "color": t.color}
                    for t in db.scalars(select(TopicCategory).where(TopicCategory.is_active.is_(True))

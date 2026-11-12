@@ -124,6 +124,7 @@ def seed(db: Session, *, include_demo: bool = True) -> None:
     _seed_topics(db)
     if include_demo:
         _seed_feedback(db)
+        _seed_demo_history(db)
     _backfill_sprint3(db)
 
 
@@ -228,6 +229,94 @@ def _seed_feedback(db: Session) -> None:
         db.commit()
         log.info("Seeded %d analyzed demo feedback rows", added)
 
+
+
+def _seed_demo_history(db: Session) -> None:
+    """Add three-period *labelled sample* comparisons to a DEMO database only.
+
+    Existing student submissions are never changed; only new source='seed' rows
+    are inserted. Each semester is checked independently (idempotent on restart).
+    Production systems set SEED_DEMO_DATA=false to disable all demo seeding.
+    """
+    from .services import analyze_into, get_matchers
+
+    if not db.scalar(select(Feedback.id).where(Feedback.source == "seed").limit(1)):
+        return
+    courses = {c.code: c for c in db.scalars(select(Course))}
+    services = {v.name: v for v in db.scalars(select(Service))}
+    questions = {kind: db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind)
+                     .order_by(SurveyQuestion.position, SurveyQuestion.id)).all()
+                 for kind in ("course", "service")}
+    matchers = get_matchers(db)
+    # Distinct historical distributions give the dashboard actual three-point demo trends.
+    # IT Help Desk gets 12 responses per semester, so the negative spike has enough
+    # samples for the existing alert rule (>= ALERT_MIN_FEEDBACK).
+    focus = [
+        ("service", "IT Help Desk"), ("service", "Library"),
+        ("course", "CSS 101"), ("course", "CSS 215"),
+    ]
+    neutral = "The service is adequate and the team handled questions as expected."
+    positive = "Support staff were very helpful and everything was easy to use."
+    negative = "The internet connection keeps failing and students cannot access the online portal."
+    teaching_good = "The lecturer explains clearly and the lessons are well organised."
+    teaching_bad = "The teaching and deadlines were confusing and workload was too heavy."
+    periods = ["Fall 2025", "Spring 2026", "Fall 2026"]
+    for semester in periods:
+        # Never duplicate demo additions on container restart.
+        marker = db.scalar(select(Survey).where(Survey.title == f"Sprint 5 demo history — {semester}"))
+        if marker:
+            continue
+        survey = Survey(title=f"Sprint 5 demo history — {semester}",
+                        description="Synthetic sample dataset for semester comparisons only",
+                        question="Demo history", semester=semester, kind="survey", status="closed")
+        db.add(survey)
+        db.flush()
+        for kind, target_name in focus:
+            target = courses.get(target_name) if kind == "course" else services.get(target_name)
+            qs = questions[kind]
+            if not target or not qs:
+                continue
+            for i in range(12):
+                if kind == "service" and target_name == "IT Help Desk":
+                    # sharp rise: 8% -> 17% -> 75% (approx), enough alert support
+                    negative_count = {"Fall 2025": 1, "Spring 2026": 2, "Fall 2026": 9}[semester]
+                    is_negative = i < negative_count
+                elif semester == "Fall 2025":
+                    is_negative = i < 4
+                elif semester == "Spring 2026":
+                    is_negative = i < 2
+                else:
+                    is_negative = i < 3
+                score = 2 if is_negative else (4 if i % 4 else 3)
+                ratings = {str(q.id): score for q in qs}
+                comment = (teaching_bad if is_negative else teaching_good) if kind == "course" else (negative if is_negative else positive)
+                fb = Feedback(survey_id=survey.id, kind=kind, semester=semester,
+                              course_id=target.id if kind == "course" else None,
+                              service_id=target.id if kind == "service" else None,
+                              department_id=target.department_id if kind == "course" else None,
+                              rating=score, ratings=ratings, text="", source="seed")
+                analyze_into(fb, comment, matchers)
+                db.add(fb)
+        # Include one row per other course/service in both earlier semesters,
+        # to make department/service comparisons useful without invented labels.
+        if semester != "Fall 2026":
+            focused_courses = {name for kind, name in focus if kind == "course"}
+            focused_services = {name for kind, name in focus if kind == "service"}
+            for kind, targets, excluded in (("course", courses, focused_courses), ("service", services, focused_services)):
+                qs = questions[kind]
+                for target_name, target in targets.items():
+                    if target_name in excluded or not qs:
+                        continue
+                    score = 3 if semester == "Fall 2025" else 4
+                    fb = Feedback(survey_id=survey.id, kind=kind, semester=semester,
+                                  course_id=target.id if kind == "course" else None,
+                                  service_id=target.id if kind == "service" else None,
+                                  department_id=target.department_id if kind == "course" else None,
+                                  rating=score, ratings={str(q.id): score for q in qs}, text="", source="seed")
+                    analyze_into(fb, teaching_good if kind == "course" else neutral, matchers)
+                    db.add(fb)
+        db.commit()
+        log.info("Seeded historical demo semester %s (source=seed)", semester)
 
 def _backfill_sprint3(db: Session) -> None:
     """Analyze Sprint 2 rows once after an existing database is upgraded."""

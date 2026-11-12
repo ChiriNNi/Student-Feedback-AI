@@ -114,3 +114,94 @@ def summary_pdf(ai: bool = False, f: Filters = Depends(filters_dep),
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename=feedback_report_{datetime.now():%Y%m%d}.pdf"})
+
+
+@router.get("/summary.xlsx")
+def summary_excel(f: Filters = Depends(filters_dep),
+                  user: User = Depends(staff_only), db: Session = Depends(get_db)):
+    """Native Excel report of role-scoped, anonymous feedback aggregates (Sprint 5.6)."""
+    from collections import defaultdict
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from ..models import Course, Department, Service
+    from ..nlp.summarizer import aspect_stats
+    from ..services import sort_semesters
+    from sqlalchemy import select
+
+    rows = feedback_rows(db, user, f)
+    kpi = _kpis(rows)
+    summary = local_summary(rows, scope_label(db, f))
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Overview"
+    ws.append(["Student Feedback Analysis Report"])
+    ws.append(["Scope", scope_label(db, f)])
+    ws.append(["Generated", datetime.now().strftime("%Y-%m-%d %H:%M")])
+    ws.append([])
+    for label, value in [
+        ("Total feedback", kpi["total"]),
+        ("Average satisfaction /5", kpi["avg_rating"]),
+        ("Positive", kpi["positive"]),
+        ("Neutral", kpi["neutral"]),
+        ("Negative", kpi["negative"]),
+        ("Positive share", kpi["positive_share"]),
+        ("Negative share", kpi["negative_share"]),
+        ("Net sentiment (pp)", kpi["satisfaction_index"]),
+    ]:
+        ws.append([label, value])
+    ws.append([])
+    ws.append(["Summary", summary.get("overview", "")])
+
+    topics_ws = wb.create_sheet("Topics")
+    topics_ws.append(["Topic", "Mentions", "Positive", "Neutral", "Negative", "Negative share"])
+    for topic in aspect_stats(rows):
+        topics_ws.append([topic["topic"], topic["total"], topic["positive"], topic["neutral"],
+                          topic["negative"], topic["negative_share"]])
+
+    # The trends sheet always spans all semesters, while honoring the other filters.
+    trend_filter = Filters(**{**f.__dict__, "semester": None})
+    all_trend_rows = feedback_rows(db, user, trend_filter)
+    trends_ws = wb.create_sheet("Semester trends")
+    trends_ws.append(["Semester", "Feedback", "Avg rating", "Positive share", "Neutral share", "Negative share"])
+    per_semester = defaultdict(list)
+    for row in all_trend_rows:
+        per_semester[row["semester"]].append(row)
+    for semester in sort_semesters(per_semester):
+        group = _kpis(per_semester[semester])
+        total = group["total"]
+        trends_ws.append([semester, total, group["avg_rating"], group["positive_share"],
+                          group["neutral"] / total if total else 0, group["negative_share"]])
+
+    names = {
+        "By course": ("course_id", {x.id: f"{x.code} — {x.title}" for x in db.scalars(select(Course))}),
+        "By department": ("department_id", {x.id: x.name for x in db.scalars(select(Department))}),
+        "By service": ("service_id", {x.id: x.name for x in db.scalars(select(Service))}),
+    }
+    for sheet_name, (key, labels) in names.items():
+        sheet = wb.create_sheet(sheet_name)
+        sheet.append(["Area", "Feedback", "Avg rating", "Positive share", "Negative share"])
+        groups = defaultdict(list)
+        for row in rows:
+            if row.get(key):
+                groups[row[key]].append(row)
+        for ident, group_rows in sorted(groups.items(), key=lambda item: labels.get(item[0], "")):
+            k = _kpis(group_rows)
+            sheet.append([labels.get(ident, f"#{ident}"), k["total"], k["avg_rating"],
+                          k["positive_share"], k["negative_share"]])
+
+    for sheet in wb:
+        sheet.freeze_panes = "A2"
+        sheet.sheet_view.showGridLines = False
+        sheet.column_dimensions["A"].width = 32
+        for col in "BCDEF":
+            sheet.column_dimensions[col].width = 22
+        for cell in sheet[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill("solid", fgColor="1F3A68")
+
+    result = io.BytesIO()
+    wb.save(result)
+    result.seek(0)
+    return StreamingResponse(result,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=feedback_report_{datetime.now():%Y%m%d}.xlsx"})
