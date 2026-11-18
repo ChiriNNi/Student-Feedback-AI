@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#1f3a68">
 <link rel="stylesheet" href="/pulse.css">
+<link rel="stylesheet" href="/sprint5.css">
 </head>
 <body>
 
@@ -378,6 +379,12 @@
       <nav class="rail-nav" aria-label="Main">
         <button type="button" data-nav="feedback" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Give feedback</span></button>
         <button type="button" data-nav="responses" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Feedback analytics</span></button>
+        <div class="mgr-submenu" id="mgrSubmenu" aria-label="Feedback analytics sections" hidden>
+          <button type="button" data-mgr-view="explorer" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h7"/></svg><span>Feedback explorer</span></button>
+          <button type="button" data-mgr-view="overview" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Overview</span></button>
+          <button type="button" data-mgr-view="compare" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18V8M9 18V4M15 18v-9M21 18v-6"/></svg><span>Comparisons &amp; Trends</span></button>
+          <button type="button" data-mgr-view="reports" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3 3 3 3-3"/></svg><span>Reports</span></button>
+        </div>
         <button type="button" data-nav="admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 11.5a3 3 0 1 0 0-6M18 14.8c2 .6 3.5 2.2 3.5 5.2"/></svg><span>Users</span></button>
         <button type="button" data-nav="profile" data-page-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span class="lbl-txt">Profile</span></button>
       </nav>
@@ -395,7 +402,7 @@
     </aside>
     <div class="page">
 
-    <div class="adm-head">
+    <div class="adm-head" id="responsesHead">
       <div>
         <h1>Feedback analytics</h1>
         <p id="rspScope">What students say about courses and services. Every response is anonymous.</p>
@@ -415,6 +422,86 @@
         </button>
       </div>
     </div>
+
+
+
+    <section class="mgr-section" id="overviewSection" hidden aria-labelledby="overviewSectionTitle">
+      <div class="mgr-section-head">
+        <div>
+          <span class="mgr-kicker">Manager dashboard</span>
+          <h2 id="overviewSectionTitle">Overview</h2>
+          <p>A quick view of course and service feedback across SDU.</p>
+        </div>
+      </div>
+
+      <section class="mgr-filter-panel" aria-labelledby="mgrFiltersTitle">
+        <div class="mgr-filter-head">
+          <div>
+            <h3 id="mgrFiltersTitle">Dashboard filters</h3>
+            <p>Filter by semester, department, course or service, and instructor. The demo catalogue uses the same organisational records for faculty and department.</p>
+          </div>
+          <div class="mgr-filter-actions">
+            <button type="button" class="btn" id="mgrApplyFilters">Apply filters</button>
+            <button type="button" class="btn secondary" id="mgrResetFilters">Reset</button>
+          </div>
+        </div>
+        <div class="mgr-filter-grid">
+          <label class="mgr-field"><span>Semester</span><span class="fx-select"><select id="mgrSemester"><option value="">All semesters</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+          <label class="mgr-field"><span>Faculty</span><span class="fx-select"><select id="mgrFaculty"><option value="">All faculties</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+          <label class="mgr-field"><span>Department</span><span class="fx-select"><select id="mgrDepartment"><option value="">All departments</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+          <label class="mgr-field"><span>Instructor</span><span class="fx-select"><select id="mgrInstructor"><option value="">All instructors</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+          <label class="mgr-field mgr-field-wide"><span>Course or service</span><span class="fx-select"><select id="mgrTarget"><option value="">All courses &amp; services</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+        </div>
+        <div class="mgr-current-filters" id="mgrCurrentFilters">Current filters: latest available semester · all faculties · all departments · all courses · all instructors</div>
+      </section>
+
+      <section class="mgr-kpi-grid" aria-label="Key performance indicators">
+        <article class="mgr-kpi-card">
+          <span class="mgr-kpi-icon is-gold">☆</span>
+          <p>Overall satisfaction</p><b id="mgrAvgRating">—</b><small id="mgrAvgRatingNote">Average score out of 5</small>
+        </article>
+        <article class="mgr-kpi-card">
+          <span class="mgr-kpi-icon is-violet">◌</span>
+          <p>Total feedback</p><b id="mgrTotalFeedback">—</b><small id="mgrTotalFeedbackNote">Responses in the current scope</small>
+        </article>
+        <article class="mgr-kpi-card">
+          <span class="mgr-kpi-icon is-green">♡</span>
+          <p>Positive sentiment</p><b id="mgrPositiveShare">—</b><small id="mgrPositiveShareNote">Share of positive responses</small>
+          <div class="mgr-meter"><i id="mgrPositiveMeter"></i></div>
+        </article>
+        <article class="mgr-kpi-card">
+          <span class="mgr-kpi-icon is-red">⚠</span>
+          <p>Negative sentiment</p><b id="mgrNegativeShare">—</b><small id="mgrNegativeShareNote">Share of negative responses</small>
+          <div class="mgr-meter"><i id="mgrNegativeMeter"></i></div>
+        </article>
+      </section>
+
+      <section class="mgr-card mgr-university-card" aria-labelledby="mgrUniversityTitle">
+        <header class="mgr-card-head"><div><h3 id="mgrUniversityTitle">SDU at a glance</h3><p>Live counts from the university database: people, departments, courses and services.</p></div></header>
+        <div id="mgrUniversityStats" class="mgr-university-stats" aria-live="polite"></div>
+        <h4 class="mgr-stat-subtitle">Departments</h4>
+        <div id="mgrDepartmentDetails" class="mgr-department-grid"></div>
+        <p class="mgr-data-source" id="mgrDataSource"></p>
+      </section>
+
+      <section class="mgr-overview-grid">
+        <article class="mgr-card">
+          <header class="mgr-card-head"><div><h3>Sentiment distribution</h3><p>Share of positive, neutral and negative feedback based on actual responses.</p></div></header>
+          <div id="mgrOverviewSentiment"></div>
+        </article>
+        <article class="mgr-card">
+          <header class="mgr-card-head"><div><h3>Top topics at a glance</h3><p>The most discussed areas in the current scope.</p></div></header>
+          <div id="mgrTopTopics"></div>
+        </article>
+        <article class="mgr-card mgr-overview-alert">
+          <header class="mgr-card-head"><div><h3>Alert</h3><p>Visible warning when negative feedback rises for a course or service.</p></div></header>
+          <div id="mgrAlertSummary"></div>
+          <button type="button" class="mgr-view-alerts" id="mgrOpenAlerts">See all trend alerts</button>
+        </article>
+      </section>
+    </section>
+
+    <section class="mgr-section" id="explorerSection" hidden aria-label="Feedback explorer">
 
     <!-- Story 4.1: feedback summary — the first thing a manager reads -->
     <section class="report-lead" aria-labelledby="summaryTitle">
@@ -582,6 +669,76 @@
       <div class="fx-grid" id="rspList"></div>
       <div class="fx-state" id="rspEmpty" hidden></div>
     </section>
+    </section>
+
+    <section class="mgr-section" id="compareSection" hidden aria-labelledby="compareSectionTitle">
+      <div class="mgr-section-head">
+        <div>
+          <span class="mgr-kicker">Decision support</span>
+          <h2 id="compareSectionTitle">Comparisons &amp; Trends</h2>
+          <p>See semester trends, important alerts, and compare courses, departments and services.</p>
+        </div>
+      </div>
+
+      <div class="mgr-stack">
+        <article class="mgr-card mgr-card-wide">
+          <header class="mgr-card-head"><div><h3>Trend analysis</h3><p>Sentiment changes across semesters.</p></div></header>
+          <div id="trendAnalysis"></div>
+          <div class="mgr-topic-trends"><div class="mgr-topic-trends-title"><h4>Topic trends</h4><label>Topic <select id="mgrTopicTrendSelect"><option value="">Choose a topic</option></select></label></div><div id="mgrTopicTrendChart"></div></div>
+        </article>
+
+        <article class="mgr-card mgr-card-wide">
+          <header class="mgr-card-head"><div><h3>Negative trend alerts</h3><p>React quickly when negative feedback rises sharply for a course, service or department.</p></div><button type="button" class="btn-sm" id="recomputeAlerts">Refresh alerts</button></header>
+          <div id="alertAnalysis"></div>
+        </article>
+
+        <article class="mgr-card mgr-card-wide">
+          <header class="mgr-card-head"><div><h3>Compare courses, departments &amp; services</h3><p>Find best practices and weaker areas using side-by-side comparisons.</p></div></header>
+          <div class="seg mgr-compare-tabs" id="compareTabs" role="tablist" aria-label="Comparison type">
+            <button type="button" class="on" data-compare="course">By course</button>
+            <button type="button" data-compare="department">By department</button>
+            <button type="button" data-compare="service">By service</button>
+          </div>
+          <div id="compareAnalysis"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="mgr-section" id="reportsSection" hidden aria-labelledby="reportsSectionTitle">
+      <div class="mgr-section-head">
+        <div>
+          <span class="mgr-kicker">Share results</span>
+          <h2 id="reportsSectionTitle">Reports</h2>
+          <p>Download reports for meetings or copy a quick summary.</p>
+        </div>
+      </div>
+      <article class="mgr-card mgr-card-wide mgr-report-builder">
+        <header class="mgr-card-head"><div><h3>Build your report</h3><p>First choose what information to include, then choose a file format.</p></div></header>
+        <div class="mgr-report-options">
+          <label class="mgr-report-field"><span>1. What do you want to report?</span>
+            <select id="mgrReportSection">
+              <option value="overview">Overview — satisfaction, response counts, sentiment</option>
+              <option value="trends">Semester trends — changes across periods</option>
+              <option value="compare_course">Course comparison — ratings by course</option>
+              <option value="compare_department">Department comparison — ratings by department</option>
+              <option value="compare_service">Service comparison — ratings by service</option>
+              <option value="alerts">Negative trend alerts — affected areas and rates</option>
+            </select>
+          </label>
+          <label class="mgr-report-field"><span>2. File format</span>
+            <select id="mgrReportFormat"><option value="pdf">PDF — ready to share at meetings</option><option value="xlsx">Excel (.xlsx) — editable table</option></select>
+          </label>
+        </div>
+        <div class="mgr-report-preview" id="mgrReportPreview"></div>
+        <div class="mgr-export-grid">
+          <button type="button" class="mgr-export-btn" id="mgrDownloadReport">Download selected report</button>
+          <button type="button" class="mgr-export-btn mgr-export-btn-secondary" id="copyReportSummary">Copy overview summary</button>
+        </div>
+        <p class="mgr-export-note">The report reflects the selected dashboard filters and your manager access scope. It contains aggregate results only — no student identities.</p>
+      </article>
+    </section>
+
+
     </div>
   </div>
 
@@ -1035,7 +1192,8 @@ async function showSuccess(session) {
   $("adminEntry").hidden = false;
   // Reloading the page while in a full-page view brings you back to it (each opener re-checks the role).
   const view = store.get("sessionStorage", "pulse.view");
-  if (view === "admin") openAdmin();
+  if (role === "manager") openResponses();
+  else if (view === "admin") openAdmin();
   else if (view === "feedback") openFeedback();
   else if (view === "responses") openResponses();
   else if (view === "profile") closePages();
@@ -1702,11 +1860,17 @@ function closePages() {
 document.querySelectorAll("[data-nav]").forEach(b => b.addEventListener("click", () => {
   const target = b.dataset.nav;
   if (target === "feedback") openFeedback();
-  else if (target === "responses") openResponses();
+  else if (target === "responses") {
+    if (currentSession?.user?.role === "manager" && !$('responsesApp').hidden) toggleManagerMenu();
+    else { if (currentSession?.user?.role === "manager") managerMenuOpen = true; openResponses(); }
+  }
   else if (target === "admin") openAdmin();
 }));
 // Filters, searches and loaded data belong to the signed-in user; drop them on sign-out.
 function resetPages() {
+  managerActiveView = "overview";
+  managerMenuOpen = false;
+  $("mgrSubmenu").hidden = true;
   Object.assign(admState, { q: "", role: "", status: "", sort: "name", dir: 1 });
   usersCache = [];
   admSearch.value = "";
@@ -1979,10 +2143,13 @@ const rspList = $("rspList"), rspEmpty = $("rspEmpty"), rspSearch = $("rspSearch
 const responsesApp = $("responsesApp"), rspCount = $("rspCount"), rspKpis = $("rspKpis");
 // sentiment filters by overall response sentiment; topic (+ optional tone) by a topic's aspect sentiment.
 const rspState = {
-  data: null, analytics: null, summary: null, keywords: null, quoteTopic: "", kind: "", pii: false, target: "", q: "",
+  data: null, analytics: null, summary: null, keywords: null, trends: null, alerts: null, meta: null,
+  compare: {}, compareBy: "course", quoteTopic: "", kind: "", pii: false, target: "", q: "",
   sentiment: "", topic: "", tone: "", expanded: { topics: false, aspects: false },
   // explorer-only filters and order
   language: "", rating: "", commented: false, sort: "new",
+  // dashboard scope filters (Sprint 5)
+  semester: "", faculty: "", department_id: "", instructor_id: "",
 };
 const EXPLORER_RESET = { kind: "", pii: false, target: "", q: "", sentiment: "", topic: "", tone: "", language: "", rating: "", commented: false };
 const RATING_FILTER = { high: "pos", mid: "mid", low: "neg" };
@@ -2016,32 +2183,359 @@ const FA_CARDS = ["sentimentAnalysis", "topicAnalysis", "aspectAnalysis", "probl
   "suggestionAnalysis", "keywordAnalysis", "quoteAnalysis", "summaryBody"];
 const rspStateHtml = (title, text, action = "") => `<b>${title}</b><p>${text}</p>${action}`;
 
+// Four compact views below Feedback analytics. The previous Sprint 3/4 view stays intact.
+let managerActiveView = "overview";
+let managerMenuOpen = false;
+function toggleManagerMenu() {
+  if (currentSession?.user?.role !== "manager") return;
+  managerMenuOpen = !managerMenuOpen;
+  $("mgrSubmenu").hidden = !managerMenuOpen;
+  document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
+}
+const managerViews = { explorer: "explorerSection", overview: "overviewSection", compare: "compareSection", reports: "reportsSection" };
+function selectManagerView(view = "overview") {
+  if (!Object.prototype.hasOwnProperty.call(managerViews, view)) view = "overview";
+  if (currentSession?.user?.role !== "manager") view = "explorer";
+  managerActiveView = view;
+  const isManager = currentSession?.user?.role === "manager";
+  $("mgrSubmenu").hidden = !isManager || !managerMenuOpen;
+  document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(isManager && managerMenuOpen));
+  document.querySelectorAll("#mgrSubmenu [data-mgr-view]").forEach(button => {
+    const active = button.dataset.mgrView === view;
+    button.classList.toggle("is-active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  for (const [name, id] of Object.entries(managerViews)) $(id).hidden = name !== view;
+  $("responsesHead").hidden = isManager && view !== "explorer";
+  const appTitle = $("responsesApp").querySelector(".page");
+  appTitle.setAttribute("data-mgr-active", view);
+  window.scrollTo(0, 0);
+}
+$("mgrSubmenu").addEventListener("click", event => {
+  const button = event.target.closest("[data-mgr-view]");
+  if (button) selectManagerView(button.dataset.mgrView);
+});
+
 async function openResponses() {
   if (!currentSession || !STAFF.includes(currentSession.user.role)) return;
   showPage("responses");
+  selectManagerView(currentSession.user.role === "manager" ? managerActiveView : "explorer");
   await loadResponses();
 }
+const queryString = params => {
+  const entries = Object.entries(params).filter(([, value]) => value !== "" && value != null);
+  const q = new URLSearchParams(entries.map(([k, v]) => [k, String(v)]));
+  const s = q.toString();
+  return s ? `?${s}` : "";
+};
+const currentScopeParams = () => {
+  const params = {};
+  if (rspState.semester) params.semester = rspState.semester;
+  if (rspState.department_id) params.department_id = rspState.department_id;
+  if (rspState.instructor_id) params.instructor_id = rspState.instructor_id;
+  if (rspState.target) {
+    const [kind, id] = rspState.target.split(":");
+    if (kind && id) params[`${kind}_id`] = id;
+  }
+  return params;
+};
+const analyticsQuery = extra => queryString({ ...currentScopeParams(), ...(extra || {}) });
+const csvEscape = value => `"${String(value ?? "").replaceAll('"', '""')}"`;
+
+function setSelectOptions(select, options, placeholder, current = "") {
+  if (!select) return;
+  select.innerHTML = `<option value="">${placeholder}</option>` + options.map(opt =>
+    `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`).join("");
+  select.value = current || "";
+}
+
+async function loadResponsesMeta() {
+  if (!currentSession) return;
+  const { ok, data, status } = await api("/meta", { token: currentSession.token });
+  if (status === 401 || status === 403) return sessionRevoked();
+  if (!ok) return;
+  rspState.meta = data;
+  setSelectOptions($("mgrSemester"), (data.semesters || []).map(v => ({ value: v, label: v })), "All semesters", rspState.semester);
+  setSelectOptions($("mgrDepartment"), (data.departments || []).map(v => ({ value: v.id, label: v.name })), "All departments", rspState.department_id);
+  setSelectOptions($("mgrInstructor"), (data.instructors || []).map(v => ({ value: v.id, label: v.name })), "All instructors", rspState.instructor_id);
+  setSelectOptions($("mgrFaculty"), (data.departments || []).map(d => ({ value: d.id, label: d.name })), "All faculties", rspState.faculty);
+  $("mgrFaculty").disabled = false;
+}
+
+function fillManagerTargetsFromData(data) {
+  const coursesOnly = currentSession.user.role === "faculty";
+  const targets = new Map();
+  data.items.forEach(r => targets.set(targetKey(r), r.target));
+  const sorted = [...targets].sort((a, b) => a[1].localeCompare(b[1]));
+  const placeholder = coursesOnly ? "Every course" : "Every course & service";
+  const options = sorted.map(([value, label]) => ({ value, label }));
+  setSelectOptions($("mgrTarget"), options, placeholder, rspState.target);
+  setSelectOptions(rspTarget, options, placeholder, rspState.target);
+  if (!targets.has(rspState.target)) rspState.target = "";
+  $("mgrTarget").value = rspState.target;
+  rspTarget.value = rspState.target;
+}
+
+function renderCurrentFilters() {
+  const meta = rspState.meta || {};
+  const dep = (meta.departments || []).find(x => String(x.id) === String(rspState.department_id));
+  const fac = (meta.departments || []).find(x => String(x.id) === String(rspState.faculty));
+  const ins = (meta.instructors || []).find(x => String(x.id) === String(rspState.instructor_id));
+  const target = $("mgrTarget")?.selectedOptions?.[0]?.textContent || "All courses & services";
+  $("mgrCurrentFilters").textContent = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target} · ${ins?.name || "All instructors"}`;
+}
+
+function renderUniversityStats() {
+  const stats = rspState.university;
+  if (!stats) { $("mgrUniversityStats").innerHTML = emptyAnalysis("University statistics unavailable."); return; }
+  const values = [
+    ["Active users", stats.users_total], ["Students", stats.students],
+    ["Professors", stats.professors], ["Managers", stats.managers],
+    ["Admins", stats.admins], ["Departments / faculties", stats.departments],
+    ["Courses", stats.courses], ["Services", stats.services],
+    ["Course reviews", stats.course_feedback], ["Service reviews", stats.service_feedback],
+  ];
+  $("mgrUniversityStats").innerHTML = values.map(([label, count]) => `<div class="mgr-university-stat"><b>${count}</b><span>${escapeHtml(label)}</span></div>`).join("");
+  $("mgrDepartmentDetails").innerHTML = (stats.departments_detail || []).map(d => `<div class="mgr-department-item"><b>${escapeHtml(d.name)}</b><span>${d.courses} courses · ${d.users} users</span></div>`).join("");
+  $("mgrDataSource").textContent = stats.sample_data_present ? "Demo seed feedback exists in this database. Figures are live database counts, not official SDU totals." : "Counts reflect currently stored records, not external university census figures.";
+}
+
+function renderManagerOverview() {
+  const a = rspState.analytics;
+  const setText = (id, value) => { $(id).textContent = value; };
+  if (!a) {
+    ["mgrAvgRating", "mgrTotalFeedback", "mgrPositiveShare", "mgrNegativeShare"].forEach(id => setText(id, "—"));
+    $("mgrOverviewSentiment").innerHTML = emptyAnalysis("Dashboard overview is temporarily unavailable.");
+    $("mgrTopTopics").innerHTML = emptyAnalysis("Top topics are temporarily unavailable.");
+    return;
+  }
+  const delta = a.delta || {};
+  const deltaText = (value, suffix = "", digits = 1) => {
+    if (value == null) return "";
+    const sign = value > 0 ? "↑" : value < 0 ? "↓" : "→";
+    return `${sign} ${Math.abs(value).toFixed(digits)}${suffix}${delta.previous ? ` vs ${delta.previous}` : ""}`;
+  };
+  setText("mgrAvgRating", a.avg_rating != null ? `${a.avg_rating.toFixed(1)}/5` : "—");
+  setText("mgrTotalFeedback", String(a.total || 0));
+  setText("mgrPositiveShare", `${Math.round((a.positive_share || 0) * 100)}%`);
+  setText("mgrNegativeShare", `${Math.round((a.negative_share || 0) * 100)}%`);
+  $("mgrAvgRatingNote").textContent = a.delta?.avg_rating != null ? deltaText(a.delta.avg_rating, "", 1) : "Average score out of 5";
+  $("mgrTotalFeedbackNote").textContent = a.delta?.total != null ? `${deltaText(a.delta.total, "", 0)} responses` : `${plural(a.total || 0, "response")} in the current scope`;
+  $("mgrPositiveShareNote").textContent = `${a.positive || 0} positive responses`;
+  $("mgrNegativeShareNote").textContent = a.delta?.negative_share != null ? `${deltaText(a.delta.negative_share * 100, " pp", 1)} · ${a.negative || 0} negative responses` : `${a.negative || 0} negative responses`;
+  $("mgrPositiveMeter").style.width = `${Math.round((a.positive_share || 0) * 100)}%`;
+  $("mgrNegativeMeter").style.width = `${Math.round((a.negative_share || 0) * 100)}%`;
+  const sentimentRows = SENTIMENTS.map(s => [s, a[s] || 0]);
+  const total = a.total || 0;
+  $("mgrOverviewSentiment").innerHTML = total ? `
+    <div class="mgr-sentiment-stack">${sentimentRows.filter(([, n]) => n).map(([s, n]) => `<span class="is-${s}" style="width:${(n / total) * 100}%"></span>`).join("")}</div>
+    <div class="mgr-sentiment-legend">${sentimentRows.map(([s, n]) => `<button type="button" data-sentiment="${s}" class="mgr-tone-chip is-${s}"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]} <b>${Math.round(total ? n / total * 100 : 0)}%</b></button>`).join("")}</div>`
+    : emptyAnalysis("No feedback has been submitted yet.");
+  const topics = rankedTopics(a).slice(0, 5);
+  $("mgrTopTopics").innerHTML = topics.length ? `<ol class="mgr-topic-list">${topics.map(t => `
+    <li><button type="button" data-topic="${escapeHtml(t.topic)}" class="mgr-topic-row">
+      <span><b>${escapeHtml(t.topic)}</b><small>${plural(t.total, "mention")}</small></span>
+      <span>${Math.round((t.negative_share || 0) * 100)}% negative</span>
+    </button></li>`).join("")}</ol>` : emptyAnalysis("No topics were detected in the current scope.");
+  renderCurrentFilters();
+}
+
+function trendLineSvg(series) {
+  if (!series?.length) return emptyAnalysis("Trend data will appear after more than one semester is available.");
+  const width = 980, height = 320, padX = 60, padY = 28;
+  const plotW = width - padX * 2, plotH = height - padY * 2;
+  const x = i => padX + (series.length === 1 ? plotW / 2 : (plotW * i / (series.length - 1)));
+  const y = v => padY + plotH - (plotH * v / 100);
+  const toneData = {
+    positive: series.map(p => ({ label: p.semester, value: pct(p.positive, p.total) })),
+    neutral: series.map(p => ({ label: p.semester, value: pct(p.neutral, p.total) })),
+    negative: series.map(p => ({ label: p.semester, value: pct(p.negative, p.total) })),
+  };
+  const path = key => toneData[key].map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.value)}`).join(" ");
+  const grid = [0, 25, 50, 75, 100];
+  return `<div class="mgr-chart-wrap">
+    <svg viewBox="0 0 ${width} ${height}" class="mgr-chart" role="img" aria-label="Sentiment trend chart">
+      ${grid.map(v => `<g><line x1="${padX}" y1="${y(v)}" x2="${width - padX}" y2="${y(v)}"></line><text x="${padX - 12}" y="${y(v) + 5}">${v}%</text></g>`).join("")}
+      ${Object.keys(toneData).map(key => `<path class="is-${key}" d="${path(key)}"></path>`).join("")}
+      ${Object.entries(toneData).map(([key, arr]) => arr.map((p, i) => `<circle class="is-${key}" cx="${x(i)}" cy="${y(p.value)}" r="5"></circle>`).join("")).join("")}
+      ${series.map((p, i) => `<text class="xlab" x="${x(i)}" y="${height - 8}" text-anchor="middle">${escapeHtml(p.semester)}</text>`).join("")}
+    </svg>
+    <ul class="mgr-chart-legend">${SENTIMENTS.map(s => `<li class="is-${s}"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]}</li>`).join("")}</ul>
+  </div>`;
+}
+
+function renderTrendAnalysis() {
+  const periods = rspState.trends?.series || [];
+  $("trendAnalysis").innerHTML = periods.length ? trendLineSvg(periods) : emptyAnalysis("Trend analysis needs at least one recorded semester.");
+  const topics = rspState.trends?.topics || [];
+  const select = $("mgrTopicTrendSelect");
+  const previous = select.value;
+  setSelectOptions(select, topics.map(t => ({ value: t.topic, label: t.topic })), "Choose a topic", previous || topics[0]?.topic || "");
+  renderTopicTrend();
+}
+function renderTopicTrend() {
+  const topic = $("mgrTopicTrendSelect").value;
+  const periods = rspState.trends?.topic_series || [];
+  if (!topic || !periods.length) {
+    $("mgrTopicTrendChart").innerHTML = emptyAnalysis("Topic history becomes available when topic mentions are recorded.");
+    return;
+  }
+  $("mgrTopicTrendChart").innerHTML = `<div class="mgr-topic-bars">${periods.map(p => {
+    const value = p[topic];
+    const mentions = p[`${topic}__mentions`] || 0;
+    return `<div class="mgr-topic-bar-row"><span>${escapeHtml(p.semester)}</span>
+      <div class="mgr-topic-bar-track"><i style="width:${value ?? 0}%"></i></div>
+      <b>${value == null ? "—" : value + "%"}</b><small>${mentions} mentions</small></div>`;
+  }).join("")}</div><p class="mgr-chart-footnote">Percent of negative mentions for the selected topic in each semester.</p>`;
+}
+$("mgrTopicTrendSelect").addEventListener("change", renderTopicTrend);
+
+function renderAlertSummary() {
+  const box = $("mgrAlertSummary");
+  if (!box) return;
+  const first = (rspState.alerts || [])[0];
+  if (!first) {
+    box.innerHTML = '<div class="mgr-alert-mini is-ok"><b>No urgent alert</b><p>No sharp negative trend was detected in the latest comparison.</p></div>';
+    return;
+  }
+  box.innerHTML = `<div class="mgr-alert-mini is-warn">
+    <b>⚠ ${escapeHtml(first.scope_name || "Feedback area")}</b>
+    <p>${Math.round((first.previous_share || 0) * 100)}% → ${Math.round((first.negative_share || 0) * 100)}% negative feedback</p>
+    <small>${escapeHtml(first.message || "Negative feedback increased.")}</small>
+  </div>`;
+}
+
+function renderAlertAnalysis() {
+  const alerts = rspState.alerts || [];
+  renderAlertSummary();
+  if (!alerts.length) {
+    $("alertAnalysis").innerHTML = '<p class="fa-empty fa-empty-ok">' + RSP_ICONS.check + 'No sharp negative trend has been detected in the latest comparison.</p>';
+    return;
+  }
+  $("alertAnalysis").innerHTML = `<div class="mgr-alert-list">${alerts.map(a => `
+    <article class="mgr-alert-card is-${a.severity || "medium"}">
+      <div class="mgr-alert-title">⚠ ${escapeHtml(a.scope_name || "Feedback area")}</div>
+      <div class="mgr-alert-shift">${Math.round((a.previous_share || 0) * 100)}% → ${Math.round((a.negative_share || 0) * 100)}%</div>
+      <p>${escapeHtml(a.message || "Negative feedback increased.")}</p>
+      <ul>
+        <li><b>Affected area:</b> ${escapeHtml(a.scope_name || "—")}</li>
+        <li><b>Previous semester:</b> ${escapeHtml(a.previous_semester || "—")}</li>
+        <li><b>Current semester:</b> ${escapeHtml(a.semester || "—")}</li>
+        <li><b>Likely driver:</b> ${escapeHtml(a.top_topic || "General dissatisfaction")}</li>
+      </ul>
+    </article>`).join("")}</div>`;
+}
+
+function compareBlock(result) {
+  const rows = result?.items || [];
+  if (!rows.length) return emptyAnalysis("No records are available for this comparison yet.");
+  const currentSemester = result.current_semester || "Current period";
+  const previousSemester = result.previous_semester || "Previous period";
+  const shown = [...rows].sort((a,b) => ((b.current?.avg_rating || b.previous?.avg_rating || 0) - (a.current?.avg_rating || a.previous?.avg_rating || 0))).slice(0, 12);
+  const bar = (data, role) => {
+    const h = data?.avg_rating == null ? 0 : Math.min(100, Math.round(data.avg_rating / 5 * 100));
+    const sem = role === "current" ? currentSemester : previousSemester;
+    return `<div class="mgr-bar-track"><div class="mgr-comparison-bar is-${role}${data ? "" : " is-empty"}" style="height:${h}%" tabindex="0"
+      title="${escapeHtml(sem)}: ${data?.avg_rating == null ? "no data" : data.avg_rating.toFixed(2) + "/5"} (${data?.total || 0} responses)">
+      <div class="mgr-bar-tooltip"><b>${escapeHtml(sem)}</b><span>${data?.avg_rating == null ? "No feedback" : data.avg_rating.toFixed(2) + "/5"}</span><small>${data?.total || 0} responses</small></div>
+    </div></div>`;
+  };
+  return `<p class="mgr-comparison-description">Average satisfaction out of 5 · ${escapeHtml(currentSemester)} compared with ${escapeHtml(previousSemester)}</p>
+    <div class="mgr-comparison-legend"><span><i class="mgr-legend-swatch is-current"></i>${escapeHtml(currentSemester)}</span><span><i class="mgr-legend-swatch is-previous"></i>${escapeHtml(previousSemester)}</span></div>
+    <div class="mgr-comparison-scroll"><div class="mgr-comparison-grid">${shown.map(row => `
+      <article class="mgr-comparison-group" aria-label="${escapeHtml(row.name)}">
+        <div class="mgr-paired-bars">${bar(row.current, "current")}${bar(row.previous, "previous")}</div>
+        <div class="mgr-comparison-name" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</div>
+        <div class="mgr-comparison-numbers">${row.current?.avg_rating?.toFixed(1) ?? "—"} / ${row.previous?.avg_rating?.toFixed(1) ?? "—"}</div>
+      </article>`).join("")}</div></div>
+    <p class="mgr-chart-footnote">Hover or focus on each bar to see the exact rating and response count. A missing bar means no data in that semester.</p>`;
+}
+
+async function fetchCompare() {
+  if (!currentSession || currentSession.user.role !== "manager") return;
+  const by = rspState.compareBy;
+  const q = analyticsQuery({ by });
+  const { ok, data, status } = await api(`/management/comparison${q}`, { token: currentSession.token });
+  if (status === 401 || status === 403) return sessionRevoked();
+  rspState.compare[by] = ok ? data : { items: [] };
+  renderCompareAnalysis();
+}
+
+function renderCompareAnalysis() {
+  $("compareAnalysis").innerHTML = compareBlock(rspState.compare[rspState.compareBy]);
+}
+
+function downloadCsv(filename, rows) {
+  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function buildReportSummaryText() {
+  const a = rspState.analytics, sum = rspState.summary;
+  const lines = [
+    `Student Feedback Analytics`,
+    $("mgrCurrentFilters").textContent,
+    "",
+    `Overall satisfaction: ${a?.avg_rating != null ? a.avg_rating.toFixed(1) + "/5" : "—"}`,
+    `Total feedback: ${a?.total ?? "—"}`,
+    `Positive sentiment: ${Math.round((a?.positive_share || 0) * 100)}%`,
+    `Negative sentiment: ${Math.round((a?.negative_share || 0) * 100)}%`,
+    "",
+  ];
+  if (sum?.overview) lines.push(`Overview: ${sum.overview}`, "");
+  if (sum?.strengths?.length) lines.push("Strengths:", ...sum.strengths.slice(0, 3).map(x => `- ${x.topic}: ${x.detail}`), "");
+  if (sum?.problems?.length) lines.push("Main problems:", ...sum.problems.slice(0, 3).map(x => `- ${x.topic}: ${x.detail}`), "");
+  const alerts = rspState.alerts || [];
+  if (alerts.length) lines.push("Alerts:", ...alerts.slice(0, 3).map(a => `- ${a.scope_name}: ${a.message}`));
+  return lines.join("\n");
+}
+
 async function loadResponses() {
   const refresh = $("rspRefresh");
   refresh.disabled = true;
   rspList.innerHTML = RSP_SKELETON;
   rspList.setAttribute("aria-busy", "true");
   FA_CARDS.forEach(id => { $(id).innerHTML = FA_SKELETON; });
+  ["mgrOverviewSentiment", "mgrTopTopics", "trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
   rspEmpty.hidden = true;
   rspCount.textContent = "Loading responses…";
-  // Every endpoint applies the role scope on the server; the page only displays what they return.
+  if (!rspState.meta) await loadResponsesMeta();
   const scope = analyticsQuery();
-  const [responsesResult, analyticsResult, summaryResult, keywordResult] = await Promise.all([
+  const extraTrendQuery = queryString({
+    department_id: rspState.department_id || undefined,
+    instructor_id: rspState.instructor_id || undefined,
+    course_id: rspState.target.startsWith("course:") ? rspState.target.split(":")[1] : undefined,
+    service_id: rspState.target.startsWith("service:") ? rspState.target.split(":")[1] : undefined,
+  });
+  if (currentSession.user.role === "manager") {
+    // Refresh persisted semester-to-semester alerts on each manager dashboard load.
+    await api("/alerts/recompute", { method: "POST", token: currentSession.token });
+  }
+  const [responsesResult, analyticsResult, summaryResult, keywordResult, trendsResult, alertsResult, universityResult] = await Promise.all([
     api("/evaluations/responses", { token: currentSession.token }),
     api(`/analytics/overview${scope}`, { token: currentSession.token }),
     api(`/analytics/summary${scope}`, { token: currentSession.token }),
     api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token: currentSession.token }),
+    api(`/analytics/trends${extraTrendQuery}`, { token: currentSession.token }),
+    api("/alerts", { token: currentSession.token }),
+    api(`/management/university${scope}`, { token: currentSession.token }),
   ]);
   rspState.summary = summaryResult.ok ? summaryResult.data : null;
   rspState.keywords = keywordResult.ok ? keywordResult.data : null;
+  rspState.trends = trendsResult.ok ? trendsResult.data : null;
+  rspState.alerts = alertsResult.ok ? alertsResult.data : [];
+  rspState.university = universityResult.ok ? universityResult.data : null;
   refresh.disabled = false;
   rspList.removeAttribute("aria-busy");
-  if (!currentSession) return;  // signed out while the requests were in flight
+  if (!currentSession) return;
   const { ok, status, data, network } = responsesResult;
   if (status === 401 || status === 403) return sessionRevoked();
   rspState.analytics = analyticsResult.ok ? analyticsResult.data : null;
@@ -2057,61 +2551,76 @@ async function loadResponses() {
       '<button type="button" class="btn-sm" data-rsp-retry>Try again</button>');
     renderKpis();
     renderAnalytics();
+    renderManagerOverview();
+    renderTrendAnalysis();
+    renderAlertAnalysis();
+    renderCompareAnalysis();
     return;
   }
   rspState.data = data;
   const coursesOnly = currentSession.user.role === "faculty";
-  $("rspKindSeg").hidden = coursesOnly;  // "All" and "Courses" would be the same list
+  $("rspKindSeg").hidden = coursesOnly;
   rspKpis.querySelector('[data-kpi="service"]').hidden = coursesOnly;
   rspKpis.classList.toggle("is-three", coursesOnly);
   $("rspScope").textContent = `${data.scope}. Every response is anonymous.`;
   const semesters = [...new Set(data.items.map(r => r.semester))];
   const updated = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   $("rspContext").textContent = [semesters.join(", "), `updated at ${updated}`].filter(Boolean).join(", ");
-  const targets = new Map();
-  data.items.forEach(r => targets.set(targetKey(r), r.target));
-  const sorted = [...targets].sort((a, b) => a[1].localeCompare(b[1]));
-  rspTarget.innerHTML = `<option value="">${coursesOnly ? "Every course" : "Every course &amp; service"}</option>`
-    + sorted.map(([k, label]) => `<option value="${k}">${escapeHtml(label)}</option>`).join("");
-  if (!targets.has(rspState.target)) rspState.target = "";
-  rspTarget.value = rspState.target;
+  fillManagerTargetsFromData(data);
   fillTopicFilter();
+  renderUniversityStats();
+  renderManagerOverview();
   renderAnalytics();
+  renderTrendAnalysis();
+  renderAlertAnalysis();
   renderResponses();
+  await fetchCompare();
 }
 
 // Topics that actually occur in the loaded responses, most mentioned first.
 function fillTopicFilter() {
   const counts = new Map();
-  rspState.data.items.forEach(r => (r.topics || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
+  (rspState.data?.items || []).forEach(r => (r.topics || []).forEach(t => counts.set(t, (counts.get(t) || 0) + 1)));
   const topics = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   $("rspTopic").innerHTML = '<option value="">Every topic</option>'
     + topics.map(([t, n]) => `<option value="${escapeHtml(t)}">${escapeHtml(t)} (${n})</option>`).join("");
   if (rspState.topic && !counts.has(rspState.topic)) rspState.topic = rspState.tone = "";
 }
 
-// Story 3.3: the whole page follows the chosen course or service, not only the list.
-function analyticsQuery() {
-  if (!rspState.target) return "";
-  const [kind, id] = rspState.target.split(":");
-  return `?${kind}_id=${encodeURIComponent(id)}`;
-}
 let analyticsRequest = 0;
 async function reloadAnalytics() {
   if (!currentSession) return;
   const request = ++analyticsRequest, scope = analyticsQuery(), token = currentSession.token;
   FA_CARDS.forEach(id => { $(id).innerHTML = FA_SKELETON; });
-  const [overview, summary, keywords] = await Promise.all([
+  ["mgrOverviewSentiment", "mgrTopTopics", "trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
+  const extraTrendQuery = queryString({
+    department_id: rspState.department_id || undefined,
+    instructor_id: rspState.instructor_id || undefined,
+    course_id: rspState.target.startsWith("course:") ? rspState.target.split(":")[1] : undefined,
+    service_id: rspState.target.startsWith("service:") ? rspState.target.split(":")[1] : undefined,
+  });
+  const [overview, summary, keywords, trends, alerts, university] = await Promise.all([
     api(`/analytics/overview${scope}`, { token }),
     api(`/analytics/summary${scope}`, { token }),
     api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token }),
+    api(`/analytics/trends${extraTrendQuery}`, { token }),
+    api("/alerts", { token }),
+    api(`/management/university${scope}`, { token }),
   ]);
-  if (request !== analyticsRequest || !currentSession) return;  // a newer choice already started
+  if (request !== analyticsRequest || !currentSession) return;
   rspState.analytics = overview.ok ? overview.data : null;
   rspState.summary = summary.ok ? summary.data : null;
   rspState.keywords = keywords.ok ? keywords.data : null;
+  rspState.trends = trends.ok ? trends.data : null;
+  rspState.alerts = alerts.ok ? alerts.data : [];
+  rspState.university = university.ok ? university.data : null;
+  renderUniversityStats();
+  renderManagerOverview();
   renderAnalytics();
+  renderTrendAnalysis();
+  renderAlertAnalysis();
   renderKpis();
+  await fetchCompare();
 }
 
 /* ---------- overview metrics ---------- */
@@ -2463,6 +2972,9 @@ function renderResponses() {
   Object.values(data.questions).flat().forEach(q => { qLabel[q.id] = q.label; });
   const q = rspState.q.trim().toLowerCase();
   const list = items.filter(r => {
+    if (rspState.semester && r.semester !== rspState.semester) return false;
+    if (rspState.department_id && String(r.department_id || "") !== String(rspState.department_id)) return false;
+    if (rspState.instructor_id && String(r.instructor_id || "") !== String(rspState.instructor_id)) return false;
     if (rspState.kind && r.kind !== rspState.kind) return false;
     if (rspState.pii && !r.pii_masked) return false;
     if (rspState.target && rspState.target !== targetKey(r)) return false;
@@ -2529,6 +3041,7 @@ function clearResponseFilters() {
   if (hadTarget) reloadAnalytics();
 }
 function scrollToExplorer() {
+  if (currentSession?.user?.role === "manager" && managerActiveView !== "explorer") selectManagerView("explorer");
   const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   $("rspHeading").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
 }
@@ -2623,6 +3136,74 @@ $("rspLanguage").addEventListener("change", e => { rspState.language = e.target.
 $("rspSort").addEventListener("change", e => { rspState.sort = e.target.value; renderResponses(); });
 $("rspCommented").addEventListener("click", () => { rspState.commented = !rspState.commented; renderResponses(); });
 $("rspPiiToggle").addEventListener("click", () => { rspState.pii = !rspState.pii; renderResponses(); });
+$("mgrApplyFilters").addEventListener("click", async () => {
+  rspState.compare = {};
+  rspState.semester = $("mgrSemester").value;
+  rspState.faculty = $("mgrFaculty").value;
+  rspState.department_id = $("mgrDepartment").value || rspState.faculty;
+  rspState.instructor_id = $("mgrInstructor").value;
+  rspState.target = $("mgrTarget").value;
+  if (rspState.target) rspState.kind = rspState.target.split(":")[0];
+  rspTarget.value = rspState.target;
+  await loadResponses();
+});
+$("mgrResetFilters").addEventListener("click", async () => {
+  rspState.compare = {};
+  rspState.semester = ""; rspState.faculty = ""; rspState.department_id = ""; rspState.instructor_id = ""; rspState.target = "";
+  $("mgrSemester").value = ""; $("mgrFaculty").value = ""; $("mgrDepartment").value = ""; $("mgrInstructor").value = ""; $("mgrTarget").value = "";
+  rspTarget.value = "";
+  await loadResponses();
+});
+$("mgrTarget").addEventListener("change", () => { rspState.target = $("mgrTarget").value; rspTarget.value = rspState.target; });
+$("compareTabs").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-compare]"); if (!b) return;
+  rspState.compareBy = b.dataset.compare;
+  document.querySelectorAll("#compareTabs button").forEach(btn => btn.classList.toggle("on", btn === b));
+  if (!rspState.compare[rspState.compareBy]) await fetchCompare(); else renderCompareAnalysis();
+});
+$("mgrOpenAlerts").addEventListener("click", () => selectManagerView("compare"));
+$("recomputeAlerts").addEventListener("click", async () => {
+  const { ok } = await api("/alerts/recompute", { method: "POST", token: currentSession.token });
+  if (ok) { const result = await api("/alerts", { token: currentSession.token }); rspState.alerts = result.ok ? result.data : []; renderAlertAnalysis(); }
+});
+function updateReportPreview() {
+  const option = $("mgrReportSection").selectedOptions[0];
+  const format = $("mgrReportFormat").value;
+  const description = {
+    overview: "Includes average satisfaction, positive/neutral/negative counts and total feedback.",
+    trends: "Includes every available semester, response volume and sentiment percentages.",
+    compare_course: "Includes each course with its average rating, response count and sentiment.",
+    compare_department: "Includes each department with its average rating and sentiment.",
+    compare_service: "Includes each university service with its average rating and sentiment.",
+    alerts: "Includes detected increases in negative feedback, affected area and semesters.",
+  }[$("mgrReportSection").value];
+  $("mgrReportPreview").innerHTML = `<b>${escapeHtml(option.textContent)}</b><p>${escapeHtml(description)}<br>File: ${format === "pdf" ? "PDF document" : "Excel workbook (.xlsx)"}</p>`;
+}
+updateReportPreview();
+$("mgrReportSection").addEventListener("change", updateReportPreview);
+$("mgrReportFormat").addEventListener("change", updateReportPreview);
+$("mgrDownloadReport").addEventListener("click", async () => {
+  if (!currentSession) return;
+  const button = $("mgrDownloadReport");
+  button.disabled = true;
+  try {
+    const section = $("mgrReportSection").value, format = $("mgrReportFormat").value;
+    const path = `/management/report${analyticsQuery({ section, format })}`;
+    const response = await fetch(CONFIG.apiBase + path, { headers: { Authorization: `Bearer ${currentSession.token}` } });
+    if (!response.ok) throw new Error(`Could not export report (${response.status})`);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `sdu-${section}.${format}`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) { toast(error.message || "Could not export the report"); }
+  finally { button.disabled = false; }
+});
+$("copyReportSummary").addEventListener("click", async () => {
+  const text = buildReportSummaryText();
+  try { await navigator.clipboard.writeText(text); toast("Report summary copied."); } catch { toast("Could not copy automatically."); }
+});
 $("rspRefresh").addEventListener("click", loadResponses);
 
 $("openFeedback").addEventListener("click", openFeedback);

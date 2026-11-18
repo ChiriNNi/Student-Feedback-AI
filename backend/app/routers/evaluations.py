@@ -169,7 +169,8 @@ def responses(
             "target": (f"{fb.course.code} — {fb.course.title}" if fb.course
                        else fb.service.name if fb.service else "Removed item"),
             "course_id": fb.course_id, "service_id": fb.service_id,
-            "department": fb.department.name if fb.department else None,
+            "department_id": fb.department_id, "department": fb.department.name if fb.department else None,
+            "instructor_id": fb.course.instructor_id if fb.course else None,
             "ratings": fb.ratings or {}, "rating": fb.rating,
             "comment": fb.text, "pii_masked": fb.pii_masked, "language": fb.language,
             "sentiment": fb.sentiment, "sentiment_score": fb.sentiment_score,
