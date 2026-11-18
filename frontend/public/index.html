@@ -452,7 +452,8 @@
           <label class="mgr-field"><span>Instructor</span><span class="fx-select"><select id="mgrInstructor"><option value="">All instructors</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
           <label class="mgr-field mgr-field-wide"><span>Course or service</span><span class="fx-select"><select id="mgrTarget"><option value="">All courses &amp; services</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
         </div>
-        <div class="mgr-current-filters" id="mgrCurrentFilters">Current filters: latest available semester · all faculties · all departments · all courses · all instructors</div>
+        <div class="mgr-current-filters" id="mgrCurrentFilters" aria-live="polite"></div>
+        <p id="mgrFilterError" role="alert" hidden></p>
       </section>
 
       <section class="mgr-kpi-grid" aria-label="Key performance indicators">
@@ -1878,6 +1879,7 @@ function resetPages() {
   fbSearch.value = "";
   fbTabs.innerHTML = fbTargets.innerHTML = "";
   Object.assign(rspState, {
+    ...DASHBOARD_RESET, meta: null, alerts: null, university: null, trends: null, compare: {}, compareBy: "course",
     data: null, analytics: null, summary: null, keywords: null, quoteTopic: "", kind: "", pii: false, target: "", q: "",
     sentiment: "", topic: "", tone: "", expanded: { topics: false, aspects: false },
   });
@@ -2142,14 +2144,14 @@ evalForm.addEventListener("submit", async e => {
 const rspList = $("rspList"), rspEmpty = $("rspEmpty"), rspSearch = $("rspSearch"), rspTarget = $("rspTarget");
 const responsesApp = $("responsesApp"), rspCount = $("rspCount"), rspKpis = $("rspKpis");
 // sentiment filters by overall response sentiment; topic (+ optional tone) by a topic's aspect sentiment.
+const DASHBOARD_RESET = { semester: "", faculty: "", department_id: "", instructor_id: "", target: "" };
 const rspState = {
   data: null, analytics: null, summary: null, keywords: null, trends: null, alerts: null, meta: null,
   compare: {}, compareBy: "course", quoteTopic: "", kind: "", pii: false, target: "", q: "",
   sentiment: "", topic: "", tone: "", expanded: { topics: false, aspects: false },
   // explorer-only filters and order
   language: "", rating: "", commented: false, sort: "new",
-  // dashboard scope filters (Sprint 5)
-  semester: "", faculty: "", department_id: "", instructor_id: "",
+  ...DASHBOARD_RESET,
 };
 const EXPLORER_RESET = { kind: "", pii: false, target: "", q: "", sentiment: "", topic: "", tone: "", language: "", rating: "", commented: false };
 const RATING_FILTER = { high: "pos", mid: "mid", low: "neg" };
@@ -2236,6 +2238,7 @@ const queryString = params => {
 const currentScopeParams = () => {
   const params = {};
   if (rspState.semester) params.semester = rspState.semester;
+  if (rspState.faculty) params.faculty_id = rspState.faculty;
   if (rspState.department_id) params.department_id = rspState.department_id;
   if (rspState.instructor_id) params.instructor_id = rspState.instructor_id;
   if (rspState.target) {
@@ -2252,42 +2255,74 @@ function setSelectOptions(select, options, placeholder, current = "") {
   select.innerHTML = `<option value="">${placeholder}</option>` + options.map(opt =>
     `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label)}</option>`).join("");
   select.value = current || "";
+  if (select.selectedIndex < 0) select.selectedIndex = 0;
 }
 
-async function loadResponsesMeta() {
-  if (!currentSession) return;
-  const { ok, data, status } = await api("/meta", { token: currentSession.token });
+function dashboardTargets(meta, { faculty, department_id, instructor_id }) {
+  const departments = meta.departments.filter(d =>
+    (!faculty || String(d.faculty_id) === faculty) &&
+    (!department_id || String(d.id) === department_id));
+  const departmentIds = new Set(departments.map(d => d.id));
+  const courses = meta.courses.filter(c => departmentIds.has(c.department_id) &&
+    (!instructor_id || String(c.instructor_id) === instructor_id));
+  const services = faculty || department_id || instructor_id ? [] : meta.services;
+  return [
+    ...courses.map(c => ({ value: `course:${c.id}`, label: `${c.code} — ${c.title}` })),
+    ...services.map(v => ({ value: `service:${v.id}`, label: v.name })),
+  ];
+}
+
+function syncDashboardFilters(selection = rspState) {
+  const meta = rspState.meta;
+  if (!meta) return;
+  const { semester, faculty, department_id, instructor_id, target } = selection;
+  setSelectOptions($("mgrSemester"), meta.semesters.map(v => ({ value: v, label: v })), "All semesters", semester);
+  const toOption = item => ({ value: item.id, label: item.name });
+  setSelectOptions($("mgrFaculty"), meta.faculties.map(toOption),
+    meta.faculties.length ? "All faculties" : "No faculties configured", faculty);
+  $("mgrFaculty").disabled = !meta.faculties.length;
+  const selectedFaculty = $("mgrFaculty").value;
+  const departments = meta.departments.filter(d => !selectedFaculty || String(d.faculty_id) === selectedFaculty);
+  setSelectOptions($("mgrDepartment"), departments.map(toOption), "All departments", department_id);
+  const selectedDepartment = $("mgrDepartment").value;
+  const departmentIds = new Set(departments.filter(d => !selectedDepartment || String(d.id) === selectedDepartment).map(d => d.id));
+  const instructorIds = new Set(meta.courses.filter(c => departmentIds.has(c.department_id)).map(c => c.instructor_id));
+  setSelectOptions($("mgrInstructor"), meta.instructors.filter(i => instructorIds.has(i.id)).map(toOption), "All instructors", instructor_id);
+  setSelectOptions($("mgrTarget"), dashboardTargets(meta, {
+    faculty: selectedFaculty, department_id: selectedDepartment, instructor_id: $("mgrInstructor").value,
+  }), "All courses & services", target);
+}
+
+function dashboardSelection() {
+  return {
+    semester: $("mgrSemester").value,
+    faculty: $("mgrFaculty").value,
+    department_id: $("mgrDepartment").value,
+    instructor_id: $("mgrInstructor").value,
+    target: $("mgrTarget").value,
+  };
+}
+
+async function loadResponsesMeta(token, request) {
+  const { ok, data, status } = await api("/meta", { token });
+  if (!isCurrentAnalyticsRequest(token, request)) return;
   if (status === 401 || status === 403) return sessionRevoked();
   if (!ok) return;
   rspState.meta = data;
-  setSelectOptions($("mgrSemester"), (data.semesters || []).map(v => ({ value: v, label: v })), "All semesters", rspState.semester);
-  setSelectOptions($("mgrDepartment"), (data.departments || []).map(v => ({ value: v.id, label: v.name })), "All departments", rspState.department_id);
-  setSelectOptions($("mgrInstructor"), (data.instructors || []).map(v => ({ value: v.id, label: v.name })), "All instructors", rspState.instructor_id);
-  setSelectOptions($("mgrFaculty"), (data.departments || []).map(d => ({ value: d.id, label: d.name })), "All faculties", rspState.faculty);
-  $("mgrFaculty").disabled = false;
 }
 
-function fillManagerTargetsFromData(data) {
-  const coursesOnly = currentSession.user.role === "faculty";
-  const targets = new Map();
-  data.items.forEach(r => targets.set(targetKey(r), r.target));
-  const sorted = [...targets].sort((a, b) => a[1].localeCompare(b[1]));
-  const placeholder = coursesOnly ? "Every course" : "Every course & service";
-  const options = sorted.map(([value, label]) => ({ value, label }));
-  setSelectOptions($("mgrTarget"), options, placeholder, rspState.target);
-  setSelectOptions(rspTarget, options, placeholder, rspState.target);
-  if (!targets.has(rspState.target)) rspState.target = "";
-  $("mgrTarget").value = rspState.target;
-  rspTarget.value = rspState.target;
+function syncExplorerTarget() {
+  if (!rspState.meta) return;
+  setSelectOptions(rspTarget, dashboardTargets(rspState.meta, rspState), "Every course & service", rspState.target);
 }
 
 function renderCurrentFilters() {
   const meta = rspState.meta || {};
   const dep = (meta.departments || []).find(x => String(x.id) === String(rspState.department_id));
-  const fac = (meta.departments || []).find(x => String(x.id) === String(rspState.faculty));
+  const fac = (meta.faculties || []).find(x => String(x.id) === String(rspState.faculty));
   const ins = (meta.instructors || []).find(x => String(x.id) === String(rspState.instructor_id));
-  const target = $("mgrTarget")?.selectedOptions?.[0]?.textContent || "All courses & services";
-  $("mgrCurrentFilters").textContent = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target} · ${ins?.name || "All instructors"}`;
+  const target = meta.courses && dashboardTargets(meta, rspState).find(v => v.value === rspState.target)?.label;
+  $("mgrCurrentFilters").textContent = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target || "All courses & services"} · ${ins?.name || "All instructors"}`;
 }
 
 function renderUniversityStats() {
@@ -2306,6 +2341,7 @@ function renderUniversityStats() {
 }
 
 function renderManagerOverview() {
+  renderCurrentFilters();
   const a = rspState.analytics;
   const setText = (id, value) => { $(id).textContent = value; };
   if (!a) {
@@ -2339,7 +2375,6 @@ function renderManagerOverview() {
     <li><button type="button" data-topic="${escapeHtml(t.topic)}" class="mgr-topic-row">
       <span><b>${escapeHtml(t.topic)}</b><small>${plural(t.total, "mention")}</small></span>
     </button></li>`).join("")}</ol>` : emptyAnalysis("No topics were detected in the current scope.");
-  renderCurrentFilters();
 }
 
 function trendLineSvg(series) {
@@ -2457,7 +2492,9 @@ async function fetchCompare() {
   if (!currentSession || currentSession.user.role !== "manager") return;
   const by = rspState.compareBy;
   const q = analyticsQuery({ by });
-  const { ok, data, status } = await api(`/management/comparison${q}`, { token: currentSession.token });
+  const token = currentSession.token, request = analyticsRequest;
+  const { ok, data, status } = await api(`/management/comparison${q}`, { token });
+  if (!isCurrentAnalyticsRequest(token, request)) return;
   if (status === 401 || status === 403) return sessionRevoked();
   rspState.compare[by] = ok ? data : { items: [] };
   renderCompareAnalysis();
@@ -2499,7 +2536,19 @@ function buildReportSummaryText() {
   return lines.join("\n");
 }
 
+let analyticsRequest = 0;
+const isCurrentAnalyticsRequest = (token, request) => currentSession?.token === token && request === analyticsRequest;
+
+function showDashboardFilterError(result) {
+  const message = $("mgrFilterError");
+  message.hidden = result.status !== 422;
+  message.textContent = message.hidden ? "" : "These filters are unavailable together. Change your selection or reset the filters.";
+}
+
 async function loadResponses() {
+  const token = currentSession?.token;
+  if (!token) return;
+  const request = ++analyticsRequest;
   const refresh = $("rspRefresh");
   refresh.disabled = true;
   rspList.innerHTML = RSP_SKELETON;
@@ -2508,27 +2557,27 @@ async function loadResponses() {
   ["mgrOverviewSentiment", "mgrTopTopics", "trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
   rspEmpty.hidden = true;
   rspCount.textContent = "Loading responses…";
-  if (!rspState.meta) await loadResponsesMeta();
+  if (!rspState.meta) await loadResponsesMeta(token, request);
+  if (!isCurrentAnalyticsRequest(token, request)) return;
+  syncDashboardFilters();
   const scope = analyticsQuery();
-  const extraTrendQuery = queryString({
-    department_id: rspState.department_id || undefined,
-    instructor_id: rspState.instructor_id || undefined,
-    course_id: rspState.target.startsWith("course:") ? rspState.target.split(":")[1] : undefined,
-    service_id: rspState.target.startsWith("service:") ? rspState.target.split(":")[1] : undefined,
-  });
+  const extraTrendQuery = analyticsQuery({ semester: null });
   if (currentSession.user.role === "manager") {
     // Refresh persisted semester-to-semester alerts on each manager dashboard load.
-    await api("/alerts/recompute", { method: "POST", token: currentSession.token });
+    await api("/alerts/recompute", { method: "POST", token });
   }
+  if (!isCurrentAnalyticsRequest(token, request)) return;
   const [responsesResult, analyticsResult, summaryResult, keywordResult, trendsResult, alertsResult, universityResult] = await Promise.all([
-    api("/evaluations/responses", { token: currentSession.token }),
-    api(`/analytics/overview${scope}`, { token: currentSession.token }),
-    api(`/analytics/summary${scope}`, { token: currentSession.token }),
-    api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token: currentSession.token }),
-    api(`/analytics/trends${extraTrendQuery}`, { token: currentSession.token }),
-    api("/alerts", { token: currentSession.token }),
-    api(`/management/university${scope}`, { token: currentSession.token }),
+    api("/evaluations/responses", { token }),
+    api(`/analytics/overview${scope}`, { token }),
+    api(`/analytics/summary${scope}`, { token }),
+    api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token }),
+    api(`/analytics/trends${extraTrendQuery}`, { token }),
+    api("/alerts", { token }),
+    api(`/management/university${scope}`, { token }),
   ]);
+  if (!isCurrentAnalyticsRequest(token, request)) return;
+  showDashboardFilterError(analyticsResult);
   rspState.summary = summaryResult.ok ? summaryResult.data : null;
   rspState.keywords = keywordResult.ok ? keywordResult.data : null;
   rspState.trends = trendsResult.ok ? trendsResult.data : null;
@@ -2567,7 +2616,7 @@ async function loadResponses() {
   const semesters = [...new Set(data.items.map(r => r.semester))];
   const updated = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   $("rspContext").textContent = [semesters.join(", "), `updated at ${updated}`].filter(Boolean).join(", ");
-  fillManagerTargetsFromData(data);
+  syncExplorerTarget();
   fillTopicFilter();
   renderUniversityStats();
   renderManagerOverview();
@@ -2588,18 +2637,13 @@ function fillTopicFilter() {
   if (rspState.topic && !counts.has(rspState.topic)) rspState.topic = rspState.tone = "";
 }
 
-let analyticsRequest = 0;
 async function reloadAnalytics() {
   if (!currentSession) return;
   const request = ++analyticsRequest, scope = analyticsQuery(), token = currentSession.token;
+  rspState.compare = {};
   FA_CARDS.forEach(id => { $(id).innerHTML = FA_SKELETON; });
   ["mgrOverviewSentiment", "mgrTopTopics", "trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
-  const extraTrendQuery = queryString({
-    department_id: rspState.department_id || undefined,
-    instructor_id: rspState.instructor_id || undefined,
-    course_id: rspState.target.startsWith("course:") ? rspState.target.split(":")[1] : undefined,
-    service_id: rspState.target.startsWith("service:") ? rspState.target.split(":")[1] : undefined,
-  });
+  const extraTrendQuery = analyticsQuery({ semester: null });
   const [overview, summary, keywords, trends, alerts, university] = await Promise.all([
     api(`/analytics/overview${scope}`, { token }),
     api(`/analytics/summary${scope}`, { token }),
@@ -2608,7 +2652,12 @@ async function reloadAnalytics() {
     api("/alerts", { token }),
     api(`/management/university${scope}`, { token }),
   ]);
-  if (request !== analyticsRequest || !currentSession) return;
+  if (!isCurrentAnalyticsRequest(token, request)) return;
+  if (overview.status === 401 || overview.status === 403) return sessionRevoked();
+  showDashboardFilterError(overview);
+  $("rspRefresh").disabled = false;
+  rspList.removeAttribute("aria-busy");
+  syncDashboardFilters();
   rspState.analytics = overview.ok ? overview.data : null;
   rspState.summary = summary.ok ? summary.data : null;
   rspState.keywords = keywords.ok ? keywords.data : null;
@@ -2972,9 +3021,13 @@ function renderResponses() {
   const qLabel = {};
   Object.values(data.questions).flat().forEach(q => { qLabel[q.id] = q.label; });
   const q = rspState.q.trim().toLowerCase();
+  const courses = new Map((rspState.meta?.courses || []).map(c => [c.id, c]));
+  const departments = new Map((rspState.meta?.departments || []).map(d => [d.id, d]));
   const list = items.filter(r => {
+    const department = courses.get(r.course_id)?.department_id ?? r.department_id;
+    if (rspState.faculty && String(departments.get(department)?.faculty_id) !== rspState.faculty) return false;
     if (rspState.semester && r.semester !== rspState.semester) return false;
-    if (rspState.department_id && String(r.department_id || "") !== String(rspState.department_id)) return false;
+    if (rspState.department_id && String(department) !== rspState.department_id) return false;
     if (rspState.instructor_id && String(r.instructor_id || "") !== String(rspState.instructor_id)) return false;
     if (rspState.kind && r.kind !== rspState.kind) return false;
     if (rspState.pii && !r.pii_masked) return false;
@@ -3137,25 +3190,17 @@ $("rspLanguage").addEventListener("change", e => { rspState.language = e.target.
 $("rspSort").addEventListener("change", e => { rspState.sort = e.target.value; renderResponses(); });
 $("rspCommented").addEventListener("click", () => { rspState.commented = !rspState.commented; renderResponses(); });
 $("rspPiiToggle").addEventListener("click", () => { rspState.pii = !rspState.pii; renderResponses(); });
+["mgrFaculty", "mgrDepartment", "mgrInstructor"].forEach(id => {
+  $(id).addEventListener("change", () => syncDashboardFilters(dashboardSelection()));
+});
 $("mgrApplyFilters").addEventListener("click", async () => {
-  rspState.compare = {};
-  rspState.semester = $("mgrSemester").value;
-  rspState.faculty = $("mgrFaculty").value;
-  rspState.department_id = $("mgrDepartment").value || rspState.faculty;
-  rspState.instructor_id = $("mgrInstructor").value;
-  rspState.target = $("mgrTarget").value;
-  if (rspState.target) rspState.kind = rspState.target.split(":")[0];
-  rspTarget.value = rspState.target;
+  Object.assign(rspState, dashboardSelection(), { compare: {}, kind: "" });
   await loadResponses();
 });
 $("mgrResetFilters").addEventListener("click", async () => {
-  rspState.compare = {};
-  rspState.semester = ""; rspState.faculty = ""; rspState.department_id = ""; rspState.instructor_id = ""; rspState.target = "";
-  $("mgrSemester").value = ""; $("mgrFaculty").value = ""; $("mgrDepartment").value = ""; $("mgrInstructor").value = ""; $("mgrTarget").value = "";
-  rspTarget.value = "";
+  Object.assign(rspState, DASHBOARD_RESET, { compare: {}, kind: "", meta: null });
   await loadResponses();
 });
-$("mgrTarget").addEventListener("change", () => { rspState.target = $("mgrTarget").value; rspTarget.value = rspState.target; });
 $("compareTabs").addEventListener("click", async e => {
   const b = e.target.closest("button[data-compare]"); if (!b) return;
   rspState.compareBy = b.dataset.compare;

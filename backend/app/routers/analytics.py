@@ -1,34 +1,68 @@
 from collections import Counter, defaultdict
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Alert, Course, Department, Feedback, Service, TopicCategory, User
+from ..models import Alert, Course, Department, Faculty, Feedback, Service, TopicCategory, User
 from ..nlp.summarizer import aspect_stats, llm_available, llm_summary, local_summary
-from ..security import get_current_user, staff_only
-from ..services import Filters, feedback_rows, scope_label, scope_query, sort_semesters
+from ..security import staff_only
+from ..services import (
+    Filters, feedback_rows, scope_label, scope_query, scoped_courses, scoped_departments, sort_semesters,
+)
 
 router = APIRouter(prefix="/api", tags=["analytics"])
 
 
+FilterID = Annotated[int | None, Query(gt=0)]
+
+
 def filters_dep(
+    user: User = Depends(staff_only),
+    db: Session = Depends(get_db),
     semester: str | None = None,
-    department_id: int | None = None,
-    course_id: int | None = None,
-    service_id: int | None = None,
-    instructor_id: int | None = None,
-    kind: str | None = None,
+    faculty_id: FilterID = None,
+    department_id: FilterID = None,
+    course_id: FilterID = None,
+    service_id: FilterID = None,
+    instructor_id: FilterID = None,
+    kind: Annotated[str | None, Query(pattern="^(course|service|survey)$")] = None,
     sentiment: str | None = None,
     topic: str | None = None,
     language: str | None = None,
     q: str | None = None,
-    survey_id: int | None = None,
+    survey_id: FilterID = None,
 ) -> Filters:
-    return Filters(semester or None, department_id or None, course_id or None, service_id or None,
-                   instructor_id or None, kind or None, sentiment or None, topic or None, language or None, q or None,
-                   survey_id or None)
+    departments = scoped_departments(user)
+    if faculty_id:
+        departments = departments.where(Department.faculty_id == faculty_id)
+    if department_id:
+        departments = departments.where(Department.id == department_id)
+
+    courses = scoped_courses(user).where(Course.department_id.in_(departments.with_only_columns(Department.id)))
+    if course_id:
+        courses = courses.where(Course.id == course_id)
+    if instructor_id:
+        courses = courses.where(Course.instructor_id == instructor_id)
+
+    invalid = (
+        (semester and semester not in _all_semesters(db, user))
+        or ((faculty_id or department_id) and db.scalar(departments.limit(1)) is None)
+        or ((course_id or instructor_id) and db.scalar(courses.limit(1)) is None)
+        or (service_id and (
+            user.role == "faculty" or faculty_id or department_id or course_id or instructor_id
+            or db.get(Service, service_id) is None
+        ))
+    )
+    if invalid:
+        raise HTTPException(422, "The selected dashboard filters are incompatible or unavailable in your scope.")
+    return Filters(
+        semester=semester, faculty_id=faculty_id, department_id=department_id, course_id=course_id,
+        service_id=service_id, instructor_id=instructor_id, kind=kind, sentiment=sentiment,
+        topic=topic, language=language, q=q, survey_id=survey_id,
+    )
 
 
 def _response_rating(row: dict) -> float | None:
@@ -76,26 +110,19 @@ def _all_semesters(db: Session, user: User) -> list[str]:
 # ------------------------------------------------------------------ meta
 
 @router.get("/meta")
-def meta(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    courses_q = select(Course).order_by(Course.code)
-    if user.role == "faculty":
-        courses_q = courses_q.where(Course.instructor_id == user.id)
-    elif user.role == "manager" and user.department_id:
-        courses_q = courses_q.where(Course.department_id == user.department_id)
-    courses = db.scalars(courses_q).all()
-    depts = db.scalars(select(Department).order_by(Department.name)).all()
-    if user.role == "manager" and user.department_id:
-        depts = [d for d in depts if d.id == user.department_id]
-    if user.role == "faculty":
-        own = {c.department_id for c in courses}
-        depts = [d for d in depts if d.id in own]
+def meta(user: User = Depends(staff_only), db: Session = Depends(get_db)):
+    courses = db.scalars(scoped_courses(user).order_by(Course.code)).all()
+    depts = db.scalars(scoped_departments(user).order_by(Department.name)).all()
+    faculty_ids = {d.faculty_id for d in depts if d.faculty_id is not None}
+    faculties = db.scalars(select(Faculty).where(Faculty.id.in_(faculty_ids)).order_by(Faculty.name))
     services = [] if user.role == "faculty" else db.scalars(select(Service).order_by(Service.name)).all()
     instructors = sorted({c.instructor for c in courses if c.instructor}, key=lambda u: u.name)
-    sems = _all_semesters(db, user) if user.role != "student" else []
+    sems = _all_semesters(db, user)
     return {
         "semesters": sems,
         "current_semester": sems[-1] if sems else None,
-        "departments": [{"id": d.id, "code": d.code, "name": d.name} for d in depts],
+        "faculties": [{"id": f.id, "code": f.code, "name": f.name} for f in faculties],
+        "departments": [{"id": d.id, "code": d.code, "name": d.name, "faculty_id": d.faculty_id} for d in depts],
         "courses": [{"id": c.id, "code": c.code, "title": c.title, "department_id": c.department_id,
                      "instructor": c.instructor.name if c.instructor else None,
                      "instructor_id": c.instructor_id} for c in courses],

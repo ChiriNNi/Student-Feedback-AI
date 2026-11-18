@@ -23,6 +23,8 @@ async def lifespan(_: FastAPI):
             Base.metadata.create_all(conn)
             # create_all() never alters existing tables, so columns added after the
             # first deploy are applied here (idempotent on every start).
+            conn.execute(text("ALTER TABLE departments ADD COLUMN IF NOT EXISTS faculty_id INTEGER REFERENCES faculties(id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_departments_faculty_id ON departments (faculty_id)"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason TEXT"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"))

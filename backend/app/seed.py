@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .models import Course, Department, Feedback, Service, Survey, SurveyQuestion, TopicCategory, User
+from .models import Course, Department, Faculty, Feedback, Service, Survey, SurveyQuestion, TopicCategory, User
 from .nlp.lexicons import DEFAULT_TOPICS
 from .security import hash_password
 
@@ -133,7 +133,9 @@ def _seed_users(db: Session) -> None:
         return
     log.info("Seeding demo departments and users...")
 
-    depts = {code: Department(code=code, name=name) for code, name in DEPARTMENTS}
+    # The demo catalogue already uses faculty-level groups as departments.
+    depts = {code: Department(code=code, name=name, faculty=Faculty(code=code, name=name))
+             for code, name in DEPARTMENTS}
     db.add_all(depts.values())
     db.flush()
 

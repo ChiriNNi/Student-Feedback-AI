@@ -211,6 +211,32 @@ summary to the keyword cloud, is recalculated for it.
 `course_id` / `service_id` filters as `/api/analytics/overview`, and are scoped
 by role on the server like every other analytics call.
 
+### Staff dashboard and filters (Sprint 6)
+
+Open **Feedback analytics → Overview** as a faculty member, manager or administrator.
+The dashboard shows response counts, satisfaction out of five, sentiment distribution
+and the most-mentioned topics. Satisfaction gives each rated response equal weight:
+it averages the stored answers per response and uses the stored overall rating for
+legacy responses without valid answers. Sentiment shares use responses with a stored
+analysis or correction. Topics count each response at most once per topic.
+
+Use **Apply filters** or **Reset** to change the semester, faculty, department,
+course/service or instructor. The options come from the staff member's database
+scope. Courses are linked to departments and instructors, and departments can
+belong to a faculty. Valid filters with zero matching responses show an empty
+state. Incompatible or inaccessible selections return HTTP 422.
+
+Start the local stack with `docker compose up --build` and open
+`http://localhost:8080`. Fresh demo installs include faculty links. On existing
+databases the backend creates the new schema at startup. To enable faculty
+filtering for existing departments, create the institution's faculty records in
+`faculties` and set `departments.faculty_id` to the corresponding IDs. Departments
+without this link remain available through the department filter.
+
+`GET /api/meta` returns scoped filter options. `GET /api/analytics/overview`
+returns the filtered counts, rating and sentiment coverage, sentiment shares and
+top topics. Both require a valid staff JWT.
+
 ### Interface
 
 One stylesheet, `frontend/public/pulse.css`, styles every screen in light and

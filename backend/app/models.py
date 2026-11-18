@@ -13,11 +13,21 @@ SENTIMENTS = ("positive", "neutral", "negative")
 ACTION_STATUSES = ("planned", "in_progress", "done")
 
 
+class Faculty(Base):
+    __tablename__ = "faculties"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(16), unique=True)
+    name: Mapped[str] = mapped_column(String(160))
+
+
 class Department(Base):
     __tablename__ = "departments"
     id: Mapped[int] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(16), unique=True)
     name: Mapped[str] = mapped_column(String(160))
+    faculty_id: Mapped[int | None] = mapped_column(ForeignKey("faculties.id"), index=True)
+
+    faculty: Mapped[Faculty | None] = relationship()
 
 
 class User(Base):

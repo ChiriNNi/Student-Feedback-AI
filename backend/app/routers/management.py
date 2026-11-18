@@ -8,28 +8,16 @@ from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Course, Department, Feedback, Service, User
+from ..models import Course, Department, Service, User
 from ..security import managers
-from ..services import Filters, feedback_rows, scope_label, sort_semesters
-from .analytics import _kpis
+from ..services import Filters, feedback_rows, scope_label, semester_key, sort_semesters
+from .analytics import _kpis, filters_dep
 
 router = APIRouter(prefix="/api/management", tags=["Sprint 5 management"])
-
-
-def scope_params(
-    semester: str | None = None,
-    department_id: int | None = None,
-    course_id: int | None = None,
-    service_id: int | None = None,
-    instructor_id: int | None = None,
-):
-    return Filters(semester=semester, department_id=department_id,
-                   course_id=course_id, service_id=service_id,
-                   instructor_id=instructor_id)
 
 
 def _groups(db: Session, user: User, f: Filters, by: str):
@@ -55,7 +43,7 @@ def _groups(db: Session, user: User, f: Filters, by: str):
 
 
 @router.get("/university")
-def university(f: Filters = Depends(scope_params), user: User = Depends(managers), db: Session = Depends(get_db)):
+def university(f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
     """Actual users/catalogue counts, never made-up demo totals. Manager scope is enforced."""
     courses_stmt = select(Course)
     if user.role == "manager" and user.department_id:
@@ -72,7 +60,6 @@ def university(f: Filters = Depends(scope_params), user: User = Depends(managers
     dept_counts = Counter(c.department_id for c in courses)
     rows = feedback_rows(db, user, f)
     kinds = Counter(r["kind"] for r in rows)
-    source_counts = dict(db.execute(select(Feedback.source, func.count(Feedback.id)).group_by(Feedback.source)).all())
     return {
         "users_total": len(users), "students": counts["student"],
         "professors": counts["faculty"], "managers": counts["manager"],
@@ -82,18 +69,19 @@ def university(f: Filters = Depends(scope_params), user: User = Depends(managers
         "service_feedback": kinds["service"],
         "departments_detail": [{"id": d.id, "name": d.name, "courses": dept_counts[d.id],
                                 "users": sum(u.department_id == d.id for u in users)} for d in depts],
-        "sample_data_present": source_counts.get("seed", 0) > 0,
+        "sample_data_present": any(row["source"] == "seed" for row in rows),
     }
 
 
 @router.get("/comparison")
 def comparison(by: str = Query("course", pattern="^(course|department|service)$"),
-               f: Filters = Depends(scope_params), user: User = Depends(managers), db: Session = Depends(get_db)):
+               f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
     """Paired group ratings for selected period and preceding period, including services."""
     all_rows = feedback_rows(db, user, Filters(**{**f.__dict__, "semester": None}))
     periods = sort_semesters(r["semester"] for r in all_rows)
-    current = f.semester if f.semester in periods else (periods[-1] if periods else None)
-    previous = periods[periods.index(current)-1] if current and periods.index(current)>0 else None
+    current = f.semester or (periods[-1] if periods else None)
+    earlier_periods = [period for period in periods if current and semester_key(period) < semester_key(current)]
+    previous = earlier_periods[-1] if earlier_periods else None
     fcur = Filters(**{**f.__dict__, "semester": current})
     fprev = Filters(**{**f.__dict__, "semester": previous}) if previous else None
     present = _groups(db, user, fcur, by) if current else []
@@ -148,7 +136,7 @@ def _report_rows(db: Session, user: User, f: Filters, section: str):
 @router.get("/report")
 def report(section: str = Query("overview", pattern="^(overview|trends|alerts|compare_course|compare_department|compare_service)$"),
            format: str = Query("pdf", pattern="^(pdf|xlsx)$"),
-           f: Filters = Depends(scope_params), user: User = Depends(managers), db: Session = Depends(get_db)):
+           f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
     columns, data = _report_rows(db, user, f, section)
     title = "SDU Feedback — " + section.replace("_", " ").title()
     label = scope_label(db, f)
