@@ -14,6 +14,7 @@ import re
 from collections import Counter, defaultdict
 
 from ..config import settings
+from ..metrics import feedback_metrics
 from .analyzer import split_sentences, tokenize
 from .lexicons import STOPWORDS, SUGGESTION_MARKERS
 
@@ -112,18 +113,18 @@ def _pct(x: float) -> str:
 
 
 def local_summary(rows: list[dict], scope_label: str = "the selected scope") -> dict:
-    n = len(rows)
+    metrics = feedback_metrics(rows)
+    n = metrics["total"]
     if not n:
         return {
-            "source": "local", "total": 0,
+            "source": "local", "total": 0, "analyzed": 0, "avg_rating": None,
+            "sentiment": {"positive": 0, "neutral": 0, "negative": 0},
             "overview": "There is no feedback for this selection yet.",
             "strengths": [], "problems": [], "suggestions": [], "aspects": [], "representative": {},
         }
 
-    sent = Counter(r["sentiment"] for r in rows)
-    pos, neg = sent["positive"] / n, sent["negative"] / n
-    ratings = [r["rating"] for r in rows if r.get("rating")]
-    avg_rating = round(sum(ratings) / len(ratings), 2) if ratings else None
+    pos, neg = metrics["positive_share"], metrics["negative_share"]
+    avg_rating = metrics["avg_rating"]
     aspects = aspect_stats(rows)
 
     min_n = max(3, round(n * 0.03))
@@ -151,10 +152,14 @@ def local_summary(rows: list[dict], scope_label: str = "the selected scope") -> 
     } for a in weak]
 
     mood = "mostly positive" if pos - neg > 0.25 else "mostly negative" if neg - pos > 0.15 else "mixed"
-    parts = [f"Based on {n} responses for {scope_label}, overall sentiment is {mood} "
-             f"({_pct(pos)} positive, {_pct(neg)} negative)."]
-    if avg_rating:
-        parts.append(f"The average rating is {avg_rating}/5.")
+    parts = [f"Based on {n} responses for {scope_label}."]
+    if metrics["analyzed"]:
+        parts.append(f"Across {metrics['analyzed']} analyzed responses, overall sentiment is {mood} "
+                     f"({_pct(pos)} positive, {_pct(neg)} negative).")
+    else:
+        parts.append("Sentiment analysis is unavailable for this selection.")
+    if avg_rating is not None:
+        parts.append(f"The average rating is {avg_rating:.2f}/5.")
     if strong:
         parts.append("Students most appreciate " + _join([s["topic"].lower() for s in strong]) + ".")
     if weak:
@@ -172,7 +177,8 @@ def local_summary(rows: list[dict], scope_label: str = "the selected scope") -> 
         "source": "local",
         "total": n,
         "avg_rating": avg_rating,
-        "sentiment": {"positive": sent["positive"], "neutral": sent["neutral"], "negative": sent["negative"]},
+        "analyzed": metrics["analyzed"],
+        "sentiment": {tone: metrics[tone] for tone in ("positive", "neutral", "negative")},
         "overview": " ".join(parts),
         "strengths": strengths,
         "problems": problems,
@@ -217,7 +223,7 @@ def llm_summary(rows: list[dict], base: dict, scope_label: str) -> dict:
         for label in ("negative", "positive", "neutral"):
             pool = [r["text"] for r in rows if r["sentiment"] == label]
             sample += [pool[i] for i in _tfidf_rank(pool, 80)]
-        stats = {k: base.get(k) for k in ("total", "avg_rating", "sentiment")}
+        stats = {k: base.get(k) for k in ("total", "analyzed", "avg_rating", "sentiment")}
         stats["aspects"] = base.get("aspects", [])[:10]
         user_msg = (
             f"Scope: {scope_label}\n"

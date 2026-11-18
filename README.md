@@ -211,6 +211,52 @@ summary to the keyword cloud, is recalculated for it.
 `course_id` / `service_id` filters as `/api/analytics/overview`, and are scoped
 by role on the server like every other analytics call.
 
+### Staff dashboard and filters (Sprint 6)
+
+Open **Feedback analytics → Overview** as a faculty member, manager or administrator.
+The dashboard shows response counts, satisfaction out of five, sentiment distribution
+and the most-mentioned topics. Satisfaction gives each rated response equal weight:
+it averages the stored answers per response and uses the stored overall rating for
+legacy responses without valid answers. Sentiment shares use responses with a stored
+analysis or correction. Topics count each response at most once per topic.
+
+Use **Apply filters** or **Reset** to change the semester, faculty, department,
+course/service or instructor. The options come from the staff member's database
+scope. Courses are linked to departments and instructors, and departments can
+belong to a faculty. Valid filters with zero matching responses show an empty
+state. Incompatible or inaccessible selections return HTTP 422.
+
+Start the local stack with `docker compose up --build` and open
+`http://localhost:8080`. Fresh demo installs include faculty links. On existing
+databases the backend creates the new schema at startup. To enable faculty
+filtering for existing departments, create the institution's faculty records in
+`faculties` and set `departments.faculty_id` to the corresponding IDs. Departments
+without this link remain available through the department filter.
+
+`GET /api/meta` returns scoped filter options. `GET /api/analytics/overview`
+returns the filtered counts, rating and sentiment coverage, sentiment shares and
+top topics. Both require a valid staff JWT.
+
+Open **Comparisons & Trends** as a manager or **Trends** as other staff.
+`GET /api/analytics/trends` applies the same filters as the overview. Select
+**All semesters** to compare history. A selected semester shows one period.
+Sentiment percentages use each semester's analyzed responses as the denominator.
+Topic frequency counts responses mentioning the topic. A semester with available
+analysis can have zero mentions. Missing feedback or analysis appears as a gap
+or an unavailable state. The charts use the persisted Sprint 3 analysis fields
+and need two semesters with sentiment data to show a change.
+
+The overview, summary and report exports use the same rating and sentiment
+calculations. The dashboard and Feedback explorer share semester, faculty,
+department, instructor, course/service and response type. Text search, rating,
+privacy and topic drill-downs filter the Explorer list and its cards locally.
+
+Run the backend suite with `cd backend && python -m unittest discover -s tests`.
+For the browser regression, use a disposable demo database with a visible course
+coded `EMPTY 100` that has no feedback. Sign in as manager and evaluate
+`frontend/tests/dashboard-regression.js` in the dashboard's browser console.
+It checks empty-course metrics, type switching and independent API failures.
+
 ### Interface
 
 One stylesheet, `frontend/public/pulse.css`, styles every screen in light and

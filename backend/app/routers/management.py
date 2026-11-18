@@ -8,28 +8,17 @@ from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Course, Department, Feedback, Service, User
+from ..metrics import feedback_metrics
+from ..models import Course, Department, Service, User
 from ..security import managers
-from ..services import Filters, feedback_rows, scope_label, sort_semesters
-from .analytics import _kpis
+from ..services import Filters, feedback_rows, scope_label, semester_key, sort_semesters
+from .analytics import filters_dep
 
 router = APIRouter(prefix="/api/management", tags=["Sprint 5 management"])
-
-
-def scope_params(
-    semester: str | None = None,
-    department_id: int | None = None,
-    course_id: int | None = None,
-    service_id: int | None = None,
-    instructor_id: int | None = None,
-):
-    return Filters(semester=semester, department_id=department_id,
-                   course_id=course_id, service_id=service_id,
-                   instructor_id=instructor_id)
 
 
 def _groups(db: Session, user: User, f: Filters, by: str):
@@ -49,13 +38,13 @@ def _groups(db: Session, user: User, f: Filters, by: str):
             buckets[r[key]].append(r)
     out = []
     for ident, items in buckets.items():
-        kpi = _kpis(items)
+        kpi = feedback_metrics(items)
         out.append({"id": ident, "name": names.get(ident, str(ident)), **kpi})
     return sorted(out, key=lambda x: (-x["total"], x["name"]))
 
 
 @router.get("/university")
-def university(f: Filters = Depends(scope_params), user: User = Depends(managers), db: Session = Depends(get_db)):
+def university(f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
     """Actual users/catalogue counts, never made-up demo totals. Manager scope is enforced."""
     courses_stmt = select(Course)
     if user.role == "manager" and user.department_id:
@@ -72,7 +61,6 @@ def university(f: Filters = Depends(scope_params), user: User = Depends(managers
     dept_counts = Counter(c.department_id for c in courses)
     rows = feedback_rows(db, user, f)
     kinds = Counter(r["kind"] for r in rows)
-    source_counts = dict(db.execute(select(Feedback.source, func.count(Feedback.id)).group_by(Feedback.source)).all())
     return {
         "users_total": len(users), "students": counts["student"],
         "professors": counts["faculty"], "managers": counts["manager"],
@@ -82,18 +70,19 @@ def university(f: Filters = Depends(scope_params), user: User = Depends(managers
         "service_feedback": kinds["service"],
         "departments_detail": [{"id": d.id, "name": d.name, "courses": dept_counts[d.id],
                                 "users": sum(u.department_id == d.id for u in users)} for d in depts],
-        "sample_data_present": source_counts.get("seed", 0) > 0,
+        "sample_data_present": any(row["source"] == "seed" for row in rows),
     }
 
 
 @router.get("/comparison")
 def comparison(by: str = Query("course", pattern="^(course|department|service)$"),
-               f: Filters = Depends(scope_params), user: User = Depends(managers), db: Session = Depends(get_db)):
+               f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
     """Paired group ratings for selected period and preceding period, including services."""
     all_rows = feedback_rows(db, user, Filters(**{**f.__dict__, "semester": None}))
     periods = sort_semesters(r["semester"] for r in all_rows)
-    current = f.semester if f.semester in periods else (periods[-1] if periods else None)
-    previous = periods[periods.index(current)-1] if current and periods.index(current)>0 else None
+    current = f.semester or (periods[-1] if periods else None)
+    earlier_periods = [period for period in periods if current and semester_key(period) < semester_key(current)]
+    previous = earlier_periods[-1] if earlier_periods else None
     fcur = Filters(**{**f.__dict__, "semester": current})
     fprev = Filters(**{**f.__dict__, "semester": previous}) if previous else None
     present = _groups(db, user, fcur, by) if current else []
@@ -110,21 +99,21 @@ def comparison(by: str = Query("course", pattern="^(course|department|service)$"
 
 
 def _report_rows(db: Session, user: User, f: Filters, section: str):
-    kpi = _kpis(feedback_rows(db, user, f))
+    kpi = feedback_metrics(feedback_rows(db, user, f))
     if section == "overview":
         return ["Indicator", "Value"], [
             ["Feedback responses", kpi["total"]], ["Average satisfaction / 5", kpi["avg_rating"] or "—"],
             ["Positive responses", kpi["positive"]], ["Neutral responses", kpi["neutral"]],
-            ["Negative responses", kpi["negative"]], ["Net sentiment", kpi["satisfaction_index"]],
+            ["Negative responses", kpi["negative"]], ["Net sentiment", kpi["satisfaction_index"] if kpi["analyzed"] else None],
         ]
     if section == "trends":
         by_sem = defaultdict(list)
         for r in feedback_rows(db, user, Filters(**{**f.__dict__, "semester": None})):
             by_sem[r["semester"]].append(r)
         return ["Semester", "Responses", "Avg rating", "Positive %", "Neutral %", "Negative %"], [
-            [s, (k := _kpis(by_sem[s]))["total"], k["avg_rating"] or "—",
-             round(k["positive"] / k["total"] * 100, 1), round(k["neutral"] / k["total"] * 100, 1),
-             round(k["negative"] / k["total"] * 100, 1)] for s in sort_semesters(by_sem)
+            [s, (k := feedback_metrics(by_sem[s]))["total"], k["avg_rating"] or "—",
+             *[round(k[f"{tone}_share"] * 100, 1) if k["analyzed"] else None
+               for tone in ("positive", "neutral", "negative")]] for s in sort_semesters(by_sem)
         ]
     if section.startswith("compare_"):
         by = section.removeprefix("compare_")
@@ -132,7 +121,8 @@ def _report_rows(db: Session, user: User, f: Filters, section: str):
             by = "course"
         return ["Name", "Responses", "Avg rating", "Positive %", "Negative %"], [
             [r["name"], r["total"], r["avg_rating"] or "—",
-             round(r["positive_share"]*100, 1), round(r["negative_share"]*100, 1)]
+             round(r["positive_share"] * 100, 1) if r["analyzed"] else None,
+             round(r["negative_share"] * 100, 1) if r["analyzed"] else None]
             for r in _groups(db, user, f, by)
         ]
     # Alerts are saved historical evaluations, not alerts manufactured on the client.
@@ -148,7 +138,7 @@ def _report_rows(db: Session, user: User, f: Filters, section: str):
 @router.get("/report")
 def report(section: str = Query("overview", pattern="^(overview|trends|alerts|compare_course|compare_department|compare_service)$"),
            format: str = Query("pdf", pattern="^(pdf|xlsx)$"),
-           f: Filters = Depends(scope_params), user: User = Depends(managers), db: Session = Depends(get_db)):
+           f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
     columns, data = _report_rows(db, user, f, section)
     title = "SDU Feedback — " + section.replace("_", " ").title()
     label = scope_label(db, f)
@@ -183,7 +173,7 @@ def report(section: str = Query("overview", pattern="^(overview|trends|alerts|co
         header_style = ParagraphStyle("ReportHeader", parent=styles["BodyText"], textColor=colors.white, fontName="Helvetica-Bold")
         doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), title=title, leftMargin=28, rightMargin=28)
         story = [Paragraph(escape(title), styles["Title"]), Paragraph("Filters: " + escape(label), styles["Normal"]), Spacer(1, 14)]
-        rows = [columns] + [list(map(lambda x: str(x if x is not None else "—"), row)) for row in data]
+        rows = [columns] + [[f"{x:.2f}" if isinstance(x, float) else str(x if x is not None else "—") for x in row] for row in data]
         if len(rows) == 1: rows.append(["No data available"] + [""] * (len(columns)-1))
         cells = [[Paragraph(escape(str(value))[:120], header_style if i == 0 else styles["BodyText"]) for value in row] for i, row in enumerate(rows)]
         widths = [ (landscape(A4)[0]-56) / len(columns)] * len(columns)

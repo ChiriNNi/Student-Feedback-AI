@@ -1,51 +1,76 @@
 from collections import Counter, defaultdict
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Alert, Course, Department, Feedback, Service, TopicCategory, User
+from ..metrics import feedback_metrics
+from ..models import Alert, Course, Department, Faculty, Feedback, Service, TopicCategory, User
 from ..nlp.summarizer import aspect_stats, llm_available, llm_summary, local_summary
-from ..security import get_current_user, staff_only
-from ..services import Filters, feedback_rows, scope_label, scope_query, sort_semesters
+from ..security import staff_only
+from ..services import (
+    Filters, feedback_rows, scope_label, scope_query, scoped_courses, scoped_departments, sort_semesters,
+)
 
 router = APIRouter(prefix="/api", tags=["analytics"])
 
 
+FilterID = Annotated[int | None, Query(gt=0)]
+
+
 def filters_dep(
+    user: User = Depends(staff_only),
+    db: Session = Depends(get_db),
     semester: str | None = None,
-    department_id: int | None = None,
-    course_id: int | None = None,
-    service_id: int | None = None,
-    instructor_id: int | None = None,
-    kind: str | None = None,
+    faculty_id: FilterID = None,
+    department_id: FilterID = None,
+    course_id: FilterID = None,
+    service_id: FilterID = None,
+    instructor_id: FilterID = None,
+    kind: Annotated[str | None, Query(pattern="^(course|service|survey)$")] = None,
     sentiment: str | None = None,
     topic: str | None = None,
     language: str | None = None,
     q: str | None = None,
-    survey_id: int | None = None,
+    survey_id: FilterID = None,
 ) -> Filters:
-    return Filters(semester or None, department_id or None, course_id or None, service_id or None,
-                   instructor_id or None, kind or None, sentiment or None, topic or None, language or None, q or None,
-                   survey_id or None)
+    departments = scoped_departments(user)
+    if faculty_id:
+        departments = departments.where(Department.faculty_id == faculty_id)
+    if department_id:
+        departments = departments.where(Department.id == department_id)
+
+    courses = scoped_courses(user).where(Course.department_id.in_(departments.with_only_columns(Department.id)))
+    if course_id:
+        courses = courses.where(Course.id == course_id)
+    if instructor_id:
+        courses = courses.where(Course.instructor_id == instructor_id)
+
+    invalid = (
+        (semester and semester not in _all_semesters(db, user))
+        or ((faculty_id or department_id) and db.scalar(departments.limit(1)) is None)
+        or ((course_id or instructor_id) and db.scalar(courses.limit(1)) is None)
+        or (service_id and (
+            user.role == "faculty" or faculty_id or department_id or course_id or instructor_id
+            or db.get(Service, service_id) is None
+        ))
+    )
+    if invalid:
+        raise HTTPException(422, "The selected dashboard filters are incompatible or unavailable in your scope.")
+    return Filters(
+        semester=semester, faculty_id=faculty_id, department_id=department_id, course_id=course_id,
+        service_id=service_id, instructor_id=instructor_id, kind=kind, sentiment=sentiment,
+        topic=topic, language=language, q=q, survey_id=survey_id,
+    )
 
 
-def _kpis(rows: list[dict]) -> dict:
-    """Story 3.1 totals: how many responses are positive, neutral and negative, and their shares."""
-    n = len(rows)
-    c = Counter(r["sentiment"] for r in rows)
-    ratings = [r["rating"] for r in rows if r.get("rating")]
-    pos = c["positive"] / n if n else 0
-    neg = c["negative"] / n if n else 0
-    return {
-        "total": n,
-        "positive": c["positive"], "neutral": c["neutral"], "negative": c["negative"],
-        "positive_share": round(pos, 4), "negative_share": round(neg, 4),
-        # "Net sentiment" on the dashboard: positive share minus negative share, in percentage points.
-        "satisfaction_index": round((pos - neg) * 100, 1),
-        "avg_rating": round(sum(ratings) / len(ratings), 2) if ratings else None,
-    }
+def _topic_mentions(rows: list[dict]) -> Counter:
+    mentions = Counter()
+    for row in rows:
+        mentions.update(set(row["topics"] or []) | set(row["aspects"] or {}))
+    return mentions
 
 
 def _topic_colors(db: Session) -> dict:
@@ -60,26 +85,19 @@ def _all_semesters(db: Session, user: User) -> list[str]:
 # ------------------------------------------------------------------ meta
 
 @router.get("/meta")
-def meta(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    courses_q = select(Course).order_by(Course.code)
-    if user.role == "faculty":
-        courses_q = courses_q.where(Course.instructor_id == user.id)
-    elif user.role == "manager" and user.department_id:
-        courses_q = courses_q.where(Course.department_id == user.department_id)
-    courses = db.scalars(courses_q).all()
-    depts = db.scalars(select(Department).order_by(Department.name)).all()
-    if user.role == "manager" and user.department_id:
-        depts = [d for d in depts if d.id == user.department_id]
-    if user.role == "faculty":
-        own = {c.department_id for c in courses}
-        depts = [d for d in depts if d.id in own]
+def meta(user: User = Depends(staff_only), db: Session = Depends(get_db)):
+    courses = db.scalars(scoped_courses(user).order_by(Course.code)).all()
+    depts = db.scalars(scoped_departments(user).order_by(Department.name)).all()
+    faculty_ids = {d.faculty_id for d in depts if d.faculty_id is not None}
+    faculties = db.scalars(select(Faculty).where(Faculty.id.in_(faculty_ids)).order_by(Faculty.name))
     services = [] if user.role == "faculty" else db.scalars(select(Service).order_by(Service.name)).all()
     instructors = sorted({c.instructor for c in courses if c.instructor}, key=lambda u: u.name)
-    sems = _all_semesters(db, user) if user.role != "student" else []
+    sems = _all_semesters(db, user)
     return {
         "semesters": sems,
         "current_semester": sems[-1] if sems else None,
-        "departments": [{"id": d.id, "code": d.code, "name": d.name} for d in depts],
+        "faculties": [{"id": f.id, "code": f.code, "name": f.name} for f in faculties],
+        "departments": [{"id": d.id, "code": d.code, "name": d.name, "faculty_id": d.faculty_id} for d in depts],
         "courses": [{"id": c.id, "code": c.code, "title": c.title, "department_id": c.department_id,
                      "instructor": c.instructor.name if c.instructor else None,
                      "instructor_id": c.instructor_id} for c in courses],
@@ -103,7 +121,7 @@ def overview(f: Filters = Depends(filters_dep), user: User = Depends(staff_only)
     # managers their department plus university services, admins everything.
     rows = feedback_rows(db, user, f)
     # Story 3.1: sentiment counts and shares, net sentiment and the average rating.
-    kpi = _kpis(rows)
+    kpi = feedback_metrics(rows)
 
     # Period-over-period deltas: selected (or latest) semester vs the one before it
     delta = None
@@ -111,12 +129,14 @@ def overview(f: Filters = Depends(filters_dep), user: User = Depends(staff_only)
         prev = sems[sems.index(target) - 1]
         cur_rows = rows if f.semester else [r for r in rows if r["semester"] == target]
         pf = Filters(**{**f.__dict__, "semester": prev})
-        a, b = _kpis(cur_rows), _kpis(feedback_rows(db, user, pf))
+        a, b = feedback_metrics(cur_rows), feedback_metrics(feedback_rows(db, user, pf))
         delta = {
             "semester": target, "previous": prev,
             "total": a["total"] - b["total"],
-            "satisfaction_index": round(a["satisfaction_index"] - b["satisfaction_index"], 1),
-            "negative_share": round(a["negative_share"] - b["negative_share"], 4),
+            "satisfaction_index": round(a["satisfaction_index"] - b["satisfaction_index"], 1)
+            if a["analyzed"] and b["analyzed"] else None,
+            "negative_share": round(a["negative_share"] - b["negative_share"], 4)
+            if a["analyzed"] and b["analyzed"] else None,
             "avg_rating": round((a["avg_rating"] or 0) - (b["avg_rating"] or 0), 2)
             if a["avg_rating"] and b["avg_rating"] else None,
         }
@@ -140,6 +160,8 @@ def overview(f: Filters = Depends(filters_dep), user: User = Depends(staff_only)
         **kpi,
         "delta": delta,
         "topics": topics,
+        "top_topics": [{"topic": topic, "total": count} for topic, count in
+                       sorted(_topic_mentions(rows).items(), key=lambda item: (-item[1], item[0]))[:5]],
         "problems": problems,
         "languages": dict(Counter(r["language"] for r in rows)),
         "kinds": dict(Counter(r["kind"] for r in rows)),
@@ -161,31 +183,31 @@ def _visible_alerts(alerts, user: User, db: Session):
 
 @router.get("/analytics/trends")
 def trends(f: Filters = Depends(filters_dep), user: User = Depends(staff_only), db: Session = Depends(get_db)):
-    f.semester = None
     rows = feedback_rows(db, user, f)
-    by_sem: dict[str, list] = defaultdict(list)
-    for r in rows:
-        by_sem[r["semester"]].append(r)
-    sems = sort_semesters(by_sem.keys())
-    series = [{"semester": s, **_kpis(by_sem[s])} for s in sems]
+    by_sem = defaultdict(list)
+    for row in rows:
+        by_sem[row["semester"]].append(row)
+    periods = []
+    if rows:
+        periods = [f.semester] if f.semester else _all_semesters(db, user)
 
-    topic_totals = Counter()
-    for r in rows:
-        topic_totals.update((r["aspects"] or {}).keys())
-    top_topics = [t for t, _ in topic_totals.most_common(8)]
-    topic_series = []
-    for s in sems:
-        point = {"semester": s}
-        stats = {a["topic"]: a for a in aspect_stats(by_sem[s])}
-        for t in top_topics:
-            a = stats.get(t)
-            point[t] = round(a["negative_share"] * 100, 1) if a else None
-            point[f"{t}__mentions"] = a["total"] if a else 0
-        topic_series.append(point)
+    series = [{"semester": period, **feedback_metrics(by_sem[period])} for period in periods]
+    totals = _topic_mentions(rows)
+    topics = sorted(totals, key=lambda topic: (-totals[topic], topic))
     colors = _topic_colors(db)
+    topic_series = []
+    for point in series:
+        period = point["semester"]
+        mentions = _topic_mentions(by_sem[period])
+        available = bool(point["analyzed"] or mentions)
+        topic_series.append({
+            "semester": period,
+            "total": point["total"],
+            "mentions": {topic: mentions[topic] for topic in topics} if available else None,
+        })
     return {
         "series": series,
-        "topics": [{"topic": t, "color": colors.get(t, "#8b5cff")} for t in top_topics],
+        "topics": [{"topic": topic, "color": colors.get(topic, "#8b5cff")} for topic in topics],
         "topic_series": topic_series,
     }
 
@@ -211,7 +233,7 @@ def compare(by: str = Query("department", pattern="^(department|course|service)$
 
     out = []
     for gid, items in groups.items():
-        k = _kpis(items)
+        k = feedback_metrics(items)
         asp = aspect_stats(items)
         worst = max((a for a in asp if a["total"] >= 3), key=lambda a: a["negative_share"], default=None)
         best = max((a for a in asp if a["total"] >= 3), key=lambda a: a["positive_share"], default=None)

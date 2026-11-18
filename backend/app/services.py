@@ -9,12 +9,12 @@ from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .models import Alert, Course, Department, Feedback, Service, TopicCategory, User
+from .models import Alert, Course, Department, Faculty, Feedback, Service, TopicCategory, User
 from .nlp.analyzer import analyze, build_matchers
 
 # ---------------------------------------------------------------- semesters
 
-_TERM_ORDER = {"spring": 0, "summer": 1, "fall": 2, "autumn": 2}
+_TERM_ORDER = {"winter": -1, "spring": 0, "summer": 1, "fall": 2, "autumn": 2}
 
 
 def semester_key(sem: str) -> tuple[int, int]:
@@ -25,7 +25,7 @@ def semester_key(sem: str) -> tuple[int, int]:
 
 
 def sort_semesters(items) -> list[str]:
-    return sorted(set(items), key=semester_key)
+    return sorted(set(items), key=lambda semester: (semester_key(semester), semester))
 
 
 # ---------------------------------------------------------------- analysis
@@ -85,6 +85,25 @@ class Filters:
     language: str | None = None
     q: str | None = None
     survey_id: int | None = None
+    faculty_id: int | None = None
+
+
+def scoped_courses(user: User) -> Select:
+    stmt = select(Course)
+    if user.role == "faculty":
+        return stmt.where(Course.instructor_id == user.id)
+    if user.role == "manager" and user.department_id:
+        return stmt.where(Course.department_id == user.department_id)
+    return stmt
+
+
+def scoped_departments(user: User) -> Select:
+    stmt = select(Department)
+    if user.role == "faculty":
+        return stmt.where(Department.id.in_(scoped_courses(user).with_only_columns(Course.department_id)))
+    if user.role == "manager" and user.department_id:
+        return stmt.where(Department.id == user.department_id)
+    return stmt
 
 
 def scope_query(stmt: Select, user: User) -> Select:
@@ -94,10 +113,14 @@ def scope_query(stmt: Select, user: User) -> Select:
     if user.role == "manager":
         if user.department_id:
             # department managers see their department's courses plus university services
-            return stmt.where(or_(Feedback.department_id == user.department_id, Feedback.kind == "service"))
+            return stmt.where(or_(
+                Feedback.course_id.in_(scoped_courses(user).with_only_columns(Course.id)),
+                Feedback.course_id.is_(None) & (Feedback.department_id == user.department_id),
+                Feedback.kind == "service",
+            ))
         return stmt
     if user.role == "faculty":
-        own = select(Course.id).where(Course.instructor_id == user.id)
+        own = scoped_courses(user).with_only_columns(Course.id)
         return stmt.where(Feedback.course_id.in_(own))
     return stmt.where(Feedback.id < 0)  # students never read feedback
 
@@ -105,8 +128,16 @@ def scope_query(stmt: Select, user: User) -> Select:
 def apply_filters(stmt: Select, f: Filters) -> Select:
     if f.semester:
         stmt = stmt.where(Feedback.semester == f.semester)
-    if f.department_id:
-        stmt = stmt.where(Feedback.department_id == f.department_id)
+    if f.department_id or f.faculty_id:
+        departments = select(Department.id)
+        if f.department_id:
+            departments = departments.where(Department.id == f.department_id)
+        if f.faculty_id:
+            departments = departments.where(Department.faculty_id == f.faculty_id)
+        stmt = stmt.where(or_(
+            Feedback.course_id.in_(select(Course.id).where(Course.department_id.in_(departments))),
+            Feedback.course_id.is_(None) & Feedback.department_id.in_(departments),
+        ))
     if f.course_id:
         stmt = stmt.where(Feedback.course_id == f.course_id)
     if f.service_id:
@@ -130,7 +161,8 @@ def feedback_rows(db: Session, user: User, f: Filters, limit: int | None = None)
     """Light-weight dict rows for analytics (topic filter applied in Python because topics is JSON)."""
     stmt = select(
         Feedback.id, Feedback.text, Feedback.sentiment, Feedback.sentiment_score, Feedback.topics,
-        Feedback.aspects, Feedback.keywords, Feedback.rating, Feedback.semester, Feedback.kind,
+        Feedback.aspects, Feedback.keywords, Feedback.rating, Feedback.ratings, Feedback.confidence,
+        Feedback.is_corrected, Feedback.source, Feedback.semester, Feedback.kind,
         Feedback.course_id, Feedback.service_id, Feedback.department_id, Feedback.language,
     )
     stmt = apply_filters(scope_query(stmt, user), f)
@@ -148,6 +180,8 @@ def scope_label(db: Session, f: Filters) -> str:
         bits.append(f"{c.code} {c.title}")
     if f.service_id and (s := db.get(Service, f.service_id)):
         bits.append(s.name)
+    if f.faculty_id and (faculty := db.get(Faculty, f.faculty_id)):
+        bits.append(faculty.name)
     if f.department_id and (d := db.get(Department, f.department_id)):
         bits.append(d.name)
     if f.instructor_id and (u := db.get(User, f.instructor_id)):
