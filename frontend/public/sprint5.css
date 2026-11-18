@@ -105,8 +105,8 @@
 #responsesApp .mgr-topic-bar-track { height:13px; overflow:hidden; border-radius:99px; background:var(--surface-2); }
 #responsesApp .mgr-topic-bar-track i { display:block; height:100%; border-radius:99px; background:#7b98c6; }
 #responsesApp .mgr-alert-list { display:grid; gap:12px; }
-#responsesApp .mgr-alert-card { padding:19px; border:1px solid #e4a8a8; border-radius:14px; background:#fff6f6; }
-#responsesApp .mgr-alert-title { color:#aa323a; font-size:16px; font-weight:650; }
+#responsesApp .mgr-alert-card { padding:19px; border:1px solid var(--neg); border-radius:14px; background:var(--neg-soft); color:var(--ink); }
+#responsesApp .mgr-alert-title { color:var(--neg); font-size:16px; font-weight:650; }
 #responsesApp .mgr-alert-shift { margin:8px 0; font-size:28px; font-weight:700; }
 #responsesApp .mgr-alert-card p { color:var(--ink-2); margin-bottom:11px; }
 #responsesApp .mgr-alert-card ul { display:grid; gap:5px; font-size:13px; color:var(--ink-2); }
