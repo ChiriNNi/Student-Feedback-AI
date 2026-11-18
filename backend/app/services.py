@@ -14,7 +14,7 @@ from .nlp.analyzer import analyze, build_matchers
 
 # ---------------------------------------------------------------- semesters
 
-_TERM_ORDER = {"spring": 0, "summer": 1, "fall": 2, "autumn": 2}
+_TERM_ORDER = {"winter": -1, "spring": 0, "summer": 1, "fall": 2, "autumn": 2}
 
 
 def semester_key(sem: str) -> tuple[int, int]:

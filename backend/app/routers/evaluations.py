@@ -9,7 +9,7 @@ two tables can't be joined back together by id order or by timestamp.
 """
 from datetime import date, datetime, time as dtime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -19,7 +19,8 @@ from ..db import get_db
 from ..models import Course, Feedback, Service, SubmissionReceipt, Survey, SurveyQuestion, User
 from ..nlp.pii import mask_pii_report, names_pattern
 from ..security import staff_only, student_only
-from ..services import analyze_into, get_matchers, scope_query, semester_key
+from ..services import Filters, analyze_into, apply_filters, get_matchers, scope_query, semester_key
+from .analytics import filters_dep
 
 router = APIRouter(prefix="/api/evaluations", tags=["evaluations"])
 
@@ -145,18 +146,11 @@ def submit(survey_id: int, body: SubmitIn, user: User = Depends(student_only), d
 
 @router.get("/responses")
 def responses(
-    kind: str | None = Query(None, pattern="^(course|service)$"),
-    course_id: int | None = None, service_id: int | None = None,
+    f: Filters = Depends(filters_dep),
     user: User = Depends(staff_only), db: Session = Depends(get_db),
 ):
-    """Submitted responses, scoped by role: faculty see their own courses, managers their department."""
-    stmt = scope_query(select(Feedback), user).where(Feedback.kind.in_(FORM_KINDS))
-    if kind:
-        stmt = stmt.where(Feedback.kind == kind)
-    if course_id:
-        stmt = stmt.where(Feedback.course_id == course_id)
-    if service_id:
-        stmt = stmt.where(Feedback.service_id == service_id)
+    """Submitted forms in the same staff and academic scope as the dashboard."""
+    stmt = apply_filters(scope_query(select(Feedback), user), f).where(Feedback.kind.in_(FORM_KINDS))
     items = db.scalars(stmt.order_by(Feedback.created_at.desc(), Feedback.id.desc())).all()
 
     questions = db.scalars(select(SurveyQuestion).order_by(SurveyQuestion.position, SurveyQuestion.id)).all()

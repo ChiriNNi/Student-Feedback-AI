@@ -15,11 +15,12 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..metrics import feedback_metrics
 from ..models import User
 from ..nlp.summarizer import llm_available, llm_summary, local_summary
 from ..security import staff_only
 from ..services import Filters, feedback_rows, scope_label
-from .analytics import _kpis, filters_dep
+from .analytics import filters_dep
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -52,7 +53,7 @@ def summary_pdf(ai: bool = False, f: Filters = Depends(filters_dep),
     s = local_summary(rows, label)
     if ai and llm_available():
         s = llm_summary(rows, s, label)
-    k = _kpis(rows)
+    k = feedback_metrics(rows)
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
@@ -65,9 +66,10 @@ def summary_pdf(ai: bool = False, f: Filters = Depends(filters_dep),
     ]
 
     kpi = [["Responses", "Avg rating", "Positive", "Negative", "Satisfaction index"],
-           [str(k["total"]), f"{k['avg_rating']}/5" if k["avg_rating"] else "—",
-            f"{round(k['positive_share'] * 100)}%", f"{round(k['negative_share'] * 100)}%",
-            f"{k['satisfaction_index']:+}"]]
+           [str(k["total"]), f"{k['avg_rating']:.2f}/5" if k["avg_rating"] is not None else "—",
+            f"{k['positive_share']:.0%}" if k["analyzed"] else "—",
+            f"{k['negative_share']:.0%}" if k["analyzed"] else "—",
+            f"{k['satisfaction_index']:+.1f}" if k["analyzed"] else "—"]]
     t = Table(kpi, colWidths=[34 * mm] * 5)
     t.setStyle(TableStyle([
         ("FONT", (0, 0), (-1, 0), _FONT, 8.5), ("TEXTCOLOR", (0, 0), (-1, 0), MUTED),
@@ -129,7 +131,7 @@ def summary_excel(f: Filters = Depends(filters_dep),
     from sqlalchemy import select
 
     rows = feedback_rows(db, user, f)
-    kpi = _kpis(rows)
+    kpi = feedback_metrics(rows)
     summary = local_summary(rows, scope_label(db, f))
     wb = Workbook()
     ws = wb.active
@@ -144,9 +146,9 @@ def summary_excel(f: Filters = Depends(filters_dep),
         ("Positive", kpi["positive"]),
         ("Neutral", kpi["neutral"]),
         ("Negative", kpi["negative"]),
-        ("Positive share", kpi["positive_share"]),
-        ("Negative share", kpi["negative_share"]),
-        ("Net sentiment (pp)", kpi["satisfaction_index"]),
+        ("Positive share", kpi["positive_share"] if kpi["analyzed"] else None),
+        ("Negative share", kpi["negative_share"] if kpi["analyzed"] else None),
+        ("Net sentiment (pp)", kpi["satisfaction_index"] if kpi["analyzed"] else None),
     ]:
         ws.append([label, value])
     ws.append([])
@@ -167,10 +169,11 @@ def summary_excel(f: Filters = Depends(filters_dep),
     for row in all_trend_rows:
         per_semester[row["semester"]].append(row)
     for semester in sort_semesters(per_semester):
-        group = _kpis(per_semester[semester])
+        group = feedback_metrics(per_semester[semester])
         total = group["total"]
-        trends_ws.append([semester, total, group["avg_rating"], group["positive_share"],
-                          group["neutral_share"], group["negative_share"]])
+        trends_ws.append([semester, total, group["avg_rating"],
+                          *[group[f"{tone}_share"] if group["analyzed"] else None
+                            for tone in ("positive", "neutral", "negative")]])
 
     names = {
         "By course": ("course_id", {x.id: f"{x.code} — {x.title}" for x in db.scalars(select(Course))}),
@@ -185,9 +188,10 @@ def summary_excel(f: Filters = Depends(filters_dep),
             if row.get(key):
                 groups[row[key]].append(row)
         for ident, group_rows in sorted(groups.items(), key=lambda item: labels.get(item[0], "")):
-            k = _kpis(group_rows)
+            k = feedback_metrics(group_rows)
             sheet.append([labels.get(ident, f"#{ident}"), k["total"], k["avg_rating"],
-                          k["positive_share"], k["negative_share"]])
+                          k["positive_share"] if k["analyzed"] else None,
+                          k["negative_share"] if k["analyzed"] else None])
 
     for sheet in wb:
         sheet.freeze_panes = "A2"

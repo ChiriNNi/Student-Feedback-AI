@@ -2158,8 +2158,9 @@ const RATING_FILTER = { high: "pos", mid: "mid", low: "neg" };
 const RATING_LABEL = { high: "Rating 4–5", mid: "Rating 3–3.9", low: "Rating below 3" };
 // Mean of the response's 1–5 answers, the number its card shows.
 const avgRating = r => {
-  const v = Object.values(r.ratings || {});
-  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : (r.rating ?? null);
+  const v = Object.values(r.ratings || {}).filter(value => Number.isInteger(value) && value >= 1 && value <= 5);
+  if (v.length) return v.reduce((a, b) => a + b, 0) / v.length;
+  return r.rating >= 1 && r.rating <= 5 ? r.rating : null;
 };
 const SENTIMENTS = ["positive", "neutral", "negative"];
 const SENTIMENT_LABEL = { positive: "Positive", neutral: "Neutral", negative: "Negative" };
@@ -2169,7 +2170,6 @@ const pct = (n, total) => (total ? Math.round(n / total * 100) : 0);
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const ratingBand = v => (v >= 4 ? "pos" : v >= 3 ? "mid" : "neg");
 const toneOf = value => (SENTIMENT_LABEL[value] ? value : "neutral");
-const targetKey = r => (r.course_id ? `course:${r.course_id}` : `service:${r.service_id}`);
 const RSP_ICONS = {
   course: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
   service: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>',
@@ -2241,6 +2241,7 @@ const queryString = params => {
 };
 const currentScopeParams = () => {
   const params = {};
+  if (rspState.kind) params.kind = rspState.kind;
   if (rspState.semester) params.semester = rspState.semester;
   if (rspState.faculty) params.faculty_id = rspState.faculty;
   if (rspState.department_id) params.department_id = rspState.department_id;
@@ -2326,13 +2327,18 @@ function renderCurrentFilters() {
   const fac = (meta.faculties || []).find(x => String(x.id) === String(rspState.faculty));
   const ins = (meta.instructors || []).find(x => String(x.id) === String(rspState.instructor_id));
   const target = meta.courses && dashboardTargets(meta, rspState).find(v => v.value === rspState.target)?.label;
-  const label = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target || "All courses & services"} · ${ins?.name || "All instructors"}`;
+  const label = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target || "All courses & services"} · ${ins?.name || "All instructors"}${rspState.kind ? ` · ${KIND_LABEL[rspState.kind]}` : ""}`;
   $("mgrCurrentFilters").textContent = $("mgrTrendScope").textContent = label;
 }
 
-function renderUniversityStats() {
+function renderUniversityStats(loading = false) {
   const stats = rspState.university;
-  if (!stats) { $("mgrUniversityStats").innerHTML = emptyAnalysis("University statistics unavailable."); return; }
+  if (!stats) {
+    $("mgrUniversityStats").innerHTML = loading ? FA_SKELETON : emptyAnalysis("University statistics unavailable.");
+    $("mgrDepartmentDetails").replaceChildren();
+    $("mgrDataSource").textContent = "";
+    return;
+  }
   const values = [
     ["Active users", stats.users_total], ["Students", stats.students],
     ["Professors", stats.professors], ["Managers", stats.managers],
@@ -2345,7 +2351,7 @@ function renderUniversityStats() {
   $("mgrDataSource").textContent = stats.sample_data_present ? "Demo seed feedback exists in this database. Figures are live database counts, not official SDU totals." : "Counts reflect currently stored records, not external university census figures.";
 }
 
-function renderManagerOverview() {
+function renderManagerOverview(loading = false) {
   renderCurrentFilters();
   const a = rspState.analytics;
   const setText = (id, value) => { $(id).textContent = value; };
@@ -2355,8 +2361,8 @@ function renderManagerOverview() {
       setText(id + "Note", "");
     });
     ["mgrPositiveMeter", "mgrNegativeMeter"].forEach(id => { $(id).style.width = "0%"; });
-    $("mgrOverviewSentiment").innerHTML = emptyAnalysis("Dashboard overview is temporarily unavailable.");
-    $("mgrTopTopics").innerHTML = emptyAnalysis("Top topics are temporarily unavailable.");
+    $("mgrOverviewSentiment").innerHTML = loading ? FA_SKELETON : emptyAnalysis("Dashboard overview is temporarily unavailable.");
+    $("mgrTopTopics").innerHTML = loading ? FA_SKELETON : emptyAnalysis("Top topics are temporarily unavailable.");
     return;
   }
   setText("mgrAvgRating", a.avg_rating != null ? `${a.avg_rating.toFixed(2)}/5` : "—");
@@ -2458,7 +2464,11 @@ $("mgrTopicTrendSelect").addEventListener("change", renderTopicTrend);
 function renderAlertSummary() {
   const box = $("mgrAlertSummary");
   if (!box) return;
-  const first = (rspState.alerts || [])[0];
+  if (!rspState.alerts) {
+    box.innerHTML = emptyAnalysis("Alerts are temporarily unavailable.");
+    return;
+  }
+  const first = rspState.alerts[0];
   if (!first) {
     box.innerHTML = '<div class="mgr-alert-mini is-ok"><b>No urgent alert</b><p>No sharp negative trend was detected in the latest comparison.</p></div>';
     return;
@@ -2471,8 +2481,12 @@ function renderAlertSummary() {
 }
 
 function renderAlertAnalysis() {
-  const alerts = rspState.alerts || [];
+  const alerts = rspState.alerts;
   renderAlertSummary();
+  if (!alerts) {
+    $("alertAnalysis").innerHTML = emptyAnalysis("Alerts are temporarily unavailable.");
+    return;
+  }
   if (!alerts.length) {
     $("alertAnalysis").innerHTML = '<p class="fa-empty fa-empty-ok">' + RSP_ICONS.check + 'No sharp negative trend has been detected in the latest comparison.</p>';
     return;
@@ -2524,12 +2538,14 @@ async function fetchCompare() {
   const { ok, data, status } = await api(`/management/comparison${q}`, { token });
   if (!isCurrentAnalyticsRequest(token, request)) return;
   if (status === 401 || status === 403) return sessionRevoked();
-  rspState.compare[by] = ok ? data : { items: [] };
+  rspState.compare[by] = ok ? data : null;
   renderCompareAnalysis();
 }
 
 function renderCompareAnalysis() {
-  $("compareAnalysis").innerHTML = compareBlock(rspState.compare[rspState.compareBy]);
+  const result = rspState.compare[rspState.compareBy];
+  $("compareAnalysis").innerHTML = result === undefined ? FA_SKELETON
+    : result === null ? emptyAnalysis("Comparison is temporarily unavailable.") : compareBlock(result);
 }
 
 function downloadCsv(filename, rows) {
@@ -2550,10 +2566,10 @@ function buildReportSummaryText() {
     `Student Feedback Analytics`,
     $("mgrCurrentFilters").textContent,
     "",
-    `Overall satisfaction: ${a?.avg_rating != null ? a.avg_rating.toFixed(1) + "/5" : "—"}`,
+    `Overall satisfaction: ${a?.avg_rating != null ? a.avg_rating.toFixed(2) + "/5" : "—"}`,
     `Total feedback: ${a?.total ?? "—"}`,
-    `Positive sentiment: ${Math.round((a?.positive_share || 0) * 100)}%`,
-    `Negative sentiment: ${Math.round((a?.negative_share || 0) * 100)}%`,
+    `Positive sentiment: ${a?.analyzed ? Math.round(a.positive_share * 100) + "%" : "—"}`,
+    `Negative sentiment: ${a?.analyzed ? Math.round(a.negative_share * 100) + "%" : "—"}`,
     "",
   ];
   if (sum?.overview) lines.push(`Overview: ${sum.overview}`, "");
@@ -2569,25 +2585,43 @@ const isCurrentAnalyticsRequest = (token, request) => currentSession?.token === 
 
 function showDashboardFilterError(result) {
   const message = $("mgrFilterError");
-  message.hidden = result.status !== 422;
-  message.textContent = message.hidden ? "" : "These filters are unavailable together. Change your selection or reset the filters.";
+  const messageText = result.status === 422
+    ? "These filters are unavailable together. Change your selection or reset the filters."
+    : rspState.meta ? "" : "Filter options are temporarily unavailable. Use Reset to try again.";
+  message.hidden = !messageText;
+  message.textContent = messageText;
 }
 
 async function loadResponses() {
   const token = currentSession?.token;
   if (!token) return;
   const request = ++analyticsRequest;
+  Object.assign(rspState, { data: null, analytics: null, summary: null, keywords: null,
+    trends: null, alerts: null, university: null, compare: {} });
+  renderKpis(null);
+  renderManagerOverview(true);
+  renderUniversityStats(true);
+  $("mgrAlertSummary").innerHTML = FA_SKELETON;
   const refresh = $("rspRefresh");
   refresh.disabled = true;
   rspList.innerHTML = RSP_SKELETON;
   rspList.setAttribute("aria-busy", "true");
   FA_CARDS.forEach(id => { $(id).innerHTML = FA_SKELETON; });
-  ["mgrOverviewSentiment", "mgrTopTopics", "trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
+  ["trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
+  $("mgrTopicTrendChart").innerHTML = FA_SKELETON;
+  $("mgrTopicTrendSelect").disabled = true;
+  $("summaryAi").hidden = true;
+  $("summarySource").textContent = "";
+  $("problemCount").hidden = true;
+  $("rspScope").textContent = "";
+  $("rspContext").textContent = "";
   rspEmpty.hidden = true;
   rspCount.textContent = "Loading responses…";
   if (!rspState.meta) await loadResponsesMeta(token, request);
   if (!isCurrentAnalyticsRequest(token, request)) return;
   syncDashboardFilters();
+  syncExplorerTarget();
+  syncSelection();
   const scope = analyticsQuery();
   if (currentSession.user.role === "manager") {
     // Refresh persisted semester-to-semester alerts on each manager dashboard load.
@@ -2595,7 +2629,7 @@ async function loadResponses() {
   }
   if (!isCurrentAnalyticsRequest(token, request)) return;
   const [responsesResult, analyticsResult, summaryResult, keywordResult, trendsResult, alertsResult, universityResult] = await Promise.all([
-    api("/evaluations/responses", { token }),
+    api(`/evaluations/responses${scope}`, { token }),
     api(`/analytics/overview${scope}`, { token }),
     api(`/analytics/summary${scope}`, { token }),
     api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token }),
@@ -2608,50 +2642,48 @@ async function loadResponses() {
   rspState.summary = summaryResult.ok ? summaryResult.data : null;
   rspState.keywords = keywordResult.ok ? keywordResult.data : null;
   rspState.trends = trendsResult.ok ? trendsResult.data : null;
-  rspState.alerts = alertsResult.ok ? alertsResult.data : [];
+  rspState.alerts = alertsResult.ok ? alertsResult.data : null;
   rspState.university = universityResult.ok ? universityResult.data : null;
   refresh.disabled = false;
   rspList.removeAttribute("aria-busy");
-  if (!currentSession) return;
   const { ok, status, data, network } = responsesResult;
-  if (status === 401 || status === 403) return sessionRevoked();
+  if ([status, analyticsResult.status].some(code => code === 401 || code === 403)) return sessionRevoked();
   rspState.analytics = analyticsResult.ok ? analyticsResult.data : null;
-  if (!ok) {
-    rspState.data = null;
-    rspList.innerHTML = "";
-    rspCount.textContent = "";
-    $("rspContext").textContent = "";
-    rspEmpty.hidden = false;
-    rspEmpty.innerHTML = rspStateHtml(
-      network ? "Cannot reach the server" : "Could not load responses",
-      "Check that the backend is running, then try again.",
-      '<button type="button" class="btn-sm" data-rsp-retry>Try again</button>');
-    renderKpis();
-    renderAnalytics();
-    renderManagerOverview();
-    renderTrendAnalysis();
-    renderAlertAnalysis();
-    renderCompareAnalysis();
-    return;
-  }
-  rspState.data = data;
-  const coursesOnly = currentSession.user.role === "faculty";
-  $("rspKindSeg").hidden = coursesOnly;
-  rspKpis.querySelector('[data-kpi="service"]').hidden = coursesOnly;
-  rspKpis.classList.toggle("is-three", coursesOnly);
-  $("rspScope").textContent = `${data.scope}. Every response is anonymous.`;
-  const semesters = [...new Set(data.items.map(r => r.semester))];
-  const updated = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  $("rspContext").textContent = [semesters.join(", "), `updated at ${updated}`].filter(Boolean).join(", ");
-  syncExplorerTarget();
-  fillTopicFilter();
+  rspState.data = ok ? data : null;
+
   renderUniversityStats();
   renderManagerOverview();
   renderAnalytics();
   renderTrendAnalysis();
   renderAlertAnalysis();
-  renderResponses();
+  renderExplorerResult(ok, data, network);
   await fetchCompare();
+}
+
+function renderExplorerResult(ok, data, network) {
+  fillTopicFilter();
+  if (!ok) {
+    rspList.innerHTML = "";
+    rspCount.textContent = "";
+    $("rspScope").textContent = "";
+    $("rspContext").textContent = "";
+    rspEmpty.hidden = false;
+    rspEmpty.innerHTML = rspStateHtml(
+      network ? "Cannot reach the server" : "Could not load responses",
+      "Check the filters or try again.",
+      '<button type="button" class="btn-sm" data-rsp-retry>Try again</button>');
+    renderKpis(null);
+    renderChips();
+    return;
+  }
+  const coursesOnly = currentSession.user.role === "faculty";
+  rspKpis.querySelector('[data-kpi="service"]').hidden = coursesOnly;
+  rspKpis.classList.toggle("is-three", coursesOnly);
+  $("rspScope").textContent = `${data.scope}. Every response is anonymous.`;
+  const semesters = [...new Set(data.items.map(r => r.semester))];
+  const updated = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  $("rspContext").textContent = [...semesters, `updated at ${updated}`].join(", ");
+  renderResponses();
 }
 
 // Topics that actually occur in the loaded responses, most mentioned first.
@@ -2664,50 +2696,18 @@ function fillTopicFilter() {
   if (rspState.topic && !counts.has(rspState.topic)) rspState.topic = rspState.tone = "";
 }
 
-async function reloadAnalytics() {
-  if (!currentSession) return;
-  const request = ++analyticsRequest, scope = analyticsQuery(), token = currentSession.token;
-  rspState.compare = {};
-  FA_CARDS.forEach(id => { $(id).innerHTML = FA_SKELETON; });
-  ["mgrOverviewSentiment", "mgrTopTopics", "trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
-  const [overview, summary, keywords, trends, alerts, university] = await Promise.all([
-    api(`/analytics/overview${scope}`, { token }),
-    api(`/analytics/summary${scope}`, { token }),
-    api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token }),
-    api(`/analytics/trends${scope}`, { token }),
-    api("/alerts", { token }),
-    api(`/management/university${scope}`, { token }),
-  ]);
-  if (!isCurrentAnalyticsRequest(token, request)) return;
-  if (overview.status === 401 || overview.status === 403) return sessionRevoked();
-  showDashboardFilterError(overview);
-  $("rspRefresh").disabled = false;
-  rspList.removeAttribute("aria-busy");
-  syncDashboardFilters();
-  rspState.analytics = overview.ok ? overview.data : null;
-  rspState.summary = summary.ok ? summary.data : null;
-  rspState.keywords = keywords.ok ? keywords.data : null;
-  rspState.trends = trends.ok ? trends.data : null;
-  rspState.alerts = alerts.ok ? alerts.data : [];
-  rspState.university = university.ok ? university.data : null;
-  renderUniversityStats();
-  renderManagerOverview();
-  renderAnalytics();
-  renderTrendAnalysis();
-  renderAlertAnalysis();
-  renderResponses();
-  await fetchCompare();
-}
-
-/* ---------- overview metrics ---------- */
-function renderKpis() {
-  const items = rspState.data?.items, a = rspState.analytics;
-  const total = items ? items.length : 0;
-  const count = test => (items ? items.filter(test).length : null);
-  const share = n => (total ? `${pct(n, total)}% of responses` : "");
-  const set = (id, n, note) => { $(id).textContent = n ?? "—"; $(`${id}Note`).textContent = n == null ? "" : note; };
+function renderKpis(items) {
+  const total = items?.length ?? null;
+  const count = test => items?.filter(test).length ?? null;
+  const ratings = (items || []).map(avgRating).filter(rating => rating != null);
+  const average = ratings.length ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : null;
+  const share = n => total ? `${pct(n, total)}% of responses` : "";
+  const set = (id, n, note) => {
+    $(id).textContent = n ?? "—";
+    $(`${id}Note`).textContent = note;
+  };
   const course = count(r => r.kind === "course"), service = count(r => r.kind === "service"), pii = count(r => r.pii_masked);
-  set("rsTotal", items ? total : null, a && a.avg_rating != null ? `Average rating ${a.avg_rating.toFixed(1)} / 5` : "");
+  set("rsTotal", total, average == null ? "" : `Average rating ${average.toFixed(2)} / 5`);
   set("rsCourse", course, share(course));
   set("rsService", service, share(service));
   set("rsPii", pii, share(pii));
@@ -2806,17 +2806,12 @@ function problemsHtml(a) {
 
 function renderAnalytics() {
   const a = rspState.analytics;
-  if (!a) {
-    $("problemCount").hidden = true;
-    $("summaryAi").hidden = true;
-    $("summarySource").textContent = "";
-    FA_CARDS.forEach(id => { $(id).innerHTML = emptyAnalysis("Analytics are temporarily unavailable. Use Refresh to try again."); });
-    return;
-  }
-  $("sentimentAnalysis").innerHTML = sentimentHtml(a);
-  $("topicAnalysis").innerHTML = topicsHtml(a);
-  $("aspectAnalysis").innerHTML = aspectsHtml(a);
-  $("problemAnalysis").innerHTML = problemsHtml(a);
+  if (!a) $("problemCount").hidden = true;
+  const unavailable = emptyAnalysis("Analytics are temporarily unavailable. Use Refresh to try again.");
+  $("sentimentAnalysis").innerHTML = a ? sentimentHtml(a) : unavailable;
+  $("topicAnalysis").innerHTML = a ? topicsHtml(a) : unavailable;
+  $("aspectAnalysis").innerHTML = a ? aspectsHtml(a) : unavailable;
+  $("problemAnalysis").innerHTML = a ? problemsHtml(a) : unavailable;
   renderSummary();
   $("suggestionAnalysis").innerHTML = suggestionsHtml(rspState.summary);
   $("keywordAnalysis").innerHTML = keywordsHtml(rspState.keywords);
@@ -2831,7 +2826,7 @@ const MOOD_TEXT = {
   mixed: "Overall, opinions here are mixed.",
 };
 function moodOf(sum) {
-  const n = sum.total || 0, s = sum.sentiment || {};
+  const n = sum.analyzed, s = sum.sentiment || {};
   const pos = (s.positive || 0) / n, neg = (s.negative || 0) / n;
   return pos - neg > 0.25 ? "positive" : neg - pos > 0.15 ? "negative" : "mixed";
 }
@@ -2847,10 +2842,10 @@ function renderSummary() {
   if (!sum) { body.innerHTML = emptyAnalysis("The summary is temporarily unavailable. Use Refresh to try again."); source.textContent = ""; ai.hidden = true; return; }
   if (!sum.total) { body.innerHTML = emptyAnalysis("No feedback has been submitted yet."); source.textContent = ""; ai.hidden = true; return; }
   const fromAi = sum.source === "llm";
-  const facts = `${plural(sum.total, "response")}${sum.avg_rating ? `, average rating ${sum.avg_rating.toFixed(1)} out of 5` : ""}`;
+  const facts = `${plural(sum.total, "response")}${sum.avg_rating ? `, average rating ${sum.avg_rating.toFixed(2)} out of 5` : ""}`;
   const lead = fromAi
     ? `<p class="report-text">${escapeHtml(sum.overview)}</p>`
-    : `<p class="report-text"><span>${MOOD_TEXT[moodOf(sum)]}</span> <span class="report-facts">${facts}</span></p>`;
+    : `<p class="report-text"><span>${sum.analyzed ? MOOD_TEXT[moodOf(sum)] : "Sentiment analysis is unavailable for this selection."}</span> <span class="report-facts">${facts}</span></p>`;
   const col = (title, items, tone, empty) => `<div class="report-col">
       <h3>${title}</h3>
       ${items.length ? `<ul>${items.map(i => summaryPoint(i, tone)).join("")}</ul>` : `<p class="fa-empty">${empty}</p>`}
@@ -2869,9 +2864,10 @@ $("summaryAi").addEventListener("click", async () => {
   if (!currentSession) return;
   const btn = $("summaryAi"), label = $("summaryAiText");
   btn.disabled = true; label.textContent = "Writing…";
-  const scope = analyticsQuery();
-  const { ok, status, data } = await api(`/analytics/summary${scope ? `${scope}&` : "?"}ai=true`, { token: currentSession.token });
+  const scope = analyticsQuery(), token = currentSession.token, request = analyticsRequest;
+  const { ok, status, data } = await api(`/analytics/summary${scope ? `${scope}&` : "?"}ai=true`, { token });
   btn.disabled = false; label.textContent = "Rewrite with AI";
+  if (!isCurrentAnalyticsRequest(token, request)) return;
   if (status === 401 || status === 403) return sessionRevoked();
   if (status === 400) return toast("AI summaries are not set up on this server. Add ANTHROPIC_API_KEY to .env.");
   if (!ok) return toast("The AI summary could not be written. The built-in summary is still shown.");
@@ -2895,13 +2891,15 @@ function quotesHtml(sum) {
   if (!groups.length) return emptyAnalysis(sum.total ? "No topics were detected in these comments." : "No feedback has been submitted yet.");
   if (!groups.some(([t]) => t === rspState.quoteTopic)) rspState.quoteTopic = groups[0][0];
   const items = rspState.data?.items || [];
-  const toneFor = (topic, text) => toneOf((items.find(r => r.comment === text)?.aspects || {})[topic]);
+  const toneFor = (topic, text) => items.find(r => r.comment === text && r.aspects?.[topic])?.aspects[topic];
   const quotes = groups.find(([t]) => t === rspState.quoteTopic)[1];
   return `<div class="quote-tabs" role="tablist" aria-label="Topic">${groups.map(([t, list]) =>
       `<button type="button" role="tab" data-quote-topic="${escapeHtml(t)}" aria-selected="${t === rspState.quoteTopic}">${escapeHtml(t)}<small>${list.length}</small></button>`).join("")}</div>
     <div class="quotes" role="tabpanel">${quotes.map(text => {
       const tone = toneFor(rspState.quoteTopic, text);
-      return `<blockquote class="is-${tone}"><p>${highlightPh(text)}</p><footer><i class="fa-dot"></i>${SENTIMENT_LABEL[tone]} about ${escapeHtml(rspState.quoteTopic)}</footer></blockquote>`;
+      const label = SENTIMENT_LABEL[tone];
+      return `<blockquote${label ? ` class="is-${tone}"` : ""}><p>${highlightPh(text)}</p>
+        <footer>${label ? `<i class="fa-dot"></i>${label} about ` : ""}${escapeHtml(rspState.quoteTopic)}</footer></blockquote>`;
     }).join("")}</div>`;
 }
 
@@ -2935,8 +2933,7 @@ function syncSelection() {
     b.classList.toggle("on", on);
     press(b, on);
   });
-  // Type is fixed once one course or service is chosen, and faculty only have courses.
-  $("rspKindSeg").hidden = currentSession?.user.role === "faculty" || !!rspState.target;
+  $("rspKindSeg").hidden = currentSession?.user.role === "faculty";
   $("rspSentimentSeg").querySelectorAll("button").forEach(b => {
     const on = b.dataset.filterSentiment === rspState.sentiment;
     b.classList.toggle("on", on);
@@ -3040,24 +3037,14 @@ function renderChips() {
 }
 
 function renderResponses() {
-  renderKpis();
   syncSelection();
   const { data } = rspState; if (!data) return;
   const items = data.items;
   const qLabel = {};
   Object.values(data.questions).flat().forEach(q => { qLabel[q.id] = q.label; });
   const q = rspState.q.trim().toLowerCase();
-  const courses = new Map((rspState.meta?.courses || []).map(c => [c.id, c]));
-  const departments = new Map((rspState.meta?.departments || []).map(d => [d.id, d]));
   const list = items.filter(r => {
-    const department = courses.get(r.course_id)?.department_id ?? r.department_id;
-    if (rspState.faculty && String(departments.get(department)?.faculty_id) !== rspState.faculty) return false;
-    if (rspState.semester && r.semester !== rspState.semester) return false;
-    if (rspState.department_id && String(department) !== rspState.department_id) return false;
-    if (rspState.instructor_id && String(r.instructor_id || "") !== String(rspState.instructor_id)) return false;
-    if (rspState.kind && r.kind !== rspState.kind) return false;
     if (rspState.pii && !r.pii_masked) return false;
-    if (rspState.target && rspState.target !== targetKey(r)) return false;
     if (rspState.sentiment && r.sentiment !== rspState.sentiment) return false;
     if (rspState.topic) {
       // Same basis as the topic statistics: the topic's aspect sentiment in this comment.
@@ -3084,11 +3071,12 @@ function renderResponses() {
     neg: (a, b) => (a.sentiment_score ?? 0) - (b.sentiment_score ?? 0) || b.id - a.id,
   }[rspState.sort];
   if (order) list.sort(order);
+  renderKpis(list);
   rspList.innerHTML = list.map(r => rspHtml(r, qLabel)).join("");
   markLongComments();
   renderChips();
   rspEmpty.hidden = list.length > 0;
-  rspEmpty.innerHTML = items.length
+  rspEmpty.innerHTML = items.length || Object.keys(currentScopeParams()).length
     ? rspStateHtml("No responses match these filters", "Try a different search, or clear the filters to see every response.",
       '<button type="button" class="btn-sm" data-rsp-clear>Clear filters</button>')
     : rspStateHtml("No responses yet", "Responses appear here as soon as students submit a form.");
@@ -3097,12 +3085,18 @@ function renderResponses() {
 
 /* ---------- filters: explorer controls, chips, and the analytics above ---------- */
 function setKind(kind) {
+  const target = rspState.target;
+  if (target && !target.startsWith(`${kind}:`)) rspState.target = "";
+  const changed = rspState.kind !== kind || rspState.target !== target;
   rspState.kind = kind;
-  if (rspState.target && !rspState.target.startsWith(kind)) { rspState.target = ""; rspTarget.value = ""; }
+  if (changed) loadResponses(); else renderResponses();
 }
 function removeFilter(key) {
-  if (key === "kind") rspState.kind = "";
-  if (key === "target") { rspState.target = ""; rspTarget.value = ""; reloadAnalytics(); }
+  if (key === "kind") return setKind("");
+  if (key === "target") {
+    rspState.target = "";
+    return loadResponses();
+  }
   if (key === "sentiment") rspState.sentiment = "";
   if (key === "topic") rspState.topic = rspState.tone = "";
   if (key === "pii") rspState.pii = false;
@@ -3113,12 +3107,10 @@ function removeFilter(key) {
   renderResponses();
 }
 function clearResponseFilters() {
-  const hadTarget = !!rspState.target;
+  const hadSharedFilter = rspState.target || rspState.kind;
   Object.assign(rspState, EXPLORER_RESET);
   rspSearch.value = "";
-  rspTarget.value = "";
-  renderResponses();
-  if (hadTarget) reloadAnalytics();
+  if (hadSharedFilter) loadResponses(); else renderResponses();
 }
 function scrollToExplorer() {
   if (managerActiveView !== "explorer") selectManagerView("explorer");
@@ -3169,8 +3161,10 @@ responsesApp.addEventListener("click", e => {
       rspState.pii = !rspState.pii;
       reveal = rspState.pii;
     } else {
+      if (k === "all") rspState.pii = false;
       setKind(k === "all" ? "" : k);
-      if (k === "all") { rspState.pii = false; reveal = false; }
+      if (k !== "all") scrollToExplorer();
+      return;
     }
   } else if (el.dataset.sentiment) {
     rspState.sentiment = rspState.sentiment === el.dataset.sentiment ? "" : el.dataset.sentiment;
@@ -3196,13 +3190,11 @@ rspList.addEventListener("click", e => {
 $("rspKindSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   setKind(b.dataset.kind);
-  renderResponses();
 });
 rspTarget.addEventListener("change", () => {
   rspState.target = rspTarget.value;
-  if (rspState.target) rspState.kind = rspState.target.split(":")[0];
-  renderResponses();
-  reloadAnalytics();
+  if (rspState.target && !rspState.target.startsWith(`${rspState.kind}:`)) rspState.kind = "";
+  loadResponses();
 });
 rspSearch.addEventListener("input", () => { rspState.q = rspSearch.value; renderResponses(); });
 $("rspSentimentSeg").addEventListener("click", e => {
@@ -3236,7 +3228,7 @@ $("compareTabs").addEventListener("click", async e => {
 $("mgrOpenAlerts").addEventListener("click", () => selectManagerView("compare"));
 $("recomputeAlerts").addEventListener("click", async () => {
   const { ok } = await api("/alerts/recompute", { method: "POST", token: currentSession.token });
-  if (ok) { const result = await api("/alerts", { token: currentSession.token }); rspState.alerts = result.ok ? result.data : []; renderAlertAnalysis(); }
+  if (ok) { const result = await api("/alerts", { token: currentSession.token }); rspState.alerts = result.ok ? result.data : null; renderAlertAnalysis(); }
 });
 function updateReportPreview() {
   const option = $("mgrReportSection").selectedOptions[0];

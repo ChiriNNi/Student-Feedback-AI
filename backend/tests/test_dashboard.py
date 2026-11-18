@@ -1,12 +1,18 @@
+import asyncio
 import unittest
+from io import BytesIO
 
 from fastapi import HTTPException
+from openpyxl import load_workbook
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.db import Base
 from app.models import Course, Department, Faculty, Feedback, Service, User
-from app.routers.analytics import filters_dep, meta, overview, trends
+from app.routers.analytics import filters_dep, meta, overview, summary, trends
+from app.routers.evaluations import responses
+from app.routers.management import _report_rows
+from app.routers.reports import summary_excel
 from app.services import Filters
 
 
@@ -130,3 +136,60 @@ class DashboardTests(unittest.TestCase):
         result = trends(Filters(semester="Fall 2026"), self.teacher, self.db)
         self.assertEqual([p["semester"] for p in result["series"]], ["Fall 2026"])
         self.assertEqual(trends(Filters(course_id=self.other_course.id), self.admin, self.db)["series"], [])
+
+
+    def test_summary_and_exports_use_unrounded_metrics_and_analyzed_responses(self):
+        self.feedback(self.course, rating=4, ratings={"1": 3, "2": 4, "3": 4},
+                      sentiment="positive", confidence=0.8)
+        self.feedback(self.course, rating=2, sentiment="negative", confidence=0.8)
+        self.feedback(self.course, sentiment="negative", confidence=0.8)
+        self.feedback(self.course, sentiment="neutral")  # Stored default, without analysis.
+        filters = Filters(course_id=self.course.id)
+        board = overview(filters, self.teacher, self.db)
+        narrative = summary(False, filters, self.teacher, self.db)
+        self.assertAlmostEqual(board["avg_rating"], (11 / 3 + 2) / 2)
+        self.assertEqual(narrative["avg_rating"], board["avg_rating"])
+        self.assertEqual(narrative["analyzed"], 3)
+        self.assertEqual(narrative["sentiment"], {"positive": 1, "neutral": 0, "negative": 2})
+        self.assertEqual(board["positive_share"], 1 / 3)
+        self.assertAlmostEqual(board["satisfaction_index"], -100 / 3)
+
+        async def collect_export():
+            export = summary_excel(filters, self.teacher, self.db)
+            return b"".join([chunk async for chunk in export.body_iterator])
+
+        workbook = load_workbook(BytesIO(asyncio.run(collect_export())))
+        exported = {row[0]: row[1] for row in workbook["Overview"].values if len(row) > 1}
+        self.assertAlmostEqual(exported["Average satisfaction /5"], board["avg_rating"])
+        self.assertAlmostEqual(exported["Positive share"], board["positive_share"])
+        self.assertAlmostEqual(exported["Net sentiment (pp)"], board["satisfaction_index"])
+        _, report = _report_rows(self.db, self.manager, filters, "overview")
+        self.assertAlmostEqual(dict(report)["Average satisfaction / 5"], board["avg_rating"])
+
+    def test_summary_and_report_indicate_unavailable_sentiment(self):
+        self.feedback(self.course, rating=4)
+        filters = Filters(course_id=self.course.id)
+        narrative = summary(False, filters, self.teacher, self.db)
+        self.assertEqual(narrative["analyzed"], 0)
+        self.assertIn("Sentiment analysis is unavailable", narrative["overview"])
+        _, report = _report_rows(self.db, self.manager, filters, "trends")
+        self.assertEqual(report[0][3:], [None, None, None])
+
+    def test_explorer_uses_dashboard_scope_for_kind_and_empty_courses(self):
+        self.feedback(self.course)
+        self.feedback()
+        for selection in ({"kind": "service"}, {"course_id": self.sibling_course.id}):
+            filters = filters_dep(self.admin, self.db, **selection)
+            dashboard = overview(filters, self.admin, self.db)
+            explorer = responses(filters, self.admin, self.db)
+            self.assertEqual(len(explorer["items"]), dashboard["total"])
+            self.assertEqual(len(explorer["items"]), int(selection.get("kind") == "service"))
+            self.assertTrue(all("user_id" not in item for item in explorer["items"]))
+
+    def test_trends_order_winter_and_other_terms_across_years(self):
+        chronological = ["Fall 2025", "Winter 2026", "Spring 2026", "Summer 2026",
+                         "Fall 2026", "Winter 2027"]
+        for term in reversed(chronological):
+            self.feedback(self.course, semester=term, confidence=0.8)
+        result = trends(Filters(), self.teacher, self.db)
+        self.assertEqual([point["semester"] for point in result["series"]], chronological)

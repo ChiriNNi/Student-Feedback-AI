@@ -12,10 +12,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..metrics import feedback_metrics
 from ..models import Course, Department, Service, User
 from ..security import managers
 from ..services import Filters, feedback_rows, scope_label, semester_key, sort_semesters
-from .analytics import _kpis, filters_dep
+from .analytics import filters_dep
 
 router = APIRouter(prefix="/api/management", tags=["Sprint 5 management"])
 
@@ -37,7 +38,7 @@ def _groups(db: Session, user: User, f: Filters, by: str):
             buckets[r[key]].append(r)
     out = []
     for ident, items in buckets.items():
-        kpi = _kpis(items)
+        kpi = feedback_metrics(items)
         out.append({"id": ident, "name": names.get(ident, str(ident)), **kpi})
     return sorted(out, key=lambda x: (-x["total"], x["name"]))
 
@@ -98,19 +99,19 @@ def comparison(by: str = Query("course", pattern="^(course|department|service)$"
 
 
 def _report_rows(db: Session, user: User, f: Filters, section: str):
-    kpi = _kpis(feedback_rows(db, user, f))
+    kpi = feedback_metrics(feedback_rows(db, user, f))
     if section == "overview":
         return ["Indicator", "Value"], [
             ["Feedback responses", kpi["total"]], ["Average satisfaction / 5", kpi["avg_rating"] or "—"],
             ["Positive responses", kpi["positive"]], ["Neutral responses", kpi["neutral"]],
-            ["Negative responses", kpi["negative"]], ["Net sentiment", kpi["satisfaction_index"]],
+            ["Negative responses", kpi["negative"]], ["Net sentiment", kpi["satisfaction_index"] if kpi["analyzed"] else None],
         ]
     if section == "trends":
         by_sem = defaultdict(list)
         for r in feedback_rows(db, user, Filters(**{**f.__dict__, "semester": None})):
             by_sem[r["semester"]].append(r)
         return ["Semester", "Responses", "Avg rating", "Positive %", "Neutral %", "Negative %"], [
-            [s, (k := _kpis(by_sem[s]))["total"], k["avg_rating"] or "—",
+            [s, (k := feedback_metrics(by_sem[s]))["total"], k["avg_rating"] or "—",
              *[round(k[f"{tone}_share"] * 100, 1) if k["analyzed"] else None
                for tone in ("positive", "neutral", "negative")]] for s in sort_semesters(by_sem)
         ]
@@ -120,7 +121,8 @@ def _report_rows(db: Session, user: User, f: Filters, section: str):
             by = "course"
         return ["Name", "Responses", "Avg rating", "Positive %", "Negative %"], [
             [r["name"], r["total"], r["avg_rating"] or "—",
-             round(r["positive_share"]*100, 1), round(r["negative_share"]*100, 1)]
+             round(r["positive_share"] * 100, 1) if r["analyzed"] else None,
+             round(r["negative_share"] * 100, 1) if r["analyzed"] else None]
             for r in _groups(db, user, f, by)
         ]
     # Alerts are saved historical evaluations, not alerts manufactured on the client.
@@ -171,7 +173,7 @@ def report(section: str = Query("overview", pattern="^(overview|trends|alerts|co
         header_style = ParagraphStyle("ReportHeader", parent=styles["BodyText"], textColor=colors.white, fontName="Helvetica-Bold")
         doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), title=title, leftMargin=28, rightMargin=28)
         story = [Paragraph(escape(title), styles["Title"]), Paragraph("Filters: " + escape(label), styles["Normal"]), Spacer(1, 14)]
-        rows = [columns] + [list(map(lambda x: str(x if x is not None else "—"), row)) for row in data]
+        rows = [columns] + [[f"{x:.2f}" if isinstance(x, float) else str(x if x is not None else "—") for x in row] for row in data]
         if len(rows) == 1: rows.append(["No data available"] + [""] * (len(columns)-1))
         cells = [[Paragraph(escape(str(value))[:120], header_style if i == 0 else styles["BodyText"]) for value in row] for i, row in enumerate(rows)]
         widths = [ (landscape(A4)[0]-56) / len(columns)] * len(columns)

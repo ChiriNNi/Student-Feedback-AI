@@ -246,6 +246,17 @@ analysis can have zero mentions. Missing feedback or analysis appears as a gap
 or an unavailable state. The charts use the persisted Sprint 3 analysis fields
 and need two semesters with sentiment data to show a change.
 
+The overview, summary and report exports use the same rating and sentiment
+calculations. The dashboard and Feedback explorer share semester, faculty,
+department, instructor, course/service and response type. Text search, rating,
+privacy and topic drill-downs filter the Explorer list and its cards locally.
+
+Run the backend suite with `cd backend && python -m unittest discover -s tests`.
+For the browser regression, use a disposable demo database with a visible course
+coded `EMPTY 100` that has no feedback. Sign in as manager and evaluate
+`frontend/tests/dashboard-regression.js` in the dashboard's browser console.
+It checks empty-course metrics, type switching and independent API failures.
+
 ### Interface
 
 One stylesheet, `frontend/public/pulse.css`, styles every screen in light and

@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..metrics import feedback_metrics
 from ..models import Alert, Course, Department, Faculty, Feedback, Service, TopicCategory, User
 from ..nlp.summarizer import aspect_stats, llm_available, llm_summary, local_summary
 from ..security import staff_only
@@ -65,32 +66,6 @@ def filters_dep(
     )
 
 
-def _response_rating(row: dict) -> float | None:
-    answers = [value for value in (row["ratings"] or {}).values()
-               if type(value) is int and 1 <= value <= 5]
-    if answers:
-        return sum(answers) / len(answers)
-    rating = row["rating"]
-    return rating if rating is not None and 1 <= rating <= 5 else None
-
-
-def _kpis(rows: list[dict]) -> dict:
-    sentiments = ("positive", "neutral", "negative")
-    counts = Counter(row["sentiment"] for row in rows
-                     if row["confidence"] > 0 or row["is_corrected"])
-    analyzed = sum(counts[tone] for tone in sentiments)
-    shares = {tone: round(counts[tone] / analyzed, 4) if analyzed else 0
-              for tone in sentiments}
-    ratings = [rating for row in rows if (rating := _response_rating(row)) is not None]
-    return {
-        "total": len(rows), "analyzed": analyzed, "rated": len(ratings),
-        **{tone: counts[tone] for tone in sentiments},
-        **{f"{tone}_share": shares[tone] for tone in sentiments},
-        "satisfaction_index": round((shares["positive"] - shares["negative"]) * 100, 1),
-        "avg_rating": round(sum(ratings) / len(ratings), 2) if ratings else None,
-    }
-
-
 def _topic_mentions(rows: list[dict]) -> Counter:
     mentions = Counter()
     for row in rows:
@@ -146,7 +121,7 @@ def overview(f: Filters = Depends(filters_dep), user: User = Depends(staff_only)
     # managers their department plus university services, admins everything.
     rows = feedback_rows(db, user, f)
     # Story 3.1: sentiment counts and shares, net sentiment and the average rating.
-    kpi = _kpis(rows)
+    kpi = feedback_metrics(rows)
 
     # Period-over-period deltas: selected (or latest) semester vs the one before it
     delta = None
@@ -154,12 +129,14 @@ def overview(f: Filters = Depends(filters_dep), user: User = Depends(staff_only)
         prev = sems[sems.index(target) - 1]
         cur_rows = rows if f.semester else [r for r in rows if r["semester"] == target]
         pf = Filters(**{**f.__dict__, "semester": prev})
-        a, b = _kpis(cur_rows), _kpis(feedback_rows(db, user, pf))
+        a, b = feedback_metrics(cur_rows), feedback_metrics(feedback_rows(db, user, pf))
         delta = {
             "semester": target, "previous": prev,
             "total": a["total"] - b["total"],
-            "satisfaction_index": round(a["satisfaction_index"] - b["satisfaction_index"], 1),
-            "negative_share": round(a["negative_share"] - b["negative_share"], 4),
+            "satisfaction_index": round(a["satisfaction_index"] - b["satisfaction_index"], 1)
+            if a["analyzed"] and b["analyzed"] else None,
+            "negative_share": round(a["negative_share"] - b["negative_share"], 4)
+            if a["analyzed"] and b["analyzed"] else None,
             "avg_rating": round((a["avg_rating"] or 0) - (b["avg_rating"] or 0), 2)
             if a["avg_rating"] and b["avg_rating"] else None,
         }
@@ -214,7 +191,7 @@ def trends(f: Filters = Depends(filters_dep), user: User = Depends(staff_only), 
     if rows:
         periods = [f.semester] if f.semester else _all_semesters(db, user)
 
-    series = [{"semester": period, **_kpis(by_sem[period])} for period in periods]
+    series = [{"semester": period, **feedback_metrics(by_sem[period])} for period in periods]
     totals = _topic_mentions(rows)
     topics = sorted(totals, key=lambda topic: (-totals[topic], topic))
     colors = _topic_colors(db)
@@ -256,7 +233,7 @@ def compare(by: str = Query("department", pattern="^(department|course|service)$
 
     out = []
     for gid, items in groups.items():
-        k = _kpis(items)
+        k = feedback_metrics(items)
         asp = aspect_stats(items)
         worst = max((a for a in asp if a["total"] >= 3), key=lambda a: a["negative_share"], default=None)
         best = max((a for a in asp if a["total"] >= 3), key=lambda a: a["positive_share"], default=None)
