@@ -130,7 +130,8 @@ def feedback_rows(db: Session, user: User, f: Filters, limit: int | None = None)
     """Light-weight dict rows for analytics (topic filter applied in Python because topics is JSON)."""
     stmt = select(
         Feedback.id, Feedback.text, Feedback.sentiment, Feedback.sentiment_score, Feedback.topics,
-        Feedback.aspects, Feedback.keywords, Feedback.rating, Feedback.semester, Feedback.kind,
+        Feedback.aspects, Feedback.keywords, Feedback.rating, Feedback.ratings, Feedback.confidence,
+        Feedback.is_corrected, Feedback.semester, Feedback.kind,
         Feedback.course_id, Feedback.service_id, Feedback.department_id, Feedback.language,
     )
     stmt = apply_filters(scope_query(stmt, user), f)

@@ -170,7 +170,7 @@ def summary_excel(f: Filters = Depends(filters_dep),
         group = _kpis(per_semester[semester])
         total = group["total"]
         trends_ws.append([semester, total, group["avg_rating"], group["positive_share"],
-                          group["neutral"] / total if total else 0, group["negative_share"]])
+                          group["neutral_share"], group["negative_share"]])
 
     names = {
         "By course": ("course_id", {x.id: f"{x.code} — {x.title}" for x in db.scalars(select(Course))}),

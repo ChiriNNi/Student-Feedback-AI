@@ -487,11 +487,11 @@
       <section class="mgr-overview-grid">
         <article class="mgr-card">
           <header class="mgr-card-head"><div><h3>Sentiment distribution</h3><p>Share of positive, neutral and negative feedback based on actual responses.</p></div></header>
-          <div id="mgrOverviewSentiment"></div>
+          <div id="mgrOverviewSentiment" aria-live="polite"></div>
         </article>
         <article class="mgr-card">
           <header class="mgr-card-head"><div><h3>Top topics at a glance</h3><p>The most discussed areas in the current scope.</p></div></header>
-          <div id="mgrTopTopics"></div>
+          <div id="mgrTopTopics" aria-live="polite"></div>
         </article>
         <article class="mgr-card mgr-overview-alert">
           <header class="mgr-card-head"><div><h3>Alert</h3><p>Visible warning when negative feedback rises for a course or service.</p></div></header>
@@ -1861,8 +1861,8 @@ document.querySelectorAll("[data-nav]").forEach(b => b.addEventListener("click",
   const target = b.dataset.nav;
   if (target === "feedback") openFeedback();
   else if (target === "responses") {
-    if (currentSession?.user?.role === "manager" && !$('responsesApp').hidden) toggleManagerMenu();
-    else { if (currentSession?.user?.role === "manager") managerMenuOpen = true; openResponses(); }
+    if (STAFF.includes(currentSession?.user?.role) && !$('responsesApp').hidden) toggleManagerMenu();
+    else openResponses();
   }
   else if (target === "admin") openAdmin();
 }));
@@ -2187,7 +2187,7 @@ const rspStateHtml = (title, text, action = "") => `<b>${title}</b><p>${text}</p
 let managerActiveView = "overview";
 let managerMenuOpen = false;
 function toggleManagerMenu() {
-  if (currentSession?.user?.role !== "manager") return;
+  if (!STAFF.includes(currentSession?.user?.role)) return;
   managerMenuOpen = !managerMenuOpen;
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
@@ -2195,19 +2195,22 @@ function toggleManagerMenu() {
 const managerViews = { explorer: "explorerSection", overview: "overviewSection", compare: "compareSection", reports: "reportsSection" };
 function selectManagerView(view = "overview") {
   if (!Object.prototype.hasOwnProperty.call(managerViews, view)) view = "overview";
-  if (currentSession?.user?.role !== "manager") view = "explorer";
+  if (currentSession?.user?.role !== "manager" && ["compare", "reports"].includes(view)) view = "overview";
   managerActiveView = view;
   const isManager = currentSession?.user?.role === "manager";
-  $("mgrSubmenu").hidden = !isManager || !managerMenuOpen;
-  document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(isManager && managerMenuOpen));
+  $("mgrSubmenu").hidden = !managerMenuOpen;
+  document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
   document.querySelectorAll("#mgrSubmenu [data-mgr-view]").forEach(button => {
+    button.hidden = !isManager && ["compare", "reports"].includes(button.dataset.mgrView);
     const active = button.dataset.mgrView === view;
     button.classList.toggle("is-active", active);
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
   for (const [name, id] of Object.entries(managerViews)) $(id).hidden = name !== view;
-  $("responsesHead").hidden = isManager && view !== "explorer";
+  $("responsesHead").hidden = view !== "explorer";
+  document.querySelectorAll("#overviewSection .mgr-university-card, #overviewSection .mgr-overview-alert")
+    .forEach(card => { card.hidden = !isManager; });
   const appTitle = $("responsesApp").querySelector(".page");
   appTitle.setAttribute("data-mgr-active", view);
   window.scrollTo(0, 0);
@@ -2220,7 +2223,8 @@ $("mgrSubmenu").addEventListener("click", event => {
 async function openResponses() {
   if (!currentSession || !STAFF.includes(currentSession.user.role)) return;
   showPage("responses");
-  selectManagerView(currentSession.user.role === "manager" ? managerActiveView : "explorer");
+  managerMenuOpen = true;
+  selectManagerView(managerActiveView);
   await loadResponses();
 }
 const queryString = params => {
@@ -2305,38 +2309,35 @@ function renderManagerOverview() {
   const a = rspState.analytics;
   const setText = (id, value) => { $(id).textContent = value; };
   if (!a) {
-    ["mgrAvgRating", "mgrTotalFeedback", "mgrPositiveShare", "mgrNegativeShare"].forEach(id => setText(id, "—"));
+    ["mgrAvgRating", "mgrTotalFeedback", "mgrPositiveShare", "mgrNegativeShare"].forEach(id => {
+      setText(id, "—");
+      setText(id + "Note", "");
+    });
+    ["mgrPositiveMeter", "mgrNegativeMeter"].forEach(id => { $(id).style.width = "0%"; });
     $("mgrOverviewSentiment").innerHTML = emptyAnalysis("Dashboard overview is temporarily unavailable.");
     $("mgrTopTopics").innerHTML = emptyAnalysis("Top topics are temporarily unavailable.");
     return;
   }
-  const delta = a.delta || {};
-  const deltaText = (value, suffix = "", digits = 1) => {
-    if (value == null) return "";
-    const sign = value > 0 ? "↑" : value < 0 ? "↓" : "→";
-    return `${sign} ${Math.abs(value).toFixed(digits)}${suffix}${delta.previous ? ` vs ${delta.previous}` : ""}`;
-  };
-  setText("mgrAvgRating", a.avg_rating != null ? `${a.avg_rating.toFixed(1)}/5` : "—");
-  setText("mgrTotalFeedback", String(a.total || 0));
-  setText("mgrPositiveShare", `${Math.round((a.positive_share || 0) * 100)}%`);
-  setText("mgrNegativeShare", `${Math.round((a.negative_share || 0) * 100)}%`);
-  $("mgrAvgRatingNote").textContent = a.delta?.avg_rating != null ? deltaText(a.delta.avg_rating, "", 1) : "Average score out of 5";
-  $("mgrTotalFeedbackNote").textContent = a.delta?.total != null ? `${deltaText(a.delta.total, "", 0)} responses` : `${plural(a.total || 0, "response")} in the current scope`;
-  $("mgrPositiveShareNote").textContent = `${a.positive || 0} positive responses`;
-  $("mgrNegativeShareNote").textContent = a.delta?.negative_share != null ? `${deltaText(a.delta.negative_share * 100, " pp", 1)} · ${a.negative || 0} negative responses` : `${a.negative || 0} negative responses`;
+  setText("mgrAvgRating", a.avg_rating != null ? `${a.avg_rating.toFixed(2)}/5` : "—");
+  setText("mgrTotalFeedback", String(a.total));
+  setText("mgrPositiveShare", a.analyzed ? `${Math.round(a.positive_share * 100)}%` : "—");
+  setText("mgrNegativeShare", a.analyzed ? `${Math.round(a.negative_share * 100)}%` : "—");
+  setText("mgrAvgRatingNote", a.rated ? `From ${plural(a.rated, "rated response")}` : "No ratings available");
+  setText("mgrTotalFeedbackNote", `${plural(a.total, "response")} in the current scope`);
+  setText("mgrPositiveShareNote", a.analyzed ? plural(a.positive, "positive response") : "No sentiment data");
+  setText("mgrNegativeShareNote", a.analyzed ? plural(a.negative, "negative response") : "No sentiment data");
   $("mgrPositiveMeter").style.width = `${Math.round((a.positive_share || 0) * 100)}%`;
   $("mgrNegativeMeter").style.width = `${Math.round((a.negative_share || 0) * 100)}%`;
   const sentimentRows = SENTIMENTS.map(s => [s, a[s] || 0]);
-  const total = a.total || 0;
+  const total = a.analyzed;
   $("mgrOverviewSentiment").innerHTML = total ? `
     <div class="mgr-sentiment-stack">${sentimentRows.filter(([, n]) => n).map(([s, n]) => `<span class="is-${s}" style="width:${(n / total) * 100}%"></span>`).join("")}</div>
     <div class="mgr-sentiment-legend">${sentimentRows.map(([s, n]) => `<button type="button" data-sentiment="${s}" class="mgr-tone-chip is-${s}"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]} <b>${Math.round(total ? n / total * 100 : 0)}%</b></button>`).join("")}</div>`
-    : emptyAnalysis("No feedback has been submitted yet.");
-  const topics = rankedTopics(a).slice(0, 5);
+    : emptyAnalysis(a.total ? "Sentiment analysis is unavailable for these responses." : "No feedback matches the current scope.");
+  const topics = a.top_topics;
   $("mgrTopTopics").innerHTML = topics.length ? `<ol class="mgr-topic-list">${topics.map(t => `
     <li><button type="button" data-topic="${escapeHtml(t.topic)}" class="mgr-topic-row">
       <span><b>${escapeHtml(t.topic)}</b><small>${plural(t.total, "mention")}</small></span>
-      <span>${Math.round((t.negative_share || 0) * 100)}% negative</span>
     </button></li>`).join("")}</ol>` : emptyAnalysis("No topics were detected in the current scope.");
   renderCurrentFilters();
 }
@@ -2651,8 +2652,8 @@ function showAllToggle(key, count) {
 
 // Story 3.1: the sentiment split as a stacked bar and a count per label; each label filters the explorer.
 function sentimentHtml(a) {
-  const total = a.total || 0;
-  if (!total) return emptyAnalysis("No feedback has been submitted yet.");
+  const total = a.analyzed;
+  if (!total) return emptyAnalysis(a.total ? "Sentiment analysis is unavailable for these responses." : "No feedback matches the current scope.");
   const counts = SENTIMENTS.map(s => [s, a[s] || 0]);
   const index = a.satisfaction_index;
   const net = typeof index === "number"
@@ -3041,7 +3042,7 @@ function clearResponseFilters() {
   if (hadTarget) reloadAnalytics();
 }
 function scrollToExplorer() {
-  if (currentSession?.user?.role === "manager" && managerActiveView !== "explorer") selectManagerView("explorer");
+  if (managerActiveView !== "explorer") selectManagerView("explorer");
   const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   $("rspHeading").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
 }

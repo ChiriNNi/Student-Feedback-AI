@@ -123,8 +123,8 @@ def _report_rows(db: Session, user: User, f: Filters, section: str):
             by_sem[r["semester"]].append(r)
         return ["Semester", "Responses", "Avg rating", "Positive %", "Neutral %", "Negative %"], [
             [s, (k := _kpis(by_sem[s]))["total"], k["avg_rating"] or "—",
-             round(k["positive"] / k["total"] * 100, 1), round(k["neutral"] / k["total"] * 100, 1),
-             round(k["negative"] / k["total"] * 100, 1)] for s in sort_semesters(by_sem)
+             *[round(k[f"{tone}_share"] * 100, 1) if k["analyzed"] else None
+               for tone in ("positive", "neutral", "negative")]] for s in sort_semesters(by_sem)
         ]
     if section.startswith("compare_"):
         by = section.removeprefix("compare_")

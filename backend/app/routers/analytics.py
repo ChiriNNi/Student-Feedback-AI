@@ -31,21 +31,37 @@ def filters_dep(
                    survey_id or None)
 
 
+def _response_rating(row: dict) -> float | None:
+    answers = [value for value in (row["ratings"] or {}).values()
+               if type(value) is int and 1 <= value <= 5]
+    if answers:
+        return sum(answers) / len(answers)
+    rating = row["rating"]
+    return rating if rating is not None and 1 <= rating <= 5 else None
+
+
 def _kpis(rows: list[dict]) -> dict:
-    """Story 3.1 totals: how many responses are positive, neutral and negative, and their shares."""
-    n = len(rows)
-    c = Counter(r["sentiment"] for r in rows)
-    ratings = [r["rating"] for r in rows if r.get("rating")]
-    pos = c["positive"] / n if n else 0
-    neg = c["negative"] / n if n else 0
+    sentiments = ("positive", "neutral", "negative")
+    counts = Counter(row["sentiment"] for row in rows
+                     if row["confidence"] > 0 or row["is_corrected"])
+    analyzed = sum(counts[tone] for tone in sentiments)
+    shares = {tone: round(counts[tone] / analyzed, 4) if analyzed else 0
+              for tone in sentiments}
+    ratings = [rating for row in rows if (rating := _response_rating(row)) is not None]
     return {
-        "total": n,
-        "positive": c["positive"], "neutral": c["neutral"], "negative": c["negative"],
-        "positive_share": round(pos, 4), "negative_share": round(neg, 4),
-        # "Net sentiment" on the dashboard: positive share minus negative share, in percentage points.
-        "satisfaction_index": round((pos - neg) * 100, 1),
+        "total": len(rows), "analyzed": analyzed, "rated": len(ratings),
+        **{tone: counts[tone] for tone in sentiments},
+        **{f"{tone}_share": shares[tone] for tone in sentiments},
+        "satisfaction_index": round((shares["positive"] - shares["negative"]) * 100, 1),
         "avg_rating": round(sum(ratings) / len(ratings), 2) if ratings else None,
     }
+
+
+def _topic_mentions(rows: list[dict]) -> Counter:
+    mentions = Counter()
+    for row in rows:
+        mentions.update(set(row["topics"] or []) | set(row["aspects"] or {}))
+    return mentions
 
 
 def _topic_colors(db: Session) -> dict:
@@ -140,6 +156,8 @@ def overview(f: Filters = Depends(filters_dep), user: User = Depends(staff_only)
         **kpi,
         "delta": delta,
         "topics": topics,
+        "top_topics": [{"topic": topic, "total": count} for topic, count in
+                       sorted(_topic_mentions(rows).items(), key=lambda item: (-item[1], item[0]))[:5]],
         "problems": problems,
         "languages": dict(Counter(r["language"] for r in rows)),
         "kinds": dict(Counter(r["kind"] for r in rows)),

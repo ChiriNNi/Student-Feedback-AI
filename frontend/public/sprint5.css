@@ -163,3 +163,6 @@
   #responsesApp .mgr-topic-bar-row { grid-template-columns:85px 1fr 35px; }
   #responsesApp .mgr-topic-bar-row small { display:none; }
 }
+
+#responsesApp .mgr-submenu button[hidden],
+#responsesApp .mgr-card[hidden] { display: none !important; }
