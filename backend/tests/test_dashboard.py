@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db import Base
 from app.models import Course, Department, Faculty, Feedback, Service, User
-from app.routers.analytics import filters_dep, meta, overview
+from app.routers.analytics import filters_dep, meta, overview, trends
 from app.services import Filters
 
 
@@ -98,3 +98,35 @@ class DashboardTests(unittest.TestCase):
                 with self.assertRaises(HTTPException) as rejection:
                     filters_dep(user, self.db, **selection)
                 self.assertEqual(rejection.exception.status_code, 422)
+
+
+    def test_trends_sort_terms_and_distinguish_zero_mentions_from_missing_data(self):
+        self.feedback(self.course, semester="Fall 2026", sentiment="negative",
+                      confidence=0.8, topics=["Workload", "Workload", "semester"])
+        self.feedback(self.course, semester="Fall 2026", sentiment="positive", confidence=0.8)
+        self.feedback(self.course, semester="Fall 2026")
+        self.feedback(self.course, semester="Spring 2025", sentiment="neutral", confidence=0.8)
+        self.feedback(self.sibling_course, semester="Summer 2026", sentiment="positive",
+                      confidence=0.8, topics=["Resources"])
+        self.feedback(self.course, semester="Fall 2027")
+
+        result = trends(Filters(course_id=self.course.id), self.manager, self.db)
+        # The sibling course is outside the manager's scope.
+        self.assertEqual([p["semester"] for p in result["series"]],
+                         ["Spring 2025", "Fall 2026", "Fall 2027"])
+        fall = result["series"][1]
+        self.assertEqual((fall["total"], fall["analyzed"], fall["negative_share"]), (3, 2, 0.5))
+        self.assertEqual([p["mentions"] for p in result["topic_series"]],
+                         [{"Workload": 0, "semester": 0}, {"Workload": 1, "semester": 1}, None])
+
+        result = trends(Filters(course_id=self.course.id), self.admin, self.db)
+        self.assertEqual(result["series"][1]["semester"], "Summer 2026")
+        self.assertEqual(result["series"][1]["total"], 0)
+        self.assertIsNone(result["topic_series"][1]["mentions"])
+
+    def test_trends_honor_semester_and_empty_scope(self):
+        self.feedback(self.course, semester="Spring 2026", confidence=0.8)
+        self.feedback(self.course, semester="Fall 2026", confidence=0.8)
+        result = trends(Filters(semester="Fall 2026"), self.teacher, self.db)
+        self.assertEqual([p["semester"] for p in result["series"]], ["Fall 2026"])
+        self.assertEqual(trends(Filters(course_id=self.other_course.id), self.admin, self.db)["series"], [])

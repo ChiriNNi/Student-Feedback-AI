@@ -25,7 +25,7 @@ def semester_key(sem: str) -> tuple[int, int]:
 
 
 def sort_semesters(items) -> list[str]:
-    return sorted(set(items), key=semester_key)
+    return sorted(set(items), key=lambda semester: (semester_key(semester), semester))
 
 
 # ---------------------------------------------------------------- analysis

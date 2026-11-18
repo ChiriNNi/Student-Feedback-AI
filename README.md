@@ -237,6 +237,15 @@ without this link remain available through the department filter.
 returns the filtered counts, rating and sentiment coverage, sentiment shares and
 top topics. Both require a valid staff JWT.
 
+Open **Comparisons & Trends** as a manager or **Trends** as other staff.
+`GET /api/analytics/trends` applies the same filters as the overview. Select
+**All semesters** to compare history. A selected semester shows one period.
+Sentiment percentages use each semester's analyzed responses as the denominator.
+Topic frequency counts responses mentioning the topic. A semester with available
+analysis can have zero mentions. Missing feedback or analysis appears as a gap
+or an unavailable state. The charts use the persisted Sprint 3 analysis fields
+and need two semesters with sentiment data to show a change.
+
 ### Interface
 
 One stylesheet, `frontend/public/pulse.css`, styles every screen in light and

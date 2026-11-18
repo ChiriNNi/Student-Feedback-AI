@@ -477,7 +477,7 @@
         </article>
       </section>
 
-      <section class="mgr-card mgr-university-card" aria-labelledby="mgrUniversityTitle">
+      <section class="mgr-card mgr-university-card" data-manager-only aria-labelledby="mgrUniversityTitle">
         <header class="mgr-card-head"><div><h3 id="mgrUniversityTitle">SDU at a glance</h3><p>Live counts from the university database: people, departments, courses and services.</p></div></header>
         <div id="mgrUniversityStats" class="mgr-university-stats" aria-live="polite"></div>
         <h4 class="mgr-stat-subtitle">Departments</h4>
@@ -494,7 +494,7 @@
           <header class="mgr-card-head"><div><h3>Top topics at a glance</h3><p>The most discussed areas in the current scope.</p></div></header>
           <div id="mgrTopTopics" aria-live="polite"></div>
         </article>
-        <article class="mgr-card mgr-overview-alert">
+        <article class="mgr-card mgr-overview-alert" data-manager-only>
           <header class="mgr-card-head"><div><h3>Alert</h3><p>Visible warning when negative feedback rises for a course or service.</p></div></header>
           <div id="mgrAlertSummary"></div>
           <button type="button" class="mgr-view-alerts" id="mgrOpenAlerts">See all trend alerts</button>
@@ -677,23 +677,23 @@
         <div>
           <span class="mgr-kicker">Decision support</span>
           <h2 id="compareSectionTitle">Comparisons &amp; Trends</h2>
-          <p>See semester trends, important alerts, and compare courses, departments and services.</p>
+          <p id="mgrTrendScope"></p>
         </div>
       </div>
 
       <div class="mgr-stack">
         <article class="mgr-card mgr-card-wide">
           <header class="mgr-card-head"><div><h3>Trend analysis</h3><p>Sentiment changes across semesters.</p></div></header>
-          <div id="trendAnalysis"></div>
-          <div class="mgr-topic-trends"><div class="mgr-topic-trends-title"><h4>Topic trends</h4><label>Topic <select id="mgrTopicTrendSelect"><option value="">Choose a topic</option></select></label></div><div id="mgrTopicTrendChart"></div></div>
+          <div id="trendAnalysis" aria-live="polite"></div>
+          <div class="mgr-topic-trends"><div class="mgr-topic-trends-title"><h4>Topic frequency by semester</h4><label>Topic <select id="mgrTopicTrendSelect"><option value="">Choose a topic</option></select></label></div><div id="mgrTopicTrendChart" aria-live="polite"></div></div>
         </article>
 
-        <article class="mgr-card mgr-card-wide">
+        <article class="mgr-card mgr-card-wide" data-manager-only>
           <header class="mgr-card-head"><div><h3>Negative trend alerts</h3><p>React quickly when negative feedback rises sharply for a course, service or department.</p></div><button type="button" class="btn-sm" id="recomputeAlerts">Refresh alerts</button></header>
           <div id="alertAnalysis"></div>
         </article>
 
-        <article class="mgr-card mgr-card-wide">
+        <article class="mgr-card mgr-card-wide" data-manager-only>
           <header class="mgr-card-head"><div><h3>Compare courses, departments &amp; services</h3><p>Find best practices and weaker areas using side-by-side comparisons.</p></div></header>
           <div class="seg mgr-compare-tabs" id="compareTabs" role="tablist" aria-label="Comparison type">
             <button type="button" class="on" data-compare="course">By course</button>
@@ -2197,13 +2197,16 @@ function toggleManagerMenu() {
 const managerViews = { explorer: "explorerSection", overview: "overviewSection", compare: "compareSection", reports: "reportsSection" };
 function selectManagerView(view = "overview") {
   if (!Object.prototype.hasOwnProperty.call(managerViews, view)) view = "overview";
-  if (currentSession?.user?.role !== "manager" && ["compare", "reports"].includes(view)) view = "overview";
+  if (currentSession?.user?.role !== "manager" && view === "reports") view = "overview";
   managerActiveView = view;
   const isManager = currentSession?.user?.role === "manager";
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
   document.querySelectorAll("#mgrSubmenu [data-mgr-view]").forEach(button => {
-    button.hidden = !isManager && ["compare", "reports"].includes(button.dataset.mgrView);
+    button.hidden = !isManager && button.dataset.mgrView === "reports";
+    if (button.dataset.mgrView === "compare") {
+      button.querySelector("span").textContent = isManager ? "Comparisons & Trends" : "Trends";
+    }
     const active = button.dataset.mgrView === view;
     button.classList.toggle("is-active", active);
     if (active) button.setAttribute("aria-current", "page");
@@ -2211,7 +2214,8 @@ function selectManagerView(view = "overview") {
   });
   for (const [name, id] of Object.entries(managerViews)) $(id).hidden = name !== view;
   $("responsesHead").hidden = view !== "explorer";
-  document.querySelectorAll("#overviewSection .mgr-university-card, #overviewSection .mgr-overview-alert")
+  $("compareSectionTitle").textContent = isManager ? "Comparisons & Trends" : "Trends";
+  document.querySelectorAll("#responsesApp [data-manager-only]")
     .forEach(card => { card.hidden = !isManager; });
   const appTitle = $("responsesApp").querySelector(".page");
   appTitle.setAttribute("data-mgr-active", view);
@@ -2322,7 +2326,8 @@ function renderCurrentFilters() {
   const fac = (meta.faculties || []).find(x => String(x.id) === String(rspState.faculty));
   const ins = (meta.instructors || []).find(x => String(x.id) === String(rspState.instructor_id));
   const target = meta.courses && dashboardTargets(meta, rspState).find(v => v.value === rspState.target)?.label;
-  $("mgrCurrentFilters").textContent = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target || "All courses & services"} · ${ins?.name || "All instructors"}`;
+  const label = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target || "All courses & services"} · ${ins?.name || "All instructors"}`;
+  $("mgrCurrentFilters").textContent = $("mgrTrendScope").textContent = label;
 }
 
 function renderUniversityStats() {
@@ -2378,52 +2383,75 @@ function renderManagerOverview() {
 }
 
 function trendLineSvg(series) {
-  if (!series?.length) return emptyAnalysis("Trend data will appear after more than one semester is available.");
-  const width = 980, height = 320, padX = 60, padY = 28;
+  const width = Math.max(700, 110 * series.length), height = 320, padX = 60, padY = 28;
   const plotW = width - padX * 2, plotH = height - padY * 2;
-  const x = i => padX + (series.length === 1 ? plotW / 2 : (plotW * i / (series.length - 1)));
-  const y = v => padY + plotH - (plotH * v / 100);
-  const toneData = {
-    positive: series.map(p => ({ label: p.semester, value: pct(p.positive, p.total) })),
-    neutral: series.map(p => ({ label: p.semester, value: pct(p.neutral, p.total) })),
-    negative: series.map(p => ({ label: p.semester, value: pct(p.negative, p.total) })),
-  };
-  const path = key => toneData[key].map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.value)}`).join(" ");
+  const x = i => padX + (series.length === 1 ? plotW / 2 : plotW * i / (series.length - 1));
+  const y = v => padY + plotH - plotH * v / 100;
+  const percent = (point, tone) => point[tone] / point.analyzed * 100;
   const grid = [0, 25, 50, 75, 100];
+  const paths = SENTIMENTS.map(tone => {
+    const path = series.map((point, i) => {
+      if (!point.analyzed) return "";
+      const command = series[i - 1]?.analyzed ? "L" : "M";
+      return `${command}${x(i)},${y(percent(point, tone))}`;
+    }).join(" ");
+    const markers = series.map((point, i) => {
+      if (!point.analyzed) return "";
+      const value = percent(point, tone);
+      const label = `${point.semester} · ${SENTIMENT_LABEL[tone]} ${value.toFixed(1)}% (${point[tone]}/${point.analyzed})`;
+      return `<circle class="is-${tone}" cx="${x(i)}" cy="${y(value)}" r="5" tabindex="0" aria-label="${escapeHtml(label)}"><title>${escapeHtml(label)}</title></circle>`;
+    }).join("");
+    return `<path class="is-${tone}" d="${path}"></path>${markers}`;
+  }).join("");
   return `<div class="mgr-chart-wrap">
-    <svg viewBox="0 0 ${width} ${height}" class="mgr-chart" role="img" aria-label="Sentiment trend chart">
-      ${grid.map(v => `<g><line x1="${padX}" y1="${y(v)}" x2="${width - padX}" y2="${y(v)}"></line><text x="${padX - 12}" y="${y(v) + 5}">${v}%</text></g>`).join("")}
-      ${Object.keys(toneData).map(key => `<path class="is-${key}" d="${path(key)}"></path>`).join("")}
-      ${Object.entries(toneData).map(([key, arr]) => arr.map((p, i) => `<circle class="is-${key}" cx="${x(i)}" cy="${y(p.value)}" r="5"></circle>`).join("")).join("")}
-      ${series.map((p, i) => `<text class="xlab" x="${x(i)}" y="${height - 8}" text-anchor="middle">${escapeHtml(p.semester)}</text>`).join("")}
-    </svg>
+    <div class="mgr-trend-scroll" tabindex="0" role="region" aria-label="Semester sentiment chart">
+      <svg viewBox="0 0 ${width} ${height}" style="min-width:${Math.max(335, 96 * series.length)}px" class="mgr-chart" role="group" aria-label="Sentiment by semester">
+        ${grid.map(v => `<g><line x1="${padX}" y1="${y(v)}" x2="${width - padX}" y2="${y(v)}"></line><text x="${padX - 12}" y="${y(v) + 5}">${v}%</text></g>`).join("")}
+        ${paths}
+        ${series.map((p, i) => `<text class="xlab" x="${x(i)}" y="${height - 8}" text-anchor="middle">${escapeHtml(p.semester)}</text>`).join("")}
+      </svg>
+    </div>
     <ul class="mgr-chart-legend">${SENTIMENTS.map(s => `<li class="is-${s}"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]}</li>`).join("")}</ul>
+    <p class="mgr-chart-footnote">${series.filter(p => p.analyzed).length < 2
+      ? "At least two semesters with sentiment data are needed to compare changes."
+      : "Gaps indicate semesters without sentiment data in this scope."}</p>
   </div>`;
 }
 
 function renderTrendAnalysis() {
   const periods = rspState.trends?.series || [];
-  $("trendAnalysis").innerHTML = periods.length ? trendLineSvg(periods) : emptyAnalysis("Trend analysis needs at least one recorded semester.");
+  const chart = $("trendAnalysis");
+  if (!rspState.trends) {
+    chart.innerHTML = emptyAnalysis("Trend analysis is temporarily unavailable.");
+  } else if (!periods.some(p => p.analyzed)) {
+    chart.innerHTML = emptyAnalysis(periods.length ? "Sentiment analysis is unavailable for these semesters."
+      : "No feedback matches the selected filters.");
+  } else {
+    chart.innerHTML = trendLineSvg(periods);
+  }
   const topics = rspState.trends?.topics || [];
   const select = $("mgrTopicTrendSelect");
-  const previous = select.value;
-  setSelectOptions(select, topics.map(t => ({ value: t.topic, label: t.topic })), "Choose a topic", previous || topics[0]?.topic || "");
+  const selected = topics.some(t => t.topic === select.value) ? select.value : topics[0]?.topic;
+  setSelectOptions(select, topics.map(t => ({ value: t.topic, label: t.topic })), "Choose a topic", selected);
+  select.disabled = !topics.length;
   renderTopicTrend();
 }
 function renderTopicTrend() {
   const topic = $("mgrTopicTrendSelect").value;
   const periods = rspState.trends?.topic_series || [];
+  const chart = $("mgrTopicTrendChart");
   if (!topic || !periods.length) {
-    $("mgrTopicTrendChart").innerHTML = emptyAnalysis("Topic history becomes available when topic mentions are recorded.");
+    chart.innerHTML = emptyAnalysis(rspState.trends ? "No topic mentions are available for these filters."
+      : "Topic history is temporarily unavailable.");
     return;
   }
-  $("mgrTopicTrendChart").innerHTML = `<div class="mgr-topic-bars">${periods.map(p => {
-    const value = p[topic];
-    const mentions = p[`${topic}__mentions`] || 0;
+  const maximum = Math.max(1, ...periods.map(p => p.mentions?.[topic] ?? 0));
+  chart.innerHTML = `<div class="mgr-topic-bars">${periods.map(p => {
+    const count = p.mentions?.[topic];
     return `<div class="mgr-topic-bar-row"><span>${escapeHtml(p.semester)}</span>
-      <div class="mgr-topic-bar-track"><i style="width:${value ?? 0}%"></i></div>
-      <b>${value == null ? "—" : value + "%"}</b><small>${mentions} mentions</small></div>`;
-  }).join("")}</div><p class="mgr-chart-footnote">Percent of negative mentions for the selected topic in each semester.</p>`;
+      <div class="mgr-topic-bar-track" aria-hidden="true"><i style="width:${(count ?? 0) / maximum * 100}%"></i></div>
+      <b>${count == null ? "No data" : plural(count, "mention")}</b></div>`;
+  }).join("")}</div><p class="mgr-chart-footnote">Number of responses mentioning this topic in each semester.</p>`;
 }
 $("mgrTopicTrendSelect").addEventListener("change", renderTopicTrend);
 
@@ -2561,7 +2589,6 @@ async function loadResponses() {
   if (!isCurrentAnalyticsRequest(token, request)) return;
   syncDashboardFilters();
   const scope = analyticsQuery();
-  const extraTrendQuery = analyticsQuery({ semester: null });
   if (currentSession.user.role === "manager") {
     // Refresh persisted semester-to-semester alerts on each manager dashboard load.
     await api("/alerts/recompute", { method: "POST", token });
@@ -2572,7 +2599,7 @@ async function loadResponses() {
     api(`/analytics/overview${scope}`, { token }),
     api(`/analytics/summary${scope}`, { token }),
     api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token }),
-    api(`/analytics/trends${extraTrendQuery}`, { token }),
+    api(`/analytics/trends${scope}`, { token }),
     api("/alerts", { token }),
     api(`/management/university${scope}`, { token }),
   ]);
@@ -2643,12 +2670,11 @@ async function reloadAnalytics() {
   rspState.compare = {};
   FA_CARDS.forEach(id => { $(id).innerHTML = FA_SKELETON; });
   ["mgrOverviewSentiment", "mgrTopTopics", "trendAnalysis", "alertAnalysis", "compareAnalysis"].forEach(id => { const el = $(id); if (el) el.innerHTML = FA_SKELETON; });
-  const extraTrendQuery = analyticsQuery({ semester: null });
   const [overview, summary, keywords, trends, alerts, university] = await Promise.all([
     api(`/analytics/overview${scope}`, { token }),
     api(`/analytics/summary${scope}`, { token }),
     api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token }),
-    api(`/analytics/trends${extraTrendQuery}`, { token }),
+    api(`/analytics/trends${scope}`, { token }),
     api("/alerts", { token }),
     api(`/management/university${scope}`, { token }),
   ]);
@@ -2669,7 +2695,7 @@ async function reloadAnalytics() {
   renderAnalytics();
   renderTrendAnalysis();
   renderAlertAnalysis();
-  renderKpis();
+  renderResponses();
   await fetchCompare();
 }
 

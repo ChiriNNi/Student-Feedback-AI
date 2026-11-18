@@ -206,31 +206,31 @@ def _visible_alerts(alerts, user: User, db: Session):
 
 @router.get("/analytics/trends")
 def trends(f: Filters = Depends(filters_dep), user: User = Depends(staff_only), db: Session = Depends(get_db)):
-    f.semester = None
     rows = feedback_rows(db, user, f)
-    by_sem: dict[str, list] = defaultdict(list)
-    for r in rows:
-        by_sem[r["semester"]].append(r)
-    sems = sort_semesters(by_sem.keys())
-    series = [{"semester": s, **_kpis(by_sem[s])} for s in sems]
+    by_sem = defaultdict(list)
+    for row in rows:
+        by_sem[row["semester"]].append(row)
+    periods = []
+    if rows:
+        periods = [f.semester] if f.semester else _all_semesters(db, user)
 
-    topic_totals = Counter()
-    for r in rows:
-        topic_totals.update((r["aspects"] or {}).keys())
-    top_topics = [t for t, _ in topic_totals.most_common(8)]
-    topic_series = []
-    for s in sems:
-        point = {"semester": s}
-        stats = {a["topic"]: a for a in aspect_stats(by_sem[s])}
-        for t in top_topics:
-            a = stats.get(t)
-            point[t] = round(a["negative_share"] * 100, 1) if a else None
-            point[f"{t}__mentions"] = a["total"] if a else 0
-        topic_series.append(point)
+    series = [{"semester": period, **_kpis(by_sem[period])} for period in periods]
+    totals = _topic_mentions(rows)
+    topics = sorted(totals, key=lambda topic: (-totals[topic], topic))
     colors = _topic_colors(db)
+    topic_series = []
+    for point in series:
+        period = point["semester"]
+        mentions = _topic_mentions(by_sem[period])
+        available = bool(point["analyzed"] or mentions)
+        topic_series.append({
+            "semester": period,
+            "total": point["total"],
+            "mentions": {topic: mentions[topic] for topic in topics} if available else None,
+        })
     return {
         "series": series,
-        "topics": [{"topic": t, "color": colors.get(t, "#8b5cff")} for t in top_topics],
+        "topics": [{"topic": topic, "color": colors.get(topic, "#8b5cff")} for topic in topics],
         "topic_series": topic_series,
     }
 
