@@ -1,143 +1,126 @@
+"""Administrator survey lifecycle. Student submissions use the anonymous evaluations router."""
+
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import KINDS, Course, Feedback, Service, SubmissionReceipt, Survey, User
-from ..security import admin_only, get_current_user, student_only
-from ..services import analyze_into, get_matchers, semester_key
+from ..models import Feedback, Survey, SurveyQuestion
+from ..security import admin_only
+from ..services import sort_semesters
+from .evaluations import _question_out, _questions
 
-router = APIRouter(prefix="/api/surveys", tags=["surveys"])
+admin_router = APIRouter(prefix="/api/admin/surveys", tags=["survey management"],
+                         dependencies=[Depends(admin_only)])
+
+DEFAULT_PROMPT = "What did you like, and what should be improved?"
+
+
+class QuestionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    label: str = Field(min_length=1, max_length=40)
+    text: str = Field(min_length=1, max_length=300)
 
 
 class SurveyIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     title: str = Field(min_length=3, max_length=200)
-    description: str = ""
-    kind: str
-    semester: str = Field(min_length=4, max_length=24)
-    status: str = "open"
-    question: str = "What did you like, and what should be improved?"
+    description: str = Field(default="", max_length=2000)
+    kind: Literal["course", "service", "survey"]
+    semester: str = Field(pattern=r"^(Winter|Spring|Summer|Fall|Autumn) [0-9]{4}$")
+    question: str = Field(default=DEFAULT_PROMPT, min_length=1, max_length=300)
+    questions: list[QuestionIn] | None = Field(default=None, max_length=30)
+
+    @field_validator("semester", mode="before")
+    @classmethod
+    def normalize_semester(cls, value):
+        return " ".join(value.split()).title() if isinstance(value, str) else value
 
 
-class SubmitIn(BaseModel):
-    course_id: int | None = None
-    service_id: int | None = None
-    rating: int | None = Field(default=None, ge=1, le=5)
-    text: str = Field(min_length=5, max_length=4000)
+class StatusIn(BaseModel):
+    status: Literal["open", "closed"]
 
 
-def survey_out(s: Survey, responses: int | None = None) -> dict:
+def _get_survey(db: Session, survey_id: int) -> Survey:
+    survey = db.get(Survey, survey_id, with_for_update=True)
+    if survey is None or survey.is_demo_archive:
+        raise HTTPException(404, "Survey not found")
+    return survey
+
+
+def _response_count(db: Session, survey_id: int) -> int:
+    return db.scalar(select(func.count()).select_from(Feedback).where(Feedback.survey_id == survey_id))
+
+
+def _survey_out(db: Session, survey: Survey, responses: int) -> dict:
     return {
-        "id": s.id, "title": s.title, "description": s.description, "kind": s.kind,
-        "semester": s.semester, "status": s.status, "question": s.question,
-        "created_at": s.created_at.isoformat() if s.created_at else None,
-        "responses": responses,
+        "id": survey.id, "title": survey.title, "description": survey.description, "kind": survey.kind,
+        "semester": survey.semester, "status": survey.status, "question": survey.question, "responses": responses,
+        "questions": [_question_out(q) for q in _questions(db, survey.kind, survey.id)],
+        "form_locked": survey.status == "open" or bool(responses),
     }
 
 
-@router.get("")
-def list_surveys(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if user.role == "student":
-        surveys = db.scalars(select(Survey).where(Survey.status == "open")).all()
-        done = {(r.survey_id, r.target_key) for r in db.scalars(
-            select(SubmissionReceipt).where(SubmissionReceipt.user_id == user.id))}
-        courses = db.scalars(select(Course).order_by(Course.code)).all()
-        services = db.scalars(select(Service).order_by(Service.name)).all()
-        out = []
-        for s in sorted(surveys, key=lambda s: (semester_key(s.semester), s.id), reverse=True):
-            item = survey_out(s)
-            if s.kind == "course":
-                item["targets"] = [{"type": "course", "id": c.id, "label": f"{c.code} — {c.title}",
-                                    "done": (s.id, f"course:{c.id}") in done} for c in courses]
-            elif s.kind == "service":
-                item["targets"] = [{"type": "service", "id": v.id, "label": v.name,
-                                    "done": (s.id, f"service:{v.id}") in done} for v in services]
-            else:
-                item["targets"] = [{"type": "general", "id": None, "label": "General",
-                                    "done": (s.id, "general") in done}]
-            item["completed"] = all(t["done"] for t in item["targets"])
-            out.append(item)
-        return out
+def _replace_questions(db: Session, survey: Survey, questions: list[QuestionIn]) -> None:
+    if survey.kind != "survey" and not questions:
+        raise HTTPException(422, "Course and service forms need at least one rating question")
+    db.execute(delete(SurveyQuestion).where(SurveyQuestion.survey_id == survey.id))
+    db.add_all(SurveyQuestion(survey_id=survey.id, kind=survey.kind, position=i,
+                              label=q.label, text=q.text) for i, q in enumerate(questions))
+    db.flush()
 
+
+@admin_router.get("")
+def list_surveys(db: Session = Depends(get_db)):
     counts = dict(db.execute(select(Feedback.survey_id, func.count()).group_by(Feedback.survey_id)).all())
-    surveys = db.scalars(select(Survey)).all()
-    surveys = sorted(surveys, key=lambda s: (semester_key(s.semester), s.id), reverse=True)
-    return [survey_out(s, counts.get(s.id, 0)) for s in surveys]
+    surveys = db.scalars(select(Survey).where(Survey.is_demo_archive.is_(False)).order_by(Survey.id.desc())).all()
+    return {
+        "items": [_survey_out(db, survey, counts.get(survey.id, 0)) for survey in surveys],
+        "semesters": sort_semesters(s.semester for s in surveys),
+    }
 
 
-@router.post("/{survey_id}/submit")
-def submit(survey_id: int, body: SubmitIn, user: User = Depends(student_only), db: Session = Depends(get_db)):
-    survey = db.get(Survey, survey_id)
-    if not survey or survey.status != "open":
-        raise HTTPException(404, "This survey is not open")
-
-    fb = Feedback(survey_id=survey.id, kind=survey.kind, semester=survey.semester,
-                  rating=body.rating, source="form")
-    if survey.kind == "course":
-        course = db.get(Course, body.course_id or 0)
-        if not course:
-            raise HTTPException(422, "Please choose a course")
-        fb.course_id, fb.department_id = course.id, course.department_id
-        target = f"course:{course.id}"
-    elif survey.kind == "service":
-        service = db.get(Service, body.service_id or 0)
-        if not service:
-            raise HTTPException(422, "Please choose a service")
-        fb.service_id = service.id
-        target = f"service:{service.id}"
-    else:
-        fb.department_id = user.department_id
-        target = "general"
-
-    analyze_into(fb, body.text, get_matchers(db))
-    # The receipt only proves participation; it has no reference to the feedback row.
-    db.add(SubmissionReceipt(user_id=user.id, survey_id=survey.id, target_key=target))
-    db.add(fb)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(409, "You have already submitted feedback for this item")
-    return {"ok": True, "pii_masked": fb.pii_masked}
-
-
-@router.post("", dependencies=[Depends(admin_only)])
+@admin_router.post("", status_code=201)
 def create_survey(body: SurveyIn, db: Session = Depends(get_db)):
-    _validate(body)
-    s = Survey(**body.model_dump())
-    db.add(s)
+    survey = Survey(**body.model_dump(exclude={"questions"}), status="draft")
+    db.add(survey)
+    db.flush()
+    _replace_questions(db, survey, body.questions or [])
     db.commit()
-    return survey_out(s, 0)
+    return _survey_out(db, survey, 0)
 
 
-@router.put("/{survey_id}", dependencies=[Depends(admin_only)])
+@admin_router.put("/{survey_id}")
 def update_survey(survey_id: int, body: SurveyIn, db: Session = Depends(get_db)):
-    _validate(body)
-    s = db.get(Survey, survey_id)
-    if not s:
-        raise HTTPException(404, "Survey not found")
-    for k, v in body.model_dump().items():
-        setattr(s, k, v)
+    survey = _get_survey(db, survey_id)
+    responses = _response_count(db, survey_id)
+    questions = body.questions
+    if survey.status == "open" or responses:
+        original = [QuestionIn(label=q.label, text=q.text) for q in _questions(db, survey.kind, survey.id)]
+        if ((body.kind, body.semester, body.question) != (survey.kind, survey.semester, survey.question)
+                or (questions is not None and questions != original)):
+            raise HTTPException(409, "Published forms and forms with responses keep their original questions, type and semester")
+        questions = None
+    elif body.kind != survey.kind and questions is None:
+        raise HTTPException(422, "Provide the questions for the new survey type")
+    for key, value in body.model_dump(exclude={"questions"}).items():
+        setattr(survey, key, value)
+    if questions is not None:
+        _replace_questions(db, survey, questions)
     db.commit()
-    return survey_out(s)
+    return _survey_out(db, survey, responses)
 
 
-@router.delete("/{survey_id}", dependencies=[Depends(admin_only)])
-def delete_survey(survey_id: int, db: Session = Depends(get_db)):
-    s = db.get(Survey, survey_id)
-    if not s:
-        raise HTTPException(404, "Survey not found")
-    db.delete(s)
+@admin_router.patch("/{survey_id}/status")
+def change_status(survey_id: int, body: StatusIn, db: Session = Depends(get_db)):
+    survey = _get_survey(db, survey_id)
+    if body.status == "closed" and survey.status == "draft":
+        raise HTTPException(409, "Only a published survey can be closed")
+    if body.status == "open" and survey.kind != "survey" and not _questions(db, survey.kind, survey.id):
+        raise HTTPException(422, "Add a rating question before publishing this form")
+    survey.status = body.status
     db.commit()
-    return {"ok": True}
-
-
-def _validate(body: SurveyIn):
-    if body.kind not in KINDS:
-        raise HTTPException(422, f"kind must be one of {KINDS}")
-    if body.status not in ("draft", "open", "closed"):
-        raise HTTPException(422, "status must be draft, open or closed")
-    if semester_key(body.semester) == (0, 0):
-        raise HTTPException(422, "semester must look like 'Fall 2026' or 'Spring 2027'")
+    return _survey_out(db, survey, _response_count(db, survey_id))

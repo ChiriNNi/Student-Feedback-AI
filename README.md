@@ -211,16 +211,17 @@ summary to the keyword cloud, is recalculated for it.
 `course_id` / `service_id` filters as `/api/analytics/overview`, and are scoped
 by role on the server like every other analytics call.
 
-### Staff dashboard and filters (Sprint 6)
+### Staff dashboard and filters
 
-Open **Feedback analytics → Overview** as a faculty member, manager or administrator.
-The dashboard shows response counts, satisfaction out of five, sentiment distribution
-and the most-mentioned topics. Satisfaction gives each rated response equal weight:
+Open **Feedback analytics → Dashboard** as a faculty member, manager or administrator.
+The dashboard shows response counts, satisfaction out of five, sentiment distribution,
+top topics and semester trends on one page. Managers also see paired comparisons and
+negative trend alerts. Satisfaction gives each rated response equal weight:
 it averages the stored answers per response and uses the stored overall rating for
 legacy responses without valid answers. Sentiment shares use responses with a stored
 analysis or correction. Topics count each response at most once per topic.
 
-Use **Apply filters** or **Reset** to change the semester, faculty, department,
+Open **Filters** to select the semester, feedback type, faculty, department,
 course/service or instructor. The options come from the staff member's database
 scope. Courses are linked to departments and instructors, and departments can
 belong to a faculty. Valid filters with zero matching responses show an empty
@@ -237,7 +238,7 @@ without this link remain available through the department filter.
 returns the filtered counts, rating and sentiment coverage, sentiment shares and
 top topics. Both require a valid staff JWT.
 
-Open **Comparisons & Trends** as a manager or **Trends** as other staff.
+Use **Sentiment** or **Topics** inside **Semester trends** to switch metrics.
 `GET /api/analytics/trends` applies the same filters as the overview. Select
 **All semesters** to compare history. A selected semester shows one period.
 Sentiment percentages use each semester's analyzed responses as the denominator.
@@ -250,6 +251,15 @@ The overview, summary and report exports use the same rating and sentiment
 calculations. The dashboard and Feedback explorer share semester, faculty,
 department, instructor, course/service and response type. Text search, rating,
 privacy and topic drill-downs filter the Explorer list and its cards locally.
+
+### Sprint 6 workflows
+
+| Story | Demo path | Expected result |
+|---|---|---|
+| 6.1 Manage surveys | Admin → **Surveys** → **New survey**. Add a custom rating statement, save a draft, edit it and publish it. Open **Give feedback** as a student, submit a response, then close the form as admin. | The student sees the custom form after publication. Closing blocks new responses and retains the response count. Published forms and forms with responses keep their question structure. |
+| 6.2 Manage topic categories | Admin → **Topic categories**. Add a category with a distinct keyword or phrase, then rename it. Submit new feedback containing that phrase. | The renamed category appears in new analysis. Existing feedback labels and linked actions follow the rename. An inactive category stops matching new submissions. |
+| 6.3 Correct AI results | Admin → **Feedback analytics → Feedback explorer** → **Correct analysis** on an anonymous response. Save a new sentiment or edit its topic labels. | The response is marked as manually corrected and the dashboard reflects the new labels. The correction audit records the administrator, previous and new labels, and the optional reason. |
+| 6.4 Track improvement actions | Manager → **Feedback explorer** → **Recurring negative themes** → **Create action**. Enter the follow-up and change its status in **Improvement actions**. | The action retains the problem and scope, and its status persists as **Planned**, **In progress** or **Done**. |
 
 Run the backend suite with `cd backend && python -m unittest discover -s tests`.
 For the browser regression, use a disposable demo database with a visible course
@@ -397,13 +407,15 @@ pulse/
 ├── backend/                 FastAPI application
 │   ├── app/
 │   │   ├── routers/auth.py  Login, register, /me, change-password, forgot-password
-│   │   ├── routers/admin.py Admin user management (mounted), topics/catalogue (not yet used by the UI)
-│   │   ├── routers/evaluations.py  Course evaluations & service reviews: forms, anonymous submit, responses
+│   │   ├── routers/admin.py User management, topic categories and analysis corrections
+│   │   ├── routers/surveys.py  Admin survey lifecycle and custom form questions
+│   │   ├── routers/evaluations.py  Published forms, anonymous submission and scoped responses
+│   │   ├── routers/actions.py  Improvement action tracking and trend alerts
 │   │   ├── nlp/pii.py       Personal data masking for comments
 │   │   ├── models.py        SQLAlchemy models (users, courses, feedback, ...)
 │   │   ├── security.py      JWT + bcrypt helpers
 │   │   ├── seed.py          Demo departments, users, courses, services, questions, surveys
-│   │   └── main.py          App entrypoint (mounts `auth`, `admin`, `evaluations`)
+│   │   └── main.py          App entrypoint and database upgrades
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
@@ -414,9 +426,3 @@ pulse/
 ├── .env.example
 └── start.ps1
 ```
-
-> Note: a few backend routers (`surveys`, `feedback`, `analytics`, `actions`,
-> `reports`) exist in the codebase for later sprints but are intentionally not
-> mounted in `main.py` yet. The
-> `admin` router's topic/course/service endpoints are mounted and usable via
-> the API, but have no UI yet — only user management does.

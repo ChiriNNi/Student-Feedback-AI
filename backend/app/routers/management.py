@@ -16,7 +16,7 @@ from ..metrics import feedback_metrics
 from ..models import Course, Department, Service, User
 from ..security import managers
 from ..services import Filters, feedback_rows, scope_label, semester_key, sort_semesters
-from .analytics import filters_dep
+from .analytics import filters_dep, trends
 
 router = APIRouter(prefix="/api/management", tags=["Sprint 5 management"])
 
@@ -78,6 +78,12 @@ def university(f: Filters = Depends(filters_dep), user: User = Depends(managers)
 def comparison(by: str = Query("course", pattern="^(course|department|service)$"),
                f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
     """Paired group ratings for selected period and preceding period, including services."""
+    current, previous, items = _semester_comparison(db, user, f, by)
+    return {"current_semester": current, "previous_semester": previous,
+            "items": items[:16], "total_groups": len(items)}
+
+
+def _semester_comparison(db: Session, user: User, f: Filters, by: str):
     all_rows = feedback_rows(db, user, Filters(**{**f.__dict__, "semester": None}))
     periods = sort_semesters(r["semester"] for r in all_rows)
     current = f.semester or (periods[-1] if periods else None)
@@ -94,37 +100,42 @@ def comparison(by: str = Query("course", pattern="^(course|department|service)$"
         a, b = all_lookup.get(ident), prev_lookup.get(ident)
         result.append({"id": ident, "name": (a or b)["name"],
                        "current": a, "previous": b})
-    return {"current_semester": current, "previous_semester": previous,
-            "items": result[:16], "total_groups": len(result)}
+    return current, previous, result
 
 
 def _report_rows(db: Session, user: User, f: Filters, section: str):
-    kpi = feedback_metrics(feedback_rows(db, user, f))
     if section == "overview":
+        kpi = feedback_metrics(feedback_rows(db, user, f))
         return ["Indicator", "Value"], [
             ["Feedback responses", kpi["total"]], ["Average satisfaction / 5", kpi["avg_rating"] or "—"],
             ["Positive responses", kpi["positive"]], ["Neutral responses", kpi["neutral"]],
             ["Negative responses", kpi["negative"]], ["Net sentiment", kpi["satisfaction_index"] if kpi["analyzed"] else None],
         ]
     if section == "trends":
-        by_sem = defaultdict(list)
-        for r in feedback_rows(db, user, Filters(**{**f.__dict__, "semester": None})):
-            by_sem[r["semester"]].append(r)
         return ["Semester", "Responses", "Avg rating", "Positive %", "Neutral %", "Negative %"], [
-            [s, (k := feedback_metrics(by_sem[s]))["total"], k["avg_rating"] or "—",
+            [k["semester"], k["total"], k["avg_rating"],
              *[round(k[f"{tone}_share"] * 100, 1) if k["analyzed"] else None
-               for tone in ("positive", "neutral", "negative")]] for s in sort_semesters(by_sem)
+               for tone in ("positive", "neutral", "negative")]] for k in trends(f, user, db)["series"]
         ]
     if section.startswith("compare_"):
         by = section.removeprefix("compare_")
         if by not in {"course", "department", "service"}:
             by = "course"
-        return ["Name", "Responses", "Avg rating", "Positive %", "Negative %"], [
-            [r["name"], r["total"], r["avg_rating"] or "—",
-             round(r["positive_share"] * 100, 1) if r["analyzed"] else None,
-             round(r["negative_share"] * 100, 1) if r["analyzed"] else None]
-            for r in _groups(db, user, f, by)
-        ]
+        current, previous, items = _semester_comparison(db, user, f, by)
+        periods = [("current", current or "Current period")]
+        if previous:
+            periods.append(("previous", previous))
+        columns = ["Name"]
+        for _, semester in periods:
+            columns.extend([f"{semester} rating / 5", f"{semester} responses"])
+        rows = []
+        for item in items:
+            row = [item["name"]]
+            for key, _ in periods:
+                metrics = item[key]
+                row.extend([metrics["avg_rating"], metrics["total"]] if metrics else [None, None])
+            rows.append(row)
+        return columns, rows
     # Alerts are saved historical evaluations, not alerts manufactured on the client.
     from .analytics import _visible_alerts
     from ..models import Alert

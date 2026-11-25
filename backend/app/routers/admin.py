@@ -1,16 +1,18 @@
 import re
 from datetime import datetime, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import ROLES, Course, Department, Feedback, Service, TopicCategory, User
+from ..models import ROLES, Action, Alert, AnalysisCorrection, Course, Department, Feedback, Service, TopicCategory, User
+from ..nlp.analyzer import label_for
 from ..passwords import password_problem
 from ..security import admin_only, get_current_user, hash_password, revoke_sessions
-from ..services import invalidate_topics
 from .auth import user_out
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(admin_only)])
@@ -150,9 +152,10 @@ def _check_user(body: UserIn, db: Session, own_id: int | None = None):
 # ------------------------------------------------------------------ topics
 
 class TopicIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     name: str = Field(min_length=2, max_length=80)
     color: str = Field(default="#8b5cff", pattern=r"^#[0-9a-fA-F]{6}$")
-    keywords: list[str] = []
+    keywords: list[str] = Field(default_factory=list, max_length=80)
     is_active: bool = True
 
 
@@ -167,27 +170,25 @@ def list_topics(db: Session = Depends(get_db)):
 
 @router.post("/topics")
 def create_topic(body: TopicIn, db: Session = Depends(get_db)):
-    if db.scalar(select(TopicCategory).where(func.lower(TopicCategory.name) == body.name.lower())):
-        raise HTTPException(409, "A topic with this name exists")
-    t = TopicCategory(name=body.name.strip(), color=body.color,
-                      keywords=_clean_kw(body.keywords), is_active=body.is_active)
+    _assert_topic_name_available(db, body.name)
+    t = TopicCategory(name=body.name, color=body.color,
+                      keywords=_topic_keywords(body), is_active=body.is_active)
     db.add(t)
-    db.commit()
-    invalidate_topics()
+    _commit_topic(db)
     return topic_out(t)
 
 
 @router.put("/topics/{topic_id}")
 def update_topic(topic_id: int, body: TopicIn, db: Session = Depends(get_db)):
-    t = db.get(TopicCategory, topic_id)
+    t = db.get(TopicCategory, topic_id, with_for_update=True)
     if not t:
         raise HTTPException(404, "Topic not found")
+    _assert_topic_name_available(db, body.name, t.id)
     old = t.name
-    t.name, t.color, t.keywords, t.is_active = body.name.strip(), body.color, _clean_kw(body.keywords), body.is_active
-    db.commit()
-    if old != t.name:
-        _rename_topic(db, old, t.name)
-    invalidate_topics()
+    t.name, t.color, t.keywords, t.is_active = body.name, body.color, _topic_keywords(body), body.is_active
+    if old != body.name:
+        _rename_topic(db, old, body.name)
+    _commit_topic(db)
     return topic_out(t)
 
 
@@ -198,26 +199,89 @@ def delete_topic(topic_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "Topic not found")
     db.delete(t)
     db.commit()
-    invalidate_topics()
     return {"ok": True, "hint": "Run 'Re-analyze feedback' to update existing records."}
 
 
-def _clean_kw(words: list[str]) -> list[str]:
-    seen, out = set(), []
-    for w in words:
-        w = w.strip().lower()
-        if w and w not in seen:
-            seen.add(w)
-            out.append(w)
-    return out
+def _assert_topic_name_available(db: Session, name: str, exclude_id: int | None = None):
+    stmt = select(TopicCategory.id).where(func.lower(TopicCategory.name) == name.lower())
+    if exclude_id is not None:
+        stmt = stmt.where(TopicCategory.id != exclude_id)
+    if db.scalar(stmt.limit(1)) is not None:
+        raise HTTPException(409, "A topic with this name exists")
+
+
+def _topic_keywords(body: TopicIn) -> list[str]:
+    words = list(dict.fromkeys(" ".join(word.lower().split()) for word in body.keywords if word.strip()))
+    if any(len(word) > 80 for word in words):
+        raise HTTPException(422, "Each keyword or phrase must be at most 80 characters")
+    if body.is_active and not words:
+        raise HTTPException(422, "Add a keyword or phrase for an active topic")
+    return words
+
+
+def _commit_topic(db: Session):
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "A topic with this name exists")
 
 
 def _rename_topic(db: Session, old: str, new: str):
     for fb in db.scalars(select(Feedback)).yield_per(500):
         if old in (fb.topics or []):
-            fb.topics = [new if t == old else t for t in fb.topics]
-            fb.aspects = {(new if k == old else k): v for k, v in (fb.aspects or {}).items()}
-    db.commit()
+            fb.topics = list(dict.fromkeys(new if t == old else t for t in fb.topics))
+        if old in (fb.aspects or {}):
+            aspects = dict(fb.aspects)
+            tone = aspects.pop(old)
+            aspects.setdefault(new, tone)
+            fb.aspects = aspects
+    db.execute(update(Action).where(Action.topic == old).values(topic=new))
+    db.execute(update(Alert).where(Alert.top_topic == old).values(top_topic=new))
+
+
+# ------------------------------------------------------------------ analysis correction
+
+Tone = Literal["positive", "neutral", "negative"]
+
+
+class CorrectionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    sentiment: Tone | None = None
+    topics: list[str] | None = Field(default=None, max_length=80)
+    aspects: dict[str, Tone] | None = Field(default=None, max_length=80)
+    reason: str = Field(default="", max_length=300)
+
+
+@router.patch("/feedback/{fb_id}/analysis")
+def correct(fb_id: int, body: CorrectionIn, user: User = Depends(admin_only), db: Session = Depends(get_db)):
+    fb = db.get(Feedback, fb_id, with_for_update=True)
+    if not fb:
+        raise HTTPException(404, "Feedback not found")
+    before = {"sentiment": fb.sentiment, "topics": fb.topics or [], "aspects": fb.aspects or {}}
+    sentiment = body.sentiment or fb.sentiment
+    topics = list(dict.fromkeys(body.topics if body.topics is not None else before["topics"]))
+    if body.topics is not None:
+        added = set(topics) - set(before["topics"])
+        active = set(db.scalars(select(TopicCategory.name).where(TopicCategory.is_active.is_(True)))) if added else set()
+        if added - active:
+            raise HTTPException(422, "Choose an active topic category")
+    if set(body.aspects or {}) - set(topics):
+        raise HTTPException(422, "Assign sentiment only to selected topics")
+    if body.aspects is not None or body.topics is not None:
+        aspects = {topic: (body.aspects or {}).get(topic, before["aspects"].get(topic, sentiment))
+                   for topic in topics}
+    else:
+        aspects = before["aspects"]
+    after = {"sentiment": sentiment, "topics": topics, "aspects": aspects}
+    if before != after:
+        fb.sentiment, fb.topics, fb.aspects = sentiment, topics, aspects
+        if label_for(fb.sentiment_score) != sentiment:
+            fb.sentiment_score = {"positive": 0.6, "neutral": 0.0, "negative": -0.6}[sentiment]
+        fb.is_corrected = True
+        db.add(AnalysisCorrection(feedback_id=fb.id, corrected_by=user.id, before=before, after=after, reason=body.reason))
+        db.commit()
+    return {"id": fb.id, **after, "is_corrected": fb.is_corrected}
 
 
 # ------------------------------------------------------------------ catalogue

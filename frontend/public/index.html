@@ -9,7 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#1f3a68">
 <link rel="stylesheet" href="/pulse.css">
-<link rel="stylesheet" href="/sprint5.css">
+<link rel="stylesheet" href="/sprint5.css?v=5">
+<link rel="stylesheet" href="/sprint6.css?v=2">
 </head>
 <body>
 
@@ -241,6 +242,8 @@
         <button type="button" data-nav="feedback" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Give feedback</span></button>
         <button type="button" data-nav="responses" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Feedback analytics</span></button>
         <button type="button" data-nav="admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 11.5a3 3 0 1 0 0-6M18 14.8c2 .6 3.5 2.2 3.5 5.2"/></svg><span>Users</span></button>
+        <button type="button" data-admin-workspace="surveys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8m-8 4h8m-8 4h5"/></svg><span>Surveys</span></button>
+        <button type="button" data-admin-workspace="topics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v8l9 9 8-8-9-9z"/><circle cx="7.5" cy="7.5" r="1"/></svg><span>Topic categories</span></button>
         <button type="button" data-nav="profile" id="admBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span class="lbl-txt">Profile</span></button>
       </nav>
       <div class="rail-foot">
@@ -257,6 +260,7 @@
     </aside>
     <div class="page">
 
+    <section id="adminUsersWorkspace">
     <div class="adm-head">
       <div>
         <h1>Users</h1>
@@ -311,6 +315,8 @@
       </div>
       <div class="adm-foot" id="admCount"></div>
     </section>
+    </section>
+    <section id="adminOperationsWorkspace" class="workflow-workspace" hidden></section>
     </div>
   </div>
 
@@ -353,7 +359,8 @@
       <div><b data-i18n="anonymous_title">Anonymous feedback</b><span data-i18n="anonymous_text"> Names, IDs, email addresses and phone numbers are removed before a response is saved.</span></div>
     </div>
 
-    <div class="seg fb-tabs" id="fbTabs" role="tablist" aria-label="Form type"></div>
+    <div class="seg fb-tabs" id="fbTabs" role="group" aria-label="Feedback form"></div>
+    <p id="fbDescription" class="workflow-form-description" hidden></p>
 
     <section class="adm-panel">
       <div class="adm-toolbar">
@@ -371,24 +378,33 @@
 
   <!-- ========== Staff: responses (full page) ========== -->
   <div class="admin-app" id="responsesApp" hidden>
-    <aside class="rail">
-      <div class="rail-brand">
-        <div class="logo-mark"></div>
-        <div class="logo-text">SDU University<small>Student feedback</small></div>
-      </div>
-      <nav class="rail-nav" aria-label="Main">
+    <aside class="rail staff-sidebar">
+      <header class="staff-sidebar-head">
+        <button type="button" class="icon-btn staff-sidebar-toggle" id="staffSidebarToggle"
+          aria-expanded="true" aria-controls="staffSidebarNav staffSidebarFooter" aria-label="Collapse sidebar" title="Collapse sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/>
+            <path class="staff-sidebar-chevron" d="m16 9-3 3 3 3"/>
+          </svg>
+        </button>
+        <div class="rail-brand">
+          <div class="logo-mark"></div>
+          <div class="logo-text">SDU University<small>Student feedback</small></div>
+        </div>
+      </header>
+      <nav class="rail-nav" id="staffSidebarNav" aria-label="Main">
         <button type="button" data-nav="feedback" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Give feedback</span></button>
         <button type="button" data-nav="responses" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Feedback analytics</span></button>
         <div class="mgr-submenu" id="mgrSubmenu" aria-label="Feedback analytics sections" hidden>
           <button type="button" data-mgr-view="explorer" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h7"/></svg><span>Feedback explorer</span></button>
-          <button type="button" data-mgr-view="overview" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Overview</span></button>
-          <button type="button" data-mgr-view="compare" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18V8M9 18V4M15 18v-9M21 18v-6"/></svg><span>Comparisons &amp; Trends</span></button>
+          <button type="button" data-mgr-view="overview" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></button>
           <button type="button" data-mgr-view="reports" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3 3 3 3-3"/></svg><span>Reports</span></button>
+          <button type="button" data-mgr-view="actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 2.5 2.5L16 9"/></svg><span>Improvement actions</span></button>
         </div>
         <button type="button" data-nav="admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 11.5a3 3 0 1 0 0-6M18 14.8c2 .6 3.5 2.2 3.5 5.2"/></svg><span>Users</span></button>
         <button type="button" data-nav="profile" data-page-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span class="lbl-txt">Profile</span></button>
       </nav>
-      <div class="rail-foot">
+      <div class="rail-foot" id="staffSidebarFooter">
         <div class="ui-tools" data-ui-tools></div>
         <div class="me-chip">
           <span class="avatar js-me-avatar">F</span>
@@ -425,81 +441,124 @@
 
 
 
-    <section class="mgr-section" id="overviewSection" hidden aria-labelledby="overviewSectionTitle">
-      <div class="mgr-section-head">
+    <section class="mgr-section mgr-dashboard" id="overviewSection" hidden aria-labelledby="overviewSectionTitle">
+      <header class="mgr-dashboard-head">
         <div>
-          <span class="mgr-kicker">Manager dashboard</span>
-          <h2 id="overviewSectionTitle">Overview</h2>
-          <p>A quick view of course and service feedback across SDU.</p>
+          <h1 id="overviewSectionTitle">Feedback dashboard</h1>
+          <div class="mgr-current-filters" id="mgrCurrentFilters" aria-live="polite"></div>
         </div>
-      </div>
+        <button type="button" class="btn-sm mgr-filter-trigger" id="mgrOpenFilters" aria-haspopup="dialog" aria-controls="mgrFilterDialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h6m4 0h6M4 17h10m4 0h2M10 4v6m4 4v6"/></svg>
+          Filters <span id="mgrFilterCount" hidden></span>
+        </button>
+      </header>
+      <p class="mgr-filter-error" id="mgrFilterError" role="alert" hidden></p>
 
-      <section class="mgr-filter-panel" aria-labelledby="mgrFiltersTitle">
-        <div class="mgr-filter-head">
-          <div>
-            <h3 id="mgrFiltersTitle">Dashboard filters</h3>
-            <p>Filter by semester, department, course or service, and instructor. The demo catalogue uses the same organisational records for faculty and department.</p>
+      <dialog class="mgr-filter-dialog" id="mgrFilterDialog" aria-labelledby="mgrFiltersTitle">
+        <form method="dialog">
+          <header class="mgr-dialog-head">
+            <h2 id="mgrFiltersTitle">Dashboard filters</h2>
+            <button type="submit" class="icon-btn" value="cancel" aria-label="Close filters">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </header>
+          <div class="mgr-filter-grid">
+            <label class="mgr-field"><span>Semester</span><span class="fx-select"><select id="mgrSemester"><option value="">All semesters</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+            <label class="mgr-field"><span>Feedback type</span><span class="fx-select"><select id="mgrKind"><option value="">All feedback</option><option value="course">Course evaluations</option><option value="service">Service reviews</option><option value="survey">General surveys</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+            <label class="mgr-field"><span>Academic faculty</span><span class="fx-select"><select id="mgrFaculty"><option value="">All faculties</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+            <label class="mgr-field"><span>Academic department</span><span class="fx-select"><select id="mgrDepartment"><option value="">All departments</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+            <label class="mgr-field"><span>Instructor</span><span class="fx-select"><select id="mgrInstructor"><option value="">All instructors</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+            <label class="mgr-field"><span>Course or service</span><span class="fx-select"><select id="mgrTarget"><option value="">All courses &amp; services</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
           </div>
-          <div class="mgr-filter-actions">
-            <button type="button" class="btn" id="mgrApplyFilters">Apply filters</button>
-            <button type="button" class="btn secondary" id="mgrResetFilters">Reset</button>
-          </div>
-        </div>
-        <div class="mgr-filter-grid">
-          <label class="mgr-field"><span>Semester</span><span class="fx-select"><select id="mgrSemester"><option value="">All semesters</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
-          <label class="mgr-field"><span>Faculty</span><span class="fx-select"><select id="mgrFaculty"><option value="">All faculties</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
-          <label class="mgr-field"><span>Department</span><span class="fx-select"><select id="mgrDepartment"><option value="">All departments</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
-          <label class="mgr-field"><span>Instructor</span><span class="fx-select"><select id="mgrInstructor"><option value="">All instructors</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
-          <label class="mgr-field mgr-field-wide"><span>Course or service</span><span class="fx-select"><select id="mgrTarget"><option value="">All courses &amp; services</option></select><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
-        </div>
-        <div class="mgr-current-filters" id="mgrCurrentFilters" aria-live="polite"></div>
-        <p id="mgrFilterError" role="alert" hidden></p>
-      </section>
+          <footer class="mgr-filter-actions">
+            <button type="button" class="btn-sm" id="mgrResetFilters">Reset filters</button>
+            <button type="submit" class="btn-sm mgr-filter-trigger" id="mgrApplyFilters" value="apply">Apply filters</button>
+          </footer>
+        </form>
+      </dialog>
 
       <section class="mgr-kpi-grid" aria-label="Key performance indicators">
         <article class="mgr-kpi-card">
-          <span class="mgr-kpi-icon is-gold">☆</span>
-          <p>Overall satisfaction</p><b id="mgrAvgRating">—</b><small id="mgrAvgRatingNote">Average score out of 5</small>
+          <span class="mgr-kpi-icon is-rating"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-3-5.5 3 1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></span>
+          <p>Overall satisfaction</p>
+          <b id="mgrAvgRating">—</b>
+          <small id="mgrAvgRatingNote">Average score out of 5</small>
         </article>
         <article class="mgr-kpi-card">
-          <span class="mgr-kpi-icon is-violet">◌</span>
-          <p>Total feedback</p><b id="mgrTotalFeedback">—</b><small id="mgrTotalFeedbackNote">Responses in the current scope</small>
+          <span class="mgr-kpi-icon is-total"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14a3 3 0 0 1-3 3H9l-5 4V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3z"/><path d="M8 8h9m-9 4h6"/></svg></span>
+          <p>Total feedback</p>
+          <b id="mgrTotalFeedback">—</b>
+          <small id="mgrTotalFeedbackNote">Responses in the current scope</small>
         </article>
         <article class="mgr-kpi-card">
-          <span class="mgr-kpi-icon is-green">♡</span>
-          <p>Positive sentiment</p><b id="mgrPositiveShare">—</b><small id="mgrPositiveShareNote">Share of positive responses</small>
-          <div class="mgr-meter"><i id="mgrPositiveMeter"></i></div>
+          <span class="mgr-kpi-icon is-positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 16 6-6 4 4 7-8m-5 0h5v5"/></svg></span>
+          <p>Positive sentiment</p>
+          <b id="mgrPositiveShare">—</b>
+          <small id="mgrPositiveShareNote">Share of positive responses</small>
         </article>
         <article class="mgr-kpi-card">
-          <span class="mgr-kpi-icon is-red">⚠</span>
-          <p>Negative sentiment</p><b id="mgrNegativeShare">—</b><small id="mgrNegativeShareNote">Share of negative responses</small>
-          <div class="mgr-meter"><i id="mgrNegativeMeter"></i></div>
+          <span class="mgr-kpi-icon is-negative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 6 6 4-4 7 8m-5 0h5v-5"/></svg></span>
+          <p>Negative sentiment</p>
+          <b id="mgrNegativeShare">—</b>
+          <small id="mgrNegativeShareNote">Share of negative responses</small>
         </article>
       </section>
 
-      <section class="mgr-card mgr-university-card" data-manager-only aria-labelledby="mgrUniversityTitle">
-        <header class="mgr-card-head"><div><h3 id="mgrUniversityTitle">SDU at a glance</h3><p>Live counts from the university database: people, departments, courses and services.</p></div></header>
+      <article class="mgr-card mgr-trend-panel" aria-labelledby="mgrTrendsTitle">
+        <header class="mgr-card-head">
+          <h2 id="mgrTrendsTitle">Semester trends</h2>
+          <div class="mgr-segments" id="mgrTrendSwitch" role="group" aria-label="Trend metric">
+            <button type="button" data-trend="sentiment" aria-pressed="true">Sentiment</button>
+            <button type="button" data-trend="topics" aria-pressed="false">Topics</button>
+          </div>
+        </header>
+        <div id="trendAnalysis" aria-live="polite"></div>
+        <div id="mgrTopicTrendPanel" hidden>
+          <label class="mgr-topic-picker"><span>Topic</span><select id="mgrTopicTrendSelect"><option value="">Choose a topic</option></select></label>
+          <div id="mgrTopicTrendChart" aria-live="polite"></div>
+        </div>
+      </article>
+
+      <div class="mgr-dashboard-grid">
+        <article class="mgr-card mgr-compare-panel" data-manager-only aria-labelledby="mgrCompareTitle">
+          <header class="mgr-card-head">
+            <h2 id="mgrCompareTitle">Compare satisfaction</h2>
+            <div class="mgr-segments" id="compareTabs" role="group" aria-label="Compare by">
+              <button type="button" data-compare="course" aria-pressed="true">Courses</button>
+              <button type="button" data-compare="department" aria-pressed="false">Departments</button>
+              <button type="button" data-compare="service" aria-pressed="false">Services</button>
+            </div>
+          </header>
+          <div id="compareAnalysis" aria-live="polite"></div>
+        </article>
+
+        <article class="mgr-card mgr-overview-panel" aria-labelledby="mgrSentimentTitle">
+          <header class="mgr-card-head"><h2 id="mgrSentimentTitle">Sentiment breakdown</h2></header>
+          <div id="mgrOverviewSentiment" aria-live="polite"></div>
+          <section class="mgr-topics-panel" aria-labelledby="mgrTopicsTitle">
+            <h3 id="mgrTopicsTitle">Top topics</h3>
+            <div id="mgrTopTopics" aria-live="polite"></div>
+          </section>
+        </article>
+      </div>
+
+      <article class="mgr-card mgr-alert-panel" data-manager-only aria-labelledby="mgrAlertsTitle">
+        <header class="mgr-card-head">
+          <h2 id="mgrAlertsTitle">Negative trend alerts</h2>
+          <button type="button" class="icon-btn" id="recomputeAlerts" aria-label="Refresh alerts" title="Refresh alerts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8m0-5v5h-5"/></svg>
+          </button>
+        </header>
+        <p class="mgr-alert-summary" id="mgrAlertSummary" role="status"></p>
+        <div id="alertAnalysis"></div>
+      </article>
+
+      <details class="mgr-card mgr-university-card" id="mgrUniversityDetails" data-manager-only>
+        <summary class="mgr-disclosure">SDU at a glance</summary>
         <div id="mgrUniversityStats" class="mgr-university-stats" aria-live="polite"></div>
-        <h4 class="mgr-stat-subtitle">Departments</h4>
         <div id="mgrDepartmentDetails" class="mgr-department-grid"></div>
         <p class="mgr-data-source" id="mgrDataSource"></p>
-      </section>
-
-      <section class="mgr-overview-grid">
-        <article class="mgr-card">
-          <header class="mgr-card-head"><div><h3>Sentiment distribution</h3><p>Share of positive, neutral and negative feedback based on actual responses.</p></div></header>
-          <div id="mgrOverviewSentiment" aria-live="polite"></div>
-        </article>
-        <article class="mgr-card">
-          <header class="mgr-card-head"><div><h3>Top topics at a glance</h3><p>The most discussed areas in the current scope.</p></div></header>
-          <div id="mgrTopTopics" aria-live="polite"></div>
-        </article>
-        <article class="mgr-card mgr-overview-alert" data-manager-only>
-          <header class="mgr-card-head"><div><h3>Alert</h3><p>Visible warning when negative feedback rises for a course or service.</p></div></header>
-          <div id="mgrAlertSummary"></div>
-          <button type="button" class="mgr-view-alerts" id="mgrOpenAlerts">See all trend alerts</button>
-        </article>
-      </section>
+      </details>
     </section>
 
     <section class="mgr-section" id="explorerSection" hidden aria-label="Feedback explorer">
@@ -628,6 +687,7 @@
           <button type="button" data-kind="" class="on" aria-pressed="true">All</button>
           <button type="button" data-kind="course" aria-pressed="false">Courses</button>
           <button type="button" data-kind="service" aria-pressed="false">Services</button>
+          <button type="button" data-kind="survey" aria-pressed="false">Surveys</button>
         </div>
         <div class="fx-seg fx-tone-seg" id="rspSentimentSeg" role="group" aria-label="Filter by sentiment">
           <button type="button" data-filter-sentiment="" class="on" aria-pressed="true">Any tone</button>
@@ -672,51 +732,19 @@
     </section>
     </section>
 
-    <section class="mgr-section" id="compareSection" hidden aria-labelledby="compareSectionTitle">
-      <div class="mgr-section-head">
-        <div>
-          <span class="mgr-kicker">Decision support</span>
-          <h2 id="compareSectionTitle">Comparisons &amp; Trends</h2>
-          <p id="mgrTrendScope"></p>
-        </div>
-      </div>
-
-      <div class="mgr-stack">
-        <article class="mgr-card mgr-card-wide">
-          <header class="mgr-card-head"><div><h3>Trend analysis</h3><p>Sentiment changes across semesters.</p></div></header>
-          <div id="trendAnalysis" aria-live="polite"></div>
-          <div class="mgr-topic-trends"><div class="mgr-topic-trends-title"><h4>Topic frequency by semester</h4><label>Topic <select id="mgrTopicTrendSelect"><option value="">Choose a topic</option></select></label></div><div id="mgrTopicTrendChart" aria-live="polite"></div></div>
-        </article>
-
-        <article class="mgr-card mgr-card-wide" data-manager-only>
-          <header class="mgr-card-head"><div><h3>Negative trend alerts</h3><p>React quickly when negative feedback rises sharply for a course, service or department.</p></div><button type="button" class="btn-sm" id="recomputeAlerts">Refresh alerts</button></header>
-          <div id="alertAnalysis"></div>
-        </article>
-
-        <article class="mgr-card mgr-card-wide" data-manager-only>
-          <header class="mgr-card-head"><div><h3>Compare courses, departments &amp; services</h3><p>Find best practices and weaker areas using side-by-side comparisons.</p></div></header>
-          <div class="seg mgr-compare-tabs" id="compareTabs" role="tablist" aria-label="Comparison type">
-            <button type="button" class="on" data-compare="course">By course</button>
-            <button type="button" data-compare="department">By department</button>
-            <button type="button" data-compare="service">By service</button>
-          </div>
-          <div id="compareAnalysis"></div>
-        </article>
-      </div>
-    </section>
-
+    <section class="mgr-section workflow-workspace" id="actionsSection" hidden></section>
     <section class="mgr-section" id="reportsSection" hidden aria-labelledby="reportsSectionTitle">
       <div class="mgr-section-head">
         <div>
           <span class="mgr-kicker">Share results</span>
           <h2 id="reportsSectionTitle">Reports</h2>
-          <p>Download reports for meetings or copy a quick summary.</p>
+          <p id="mgrReportScope"></p>
         </div>
       </div>
       <article class="mgr-card mgr-card-wide mgr-report-builder">
         <header class="mgr-card-head"><div><h3>Build your report</h3><p>First choose what information to include, then choose a file format.</p></div></header>
         <div class="mgr-report-options">
-          <label class="mgr-report-field"><span>1. What do you want to report?</span>
+          <label class="mgr-report-field"><span>Report content</span>
             <select id="mgrReportSection">
               <option value="overview">Overview — satisfaction, response counts, sentiment</option>
               <option value="trends">Semester trends — changes across periods</option>
@@ -726,7 +754,7 @@
               <option value="alerts">Negative trend alerts — affected areas and rates</option>
             </select>
           </label>
-          <label class="mgr-report-field"><span>2. File format</span>
+          <label class="mgr-report-field"><span>File format</span>
             <select id="mgrReportFormat"><option value="pdf">PDF — ready to share at meetings</option><option value="xlsx">Excel (.xlsx) — editable table</option></select>
           </label>
         </div>
@@ -742,6 +770,23 @@
 
     </div>
   </div>
+
+  <dialog class="workflow-dialog" id="workflowDialog" aria-labelledby="workflowDialogTitle">
+    <form id="workflowForm">
+      <header class="workflow-dialog-head">
+        <h2 id="workflowDialogTitle"></h2>
+        <button class="icon-btn" type="button" data-workflow-close aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div id="workflowFields"></div>
+      <p class="workflow-error" id="workflowError" role="alert" hidden></p>
+      <footer class="workflow-dialog-foot">
+        <button class="btn-sm" type="button" data-workflow-close>Cancel</button>
+        <button class="btn-sm workflow-primary" id="workflowSave" type="submit">Save changes</button>
+      </footer>
+    </form>
+  </dialog>
 
   <!-- ========== Create / edit user modal ========== -->
   <div class="modal" id="userModal" hidden role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
@@ -871,7 +916,7 @@
         <div class="eval-stage">
           <div id="evalQuestions"></div>
           <div class="field" id="evalCommentStep" hidden>
-            <label class="lbl" for="evalComment"><span id="evalPrompt">Comment</span><span data-i18n="optional">optional</span></label>
+            <label class="lbl" for="evalComment"><span id="evalPrompt">Comment</span><span id="evalOptional" data-i18n="optional">optional</span></label>
             <textarea class="ta" id="evalComment" maxlength="2000" rows="5" placeholder="Be specific — what should stay, and what should change?"></textarea>
             <div class="ta-foot">
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span data-i18n="pii_note">Names, emails and phone numbers are removed automatically.</span></span>
@@ -1497,6 +1542,9 @@ function openAdmin() {
   $("admMeEmail").textContent = me.email || "";
   $("admAvatar").textContent = initials(me.name);
   showPage("admin");
+  $("adminUsersWorkspace").hidden = false;
+  $("adminOperationsWorkspace").hidden = true;
+  adminApp.querySelectorAll("[data-admin-workspace]").forEach(button => button.removeAttribute("aria-current"));
   loadUsers();
 }
 $("openAdmin").addEventListener("click", openAdmin);
@@ -1875,12 +1923,16 @@ function resetPages() {
   Object.assign(admState, { q: "", role: "", status: "", sort: "name", dir: 1 });
   usersCache = [];
   admSearch.value = "";
-  Object.assign(fbState, { forms: [], kind: "course", q: "" });
+  Object.assign(fbState, { forms: [], formId: null, q: "" });
   fbSearch.value = "";
   fbTabs.innerHTML = fbTargets.innerHTML = "";
+  setTrendMetric("sentiment");
+  setComparisonType("course");
+  $("mgrFilterDialog").close();
+  $("mgrUniversityDetails").open = false;
   Object.assign(rspState, {
-    ...DASHBOARD_RESET, meta: null, alerts: null, university: null, trends: null, compare: {}, compareBy: "course",
-    data: null, analytics: null, summary: null, keywords: null, quoteTopic: "", kind: "", pii: false, target: "", q: "",
+    ...DASHBOARD_RESET, meta: null, alerts: null, university: null, trends: null, compare: {},
+    data: null, analytics: null, summary: null, keywords: null, quoteTopic: "", pii: false, q: "",
     sentiment: "", topic: "", tone: "", expanded: { topics: false, aspects: false },
   });
   rspSearch.value = "";
@@ -1888,11 +1940,12 @@ function resetPages() {
   rspEmpty.hidden = true;
   $("rspFilters").hidden = true;
   evalCtx = null;
+  document.dispatchEvent(new Event("workflow-reset"));
 }
 document.querySelectorAll("[data-page-back]").forEach(b => b.addEventListener("click", closePages));
 document.querySelectorAll("[data-page-logout]").forEach(b => b.addEventListener("click", () => signOut()));
 
-const KIND_LABEL = { course: "Course evaluation", service: "Service review" };
+const KIND_LABEL = { course: "Course evaluation", service: "Service review", survey: "General survey" };
 const PH_RE = /\[(NAME|EMAIL|PHONE|ID|CONTACT)\]/g;
 const PH_LABEL = { NAME: ["name", "names"], EMAIL: ["email", "emails"], PHONE: ["phone number", "phone numbers"], ID: ["ID number", "ID numbers"], CONTACT: ["contact handle", "contact handles"] };
 // Escapes first, then highlights the placeholders the server put in place of personal data.
@@ -1909,7 +1962,7 @@ const SHIELD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const fbTabs = $("fbTabs"), fbTargets = $("fbTargets"), fbEmpty = $("fbEmpty"), fbSearch = $("fbSearch");
 const evalModal = $("evalModal"), evalForm = $("evalForm"), evalDone = $("evalDone");
 const evalComment = $("evalComment"), evalAlertEl = $("evalAlert"), evalSubmit = $("evalSubmit");
-const fbState = { forms: [], kind: "course", q: "" };
+const fbState = { forms: [], formId: null, q: "" };
 let evalCtx = null;
 let evalStep = 0;
 
@@ -1925,25 +1978,28 @@ async function openFeedback() {
     return;
   }
   fbState.forms = data;
-  if (!data.some(f => f.kind === fbState.kind) && data[0]) fbState.kind = data[0].kind;
+  if (!data.some(form => form.id === fbState.formId)) fbState.formId = data[0]?.id ?? null;
   renderForms();
 }
-const currentForm = () => fbState.forms.find(f => f.kind === fbState.kind);
+const currentForm = () => fbState.forms.find(form => form.id === fbState.formId);
 
 function renderForms() {
   fbTabs.innerHTML = fbState.forms.map(f => {
-    const on = f.kind === fbState.kind, done = f.targets.filter(t => t.done).length;
-    const label = tr(f.kind === "course" ? "kind_course" : "kind_service");
-    return `<button type="button" role="tab" data-kind="${f.kind}" class="${on ? "on" : ""}" aria-selected="${on}">${label}<small>${done}/${f.targets.length}</small></button>`;
+    const on = f.id === fbState.formId, done = f.targets.filter(t => t.done).length;
+    return `<button type="button" data-form-id="${f.id}" class="${on ? "on" : ""}" aria-pressed="${on}">
+      ${escapeHtml(trContent(f.title))}<small>${done}/${f.targets.length}</small></button>`;
   }).join("");
 
   const form = currentForm();
+  $("fbDescription").hidden = !form?.description;
+  $("fbDescription").textContent = form?.description || "";
   if (!form) {
     fbTargets.innerHTML = `<div class="adm-empty" style="grid-column:1/-1"><b>${tr("no_open_forms")}</b></div>`;
     $("fbProgress").textContent = "—"; $("fbBar").style.width = "0";
     fbEmpty.hidden = true;
     return;
   }
+  fbSearch.closest(".input").hidden = form.kind === "survey";
   fbSearch.placeholder = tr(form.kind === "course" ? "search_courses" : "search_services");
   const done = form.targets.filter(t => t.done).length, total = form.targets.length;
   $("fbLead").textContent = `${trContent(form.semester)}. ${tr("rated_progress", { done, total })}`;
@@ -1977,8 +2033,9 @@ function tgtHtml(t) {
 
 fbTabs.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
-  fbState.kind = b.dataset.kind; fbState.q = ""; fbSearch.value = "";
+  fbState.formId = Number(b.dataset.formId); fbState.q = ""; fbSearch.value = "";
   renderForms();
+  fbTabs.querySelector(`[data-form-id="${fbState.formId}"]`).focus();
 });
 fbSearch.addEventListener("input", () => { fbState.q = fbSearch.value; renderForms(); });
 fbTargets.addEventListener("click", e => {
@@ -2004,7 +2061,8 @@ function openEval(form, t) {
           `<label><input type="radio" name="q${q.id}" value="${v}" aria-label="${escapeHtml(tr(`rating_${v}`))}"><span><b>${v}</b><small data-rating-label="${v}">${escapeHtml(tr(`rating_${v}`))}</small></span></label>`).join("")}</div>
       </fieldset>`).join("");
   evalComment.value = "";
-  $("evalPrompt").textContent = tr("comment");
+  $("evalPrompt").textContent = trContent(form.comment_prompt) || tr("comment");
+  $("evalOptional").hidden = form.comment_required;
   evalComment.placeholder = tr("comment_hint");
   updateEvalCount();
   evalAlertEl.className = "alert";
@@ -2013,7 +2071,7 @@ function openEval(form, t) {
   evalDone.hidden = true;
   evalStep = 0;
   renderEvalStep(false);
-  openModal(evalModal, evalModal.querySelector(".likert input"));
+  openModal(evalModal, evalModal.querySelector(".likert input") || evalComment);
 }
 function showEvalAlert(msg) { evalAlertEl.className = "alert show"; evalAlertEl.textContent = msg; }
 function updateEvalCount() { $("evalCount").textContent = `${evalComment.value.length} / 2000`; }
@@ -2031,7 +2089,7 @@ function renderEvalStep(focus = true) {
   $("evalStepLabel").textContent = onComment
     ? tr("comment_step")
     : tr("question_of", { current: evalStep + 1, total: questions.length });
-  $("evalStepHint").textContent = onComment ? tr("optional") : "";
+  $("evalStepHint").textContent = onComment && !evalCtx.form.comment_required ? tr("optional") : "";
   $("evalStepBar").style.width = `${((evalStep + 1) / total) * 100}%`;
   evalAlertEl.className = "alert";
   if (focus) {
@@ -2050,7 +2108,7 @@ function refreshEvalLanguage() {
     : target.department;
   evalForm.querySelectorAll("[data-source]").forEach(el => { el.textContent = trContent(el.dataset.source); });
   evalForm.querySelectorAll("[data-rating-label]").forEach(el => { el.textContent = tr(`rating_${el.dataset.ratingLabel}`); });
-  $("evalPrompt").textContent = tr("comment");
+  $("evalPrompt").textContent = trContent(form.comment_prompt) || tr("comment");
   evalComment.placeholder = tr("comment_hint");
   renderEvalStep(false);
 }
@@ -2086,6 +2144,11 @@ evalForm.addEventListener("submit", async e => {
   e.preventDefault();
   if (!currentSession || !evalCtx || evalSubmit.disabled) return;
   const { form, target } = evalCtx;
+  if (form.comment_required && !evalComment.value.trim()) {
+    showEvalAlert("Please enter a response");
+    evalComment.focus();
+    return;
+  }
   const ratings = {};
   let firstMissing = null;
   form.questions.forEach(q => {
@@ -2108,7 +2171,7 @@ evalForm.addEventListener("submit", async e => {
   try {
     res = await api(`/evaluations/${form.id}/submit`, {
       method: "POST", token: currentSession.token,
-      body: { ratings, comment: evalComment.value.trim(), [form.kind === "course" ? "course_id" : "service_id"]: target.id },
+      body: { ratings, comment: evalComment.value.trim(), ...(form.kind === "survey" ? {} : { [`${form.kind}_id`]: target.id }) },
     });
   } finally {
     evalSubmit.classList.remove("loading"); evalSubmit.disabled = false;
@@ -2143,11 +2206,33 @@ evalForm.addEventListener("submit", async e => {
    ========================================================= */
 const rspList = $("rspList"), rspEmpty = $("rspEmpty"), rspSearch = $("rspSearch"), rspTarget = $("rspTarget");
 const responsesApp = $("responsesApp"), rspCount = $("rspCount"), rspKpis = $("rspKpis");
+const staffSidebarToggle = $("staffSidebarToggle");
+const staffSidebarCompact = window.matchMedia("(max-width: 920px)");
+const staffSidebarKey = "pulse.staffSidebarExpanded";
+function setStaffSidebar(expanded) {
+  responsesApp.classList.toggle("is-sidebar-collapsed", !expanded);
+  $("staffSidebarNav").hidden = $("staffSidebarFooter").hidden = !expanded;
+  const label = expanded ? "Collapse sidebar" : "Expand sidebar";
+  staffSidebarToggle.setAttribute("aria-expanded", String(expanded));
+  staffSidebarToggle.setAttribute("aria-label", label);
+  staffSidebarToggle.title = label;
+}
+function restoreStaffSidebar() {
+  setStaffSidebar(store.get("localStorage", staffSidebarKey) ?? !staffSidebarCompact.matches);
+}
+staffSidebarToggle.addEventListener("click", () => {
+  const expanded = staffSidebarToggle.getAttribute("aria-expanded") !== "true";
+  store.set("localStorage", staffSidebarKey, expanded);
+  setStaffSidebar(expanded);
+});
+staffSidebarCompact.addEventListener("change", restoreStaffSidebar);
+restoreStaffSidebar();
+
 // sentiment filters by overall response sentiment; topic (+ optional tone) by a topic's aspect sentiment.
-const DASHBOARD_RESET = { semester: "", faculty: "", department_id: "", instructor_id: "", target: "" };
+const DASHBOARD_RESET = { semester: "", faculty: "", department_id: "", instructor_id: "", target: "", kind: "" };
 const rspState = {
   data: null, analytics: null, summary: null, keywords: null, trends: null, alerts: null, meta: null,
-  compare: {}, compareBy: "course", quoteTopic: "", kind: "", pii: false, target: "", q: "",
+  compare: {}, compareBy: "course", quoteTopic: "", pii: false, q: "",
   sentiment: "", topic: "", tone: "", expanded: { topics: false, aspects: false },
   // explorer-only filters and order
   language: "", rating: "", commented: false, sort: "new",
@@ -2185,7 +2270,6 @@ const FA_CARDS = ["sentimentAnalysis", "topicAnalysis", "aspectAnalysis", "probl
   "suggestionAnalysis", "keywordAnalysis", "quoteAnalysis", "summaryBody"];
 const rspStateHtml = (title, text, action = "") => `<b>${title}</b><p>${text}</p>${action}`;
 
-// Four compact views below Feedback analytics. The previous Sprint 3/4 view stays intact.
 let managerActiveView = "overview";
 let managerMenuOpen = false;
 function toggleManagerMenu() {
@@ -2194,19 +2278,17 @@ function toggleManagerMenu() {
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
 }
-const managerViews = { explorer: "explorerSection", overview: "overviewSection", compare: "compareSection", reports: "reportsSection" };
+const managerViews = { explorer: "explorerSection", overview: "overviewSection", reports: "reportsSection", actions: "actionsSection" };
 function selectManagerView(view = "overview") {
   if (!Object.prototype.hasOwnProperty.call(managerViews, view)) view = "overview";
-  if (currentSession?.user?.role !== "manager" && view === "reports") view = "overview";
-  managerActiveView = view;
   const isManager = currentSession?.user?.role === "manager";
+  const restricted = ["reports", "actions"];
+  if (!isManager && restricted.includes(view)) view = "overview";
+  managerActiveView = view;
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
   document.querySelectorAll("#mgrSubmenu [data-mgr-view]").forEach(button => {
-    button.hidden = !isManager && button.dataset.mgrView === "reports";
-    if (button.dataset.mgrView === "compare") {
-      button.querySelector("span").textContent = isManager ? "Comparisons & Trends" : "Trends";
-    }
+    button.hidden = !isManager && restricted.includes(button.dataset.mgrView);
     const active = button.dataset.mgrView === view;
     button.classList.toggle("is-active", active);
     if (active) button.setAttribute("aria-current", "page");
@@ -2214,12 +2296,12 @@ function selectManagerView(view = "overview") {
   });
   for (const [name, id] of Object.entries(managerViews)) $(id).hidden = name !== view;
   $("responsesHead").hidden = view !== "explorer";
-  $("compareSectionTitle").textContent = isManager ? "Comparisons & Trends" : "Trends";
   document.querySelectorAll("#responsesApp [data-manager-only]")
     .forEach(card => { card.hidden = !isManager; });
   const appTitle = $("responsesApp").querySelector(".page");
   appTitle.setAttribute("data-mgr-active", view);
   window.scrollTo(0, 0);
+  if (view === "actions") document.dispatchEvent(new Event("workflow-actions-open"));
 }
 $("mgrSubmenu").addEventListener("click", event => {
   const button = event.target.closest("[data-mgr-view]");
@@ -2263,14 +2345,15 @@ function setSelectOptions(select, options, placeholder, current = "") {
   if (select.selectedIndex < 0) select.selectedIndex = 0;
 }
 
-function dashboardTargets(meta, { faculty, department_id, instructor_id }) {
+function dashboardTargets(meta, { faculty, department_id, instructor_id }, kind = "") {
+  if (kind === "survey") return [];
   const departments = meta.departments.filter(d =>
     (!faculty || String(d.faculty_id) === faculty) &&
     (!department_id || String(d.id) === department_id));
   const departmentIds = new Set(departments.map(d => d.id));
-  const courses = meta.courses.filter(c => departmentIds.has(c.department_id) &&
+  const courses = kind === "service" ? [] : meta.courses.filter(c => departmentIds.has(c.department_id) &&
     (!instructor_id || String(c.instructor_id) === instructor_id));
-  const services = faculty || department_id || instructor_id ? [] : meta.services;
+  const services = kind === "course" || faculty || department_id || instructor_id ? [] : meta.services;
   return [
     ...courses.map(c => ({ value: `course:${c.id}`, label: `${c.code} — ${c.title}` })),
     ...services.map(v => ({ value: `service:${v.id}`, label: v.name })),
@@ -2278,24 +2361,36 @@ function dashboardTargets(meta, { faculty, department_id, instructor_id }) {
 }
 
 function syncDashboardFilters(selection = rspState) {
-  const meta = rspState.meta;
-  if (!meta) return;
-  const { semester, faculty, department_id, instructor_id, target } = selection;
+  const meta = rspState.meta || { semesters: [], faculties: [], departments: [], courses: [], instructors: [], services: [] };
+  $("mgrApplyFilters").disabled = !rspState.meta;
+  $("mgrKind").disabled = !rspState.meta;
+  $("mgrSemester").disabled = !meta.semesters.length;
+  const { semester, faculty, department_id, instructor_id, target, kind } = selection;
+  const serviceOnly = kind === "service";
+  $("mgrKind").value = kind;
+  $("mgrKind").querySelector('[value="service"]').disabled = !meta.services.length;
+  $("mgrKind").querySelector('[value="survey"]').disabled = currentSession?.user?.role === "faculty";
   setSelectOptions($("mgrSemester"), meta.semesters.map(v => ({ value: v, label: v })), "All semesters", semester);
   const toOption = item => ({ value: item.id, label: item.name });
   setSelectOptions($("mgrFaculty"), meta.faculties.map(toOption),
-    meta.faculties.length ? "All faculties" : "No faculties configured", faculty);
-  $("mgrFaculty").disabled = !meta.faculties.length;
+    meta.faculties.length ? "All faculties" : "No faculties configured", serviceOnly ? "" : faculty);
+  $("mgrFaculty").disabled = serviceOnly || !meta.faculties.length;
   const selectedFaculty = $("mgrFaculty").value;
   const departments = meta.departments.filter(d => !selectedFaculty || String(d.faculty_id) === selectedFaculty);
-  setSelectOptions($("mgrDepartment"), departments.map(toOption), "All departments", department_id);
+  setSelectOptions($("mgrDepartment"), departments.map(toOption), "All departments", serviceOnly ? "" : department_id);
+  $("mgrDepartment").disabled = serviceOnly || !departments.length;
   const selectedDepartment = $("mgrDepartment").value;
   const departmentIds = new Set(departments.filter(d => !selectedDepartment || String(d.id) === selectedDepartment).map(d => d.id));
   const instructorIds = new Set(meta.courses.filter(c => departmentIds.has(c.department_id)).map(c => c.instructor_id));
-  setSelectOptions($("mgrInstructor"), meta.instructors.filter(i => instructorIds.has(i.id)).map(toOption), "All instructors", instructor_id);
-  setSelectOptions($("mgrTarget"), dashboardTargets(meta, {
+  const instructors = meta.instructors.filter(i => instructorIds.has(i.id));
+  setSelectOptions($("mgrInstructor"), instructors.map(toOption), "All instructors", serviceOnly || kind === "survey" ? "" : instructor_id);
+  $("mgrInstructor").disabled = serviceOnly || kind === "survey" || !instructors.length;
+  const targets = dashboardTargets(meta, {
     faculty: selectedFaculty, department_id: selectedDepartment, instructor_id: $("mgrInstructor").value,
-  }), "All courses & services", target);
+  }, kind);
+  const anyTarget = { course: "All courses", service: "All services", survey: "General surveys" }[kind] || "All courses &amp; services";
+  setSelectOptions($("mgrTarget"), targets, anyTarget, target);
+  $("mgrTarget").disabled = !targets.length;
 }
 
 function dashboardSelection() {
@@ -2305,6 +2400,7 @@ function dashboardSelection() {
     department_id: $("mgrDepartment").value,
     instructor_id: $("mgrInstructor").value,
     target: $("mgrTarget").value,
+    kind: $("mgrKind").value,
   };
 }
 
@@ -2321,14 +2417,23 @@ function syncExplorerTarget() {
   setSelectOptions(rspTarget, dashboardTargets(rspState.meta, rspState), "Every course & service", rspState.target);
 }
 
-function renderCurrentFilters() {
+function dashboardFilterLabels() {
   const meta = rspState.meta || {};
   const dep = (meta.departments || []).find(x => String(x.id) === String(rspState.department_id));
   const fac = (meta.faculties || []).find(x => String(x.id) === String(rspState.faculty));
   const ins = (meta.instructors || []).find(x => String(x.id) === String(rspState.instructor_id));
   const target = meta.courses && dashboardTargets(meta, rspState).find(v => v.value === rspState.target)?.label;
-  const label = `Current filters: ${rspState.semester || "All semesters"} · ${fac?.name || "All faculties"} · ${dep?.name || "All departments"} · ${target || "All courses & services"} · ${ins?.name || "All instructors"}${rspState.kind ? ` · ${KIND_LABEL[rspState.kind]}` : ""}`;
-  $("mgrCurrentFilters").textContent = $("mgrTrendScope").textContent = label;
+  return [rspState.semester, fac?.name, dep?.name, ins?.name, KIND_LABEL[rspState.kind], target].filter(Boolean);
+}
+
+function renderCurrentFilters() {
+  const labels = dashboardFilterLabels();
+  $("mgrCurrentFilters").innerHTML = labels.length
+    ? labels.map(label => `<span class="mgr-scope-chip">${escapeHtml(label)}</span>`).join("")
+    : "All semesters · All feedback";
+  $("mgrFilterCount").hidden = !labels.length;
+  $("mgrFilterCount").textContent = labels.length;
+  $("mgrReportScope").textContent = labels.join(" · ") || "All semesters · All feedback";
 }
 
 function renderUniversityStats(loading = false) {
@@ -2360,68 +2465,118 @@ function renderManagerOverview(loading = false) {
       setText(id, "—");
       setText(id + "Note", "");
     });
-    ["mgrPositiveMeter", "mgrNegativeMeter"].forEach(id => { $(id).style.width = "0%"; });
     $("mgrOverviewSentiment").innerHTML = loading ? FA_SKELETON : emptyAnalysis("Dashboard overview is temporarily unavailable.");
     $("mgrTopTopics").innerHTML = loading ? FA_SKELETON : emptyAnalysis("Top topics are temporarily unavailable.");
     return;
   }
   setText("mgrAvgRating", a.avg_rating != null ? `${a.avg_rating.toFixed(2)}/5` : "—");
   setText("mgrTotalFeedback", String(a.total));
-  setText("mgrPositiveShare", a.analyzed ? `${Math.round(a.positive_share * 100)}%` : "—");
-  setText("mgrNegativeShare", a.analyzed ? `${Math.round(a.negative_share * 100)}%` : "—");
+  const shares = a.analyzed ? dashboardSentimentShares(a) : null;
+  setText("mgrPositiveShare", shares ? `${shares.positive}%` : "—");
+  setText("mgrNegativeShare", shares ? `${shares.negative}%` : "—");
   setText("mgrAvgRatingNote", a.rated ? `From ${plural(a.rated, "rated response")}` : "No ratings available");
-  setText("mgrTotalFeedbackNote", `${plural(a.total, "response")} in the current scope`);
+  setText("mgrTotalFeedbackNote", `${plural(a.analyzed, "response")} analyzed`);
   setText("mgrPositiveShareNote", a.analyzed ? plural(a.positive, "positive response") : "No sentiment data");
   setText("mgrNegativeShareNote", a.analyzed ? plural(a.negative, "negative response") : "No sentiment data");
-  $("mgrPositiveMeter").style.width = `${Math.round((a.positive_share || 0) * 100)}%`;
-  $("mgrNegativeMeter").style.width = `${Math.round((a.negative_share || 0) * 100)}%`;
   const sentimentRows = SENTIMENTS.map(s => [s, a[s] || 0]);
   const total = a.analyzed;
   $("mgrOverviewSentiment").innerHTML = total ? `
-    <div class="mgr-sentiment-stack">${sentimentRows.filter(([, n]) => n).map(([s, n]) => `<span class="is-${s}" style="width:${(n / total) * 100}%"></span>`).join("")}</div>
-    <div class="mgr-sentiment-legend">${sentimentRows.map(([s, n]) => `<button type="button" data-sentiment="${s}" class="mgr-tone-chip is-${s}"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]} <b>${Math.round(total ? n / total * 100 : 0)}%</b></button>`).join("")}</div>`
+    <div class="mgr-sentiment-stack" aria-hidden="true">${sentimentRows.filter(([, n]) => n).map(([s, n]) => `<span class="is-${s}" style="width:${(n / total) * 100}%"></span>`).join("")}</div>
+    <div class="mgr-sentiment-legend">${sentimentRows.map(([s, n]) => `<button type="button" data-sentiment="${s}" class="mgr-tone-chip is-${s}" title="${plural(n, "response")}">
+      <span><i class="fa-dot" aria-hidden="true"></i>${SENTIMENT_LABEL[s]}</span><b>${shares[s]}%</b></button>`).join("")}</div>`
     : emptyAnalysis(a.total ? "Sentiment analysis is unavailable for these responses." : "No feedback matches the current scope.");
-  const topics = a.top_topics;
+  const topics = a.top_topics, maxMentions = topics[0]?.total || 1;
   $("mgrTopTopics").innerHTML = topics.length ? `<ol class="mgr-topic-list">${topics.map(t => `
     <li><button type="button" data-topic="${escapeHtml(t.topic)}" class="mgr-topic-row">
-      <span><b>${escapeHtml(t.topic)}</b><small>${plural(t.total, "mention")}</small></span>
+      <span>${escapeHtml(t.topic)}</span><span class="mgr-topic-bar-track" aria-hidden="true"><i style="width:${t.total / maxMentions * 100}%"></i></span>
+      <b aria-label="${plural(t.total, "mention")}">${t.total}</b>
     </button></li>`).join("")}</ol>` : emptyAnalysis("No topics were detected in the current scope.");
 }
 
-function trendLineSvg(series) {
-  const width = Math.max(700, 110 * series.length), height = 320, padX = 60, padY = 28;
-  const plotW = width - padX * 2, plotH = height - padY * 2;
-  const x = i => padX + (series.length === 1 ? plotW / 2 : plotW * i / (series.length - 1));
-  const y = v => padY + plotH - plotH * v / 100;
+// Allocate leftover percentage points to the largest remainders so the labels add to 100.
+function dashboardSentimentShares(point) {
+  const parts = SENTIMENTS.map(tone => {
+    const numerator = point[tone] * 100;
+    return { tone, whole: Math.floor(numerator / point.analyzed), remainder: numerator % point.analyzed };
+  }).sort((a, b) => b.remainder - a.remainder);
+  const leftover = 100 - parts.reduce((sum, part) => sum + part.whole, 0);
+  return Object.fromEntries(parts.map((part, i) => [part.tone, part.whole + Number(i < leftover)]));
+}
+
+function trendLineSvg(series, availableWidth, selected = series.findLastIndex(point => point.analyzed)) {
+  const width = series.length > 3 ? Math.max(availableWidth, 86 * series.length + 70) : availableWidth;
+  const height = Math.round(Math.min(300, Math.max(180, availableWidth * .35)));
+  const left = 52, right = width - 48, top = 14, bottom = height - 34;
+  const spacing = (right - left) / Math.max(1, series.length - 1);
+  const x = i => series.length === 1 ? (left + right) / 2 : left + i * spacing;
+  const y = value => bottom - (bottom - top) * value / 100;
   const percent = (point, tone) => point[tone] / point.analyzed * 100;
-  const grid = [0, 25, 50, 75, 100];
   const paths = SENTIMENTS.map(tone => {
     const path = series.map((point, i) => {
       if (!point.analyzed) return "";
-      const command = series[i - 1]?.analyzed ? "L" : "M";
-      return `${command}${x(i)},${y(percent(point, tone))}`;
+      return `${series[i - 1]?.analyzed ? "L" : "M"}${x(i)},${y(percent(point, tone))}`;
     }).join(" ");
-    const markers = series.map((point, i) => {
-      if (!point.analyzed) return "";
-      const value = percent(point, tone);
-      const label = `${point.semester} · ${SENTIMENT_LABEL[tone]} ${value.toFixed(1)}% (${point[tone]}/${point.analyzed})`;
-      return `<circle class="is-${tone}" cx="${x(i)}" cy="${y(value)}" r="5" tabindex="0" aria-label="${escapeHtml(label)}"><title>${escapeHtml(label)}</title></circle>`;
-    }).join("");
+    const markers = series.map((point, i) => point.analyzed
+      ? `<circle class="is-${tone}" cx="${x(i)}" cy="${y(percent(point, tone))}" r="4.5"></circle>` : "").join("");
     return `<path class="is-${tone}" d="${path}"></path>${markers}`;
   }).join("");
-  return `<div class="mgr-chart-wrap">
-    <div class="mgr-trend-scroll" tabindex="0" role="region" aria-label="Semester sentiment chart">
-      <svg viewBox="0 0 ${width} ${height}" style="min-width:${Math.max(335, 96 * series.length)}px" class="mgr-chart" role="group" aria-label="Sentiment by semester">
-        ${grid.map(v => `<g><line x1="${padX}" y1="${y(v)}" x2="${width - padX}" y2="${y(v)}"></line><text x="${padX - 12}" y="${y(v) + 5}">${v}%</text></g>`).join("")}
+  const periods = series.map((point, i) => {
+    const shares = point.analyzed ? dashboardSentimentShares(point) : null;
+    const breakdown = shares
+      ? SENTIMENTS.map(tone => `${SENTIMENT_LABEL[tone]} ${shares[tone]}%`).join(", ")
+      : "No sentiment data";
+    const label = `${point.semester} · ${breakdown}`;
+    const hitLeft = i === 0 ? 0 : x(i) - spacing / 2;
+    const hitRight = i === series.length - 1 ? width : x(i) + spacing / 2;
+    return `<g class="mgr-period${i === selected ? " is-selected" : ""}" data-period="${i}" tabindex="0"
+      role="button" aria-pressed="${i === selected}" aria-label="${escapeHtml(label)}">
+      <title>${escapeHtml(label)}</title>
+      <line class="mgr-period-guide" x1="${x(i)}" y1="${top}" x2="${x(i)}" y2="${bottom}"></line>
+      <text class="mgr-period-label" x="${x(i)}" y="${height - 12}" text-anchor="middle">${escapeHtml(point.semester)}</text>
+      <rect x="${hitLeft}" y="0" width="${hitRight - hitLeft}" height="${height}" fill="transparent"></rect>
+    </g>`;
+  }).join("");
+  const minWidth = width > availableWidth ? ` style="min-width:${width}px"` : "";
+  return `<div class="mgr-trend-scroll">
+      <svg viewBox="0 0 ${width} ${height}"${minWidth} data-chart-width="${availableWidth}" class="mgr-chart" role="group" aria-label="Sentiment by semester">
+        ${[0, 25, 50, 75, 100].map(value => `<g><line x1="${left}" y1="${y(value)}" x2="${right}" y2="${y(value)}"></line>
+          <text x="${left - 9}" y="${y(value) + 4}" text-anchor="end">${value}%</text></g>`).join("")}
         ${paths}
-        ${series.map((p, i) => `<text class="xlab" x="${x(i)}" y="${height - 8}" text-anchor="middle">${escapeHtml(p.semester)}</text>`).join("")}
+        ${periods}
       </svg>
     </div>
-    <ul class="mgr-chart-legend">${SENTIMENTS.map(s => `<li class="is-${s}"><i class="fa-dot"></i>${SENTIMENT_LABEL[s]}</li>`).join("")}</ul>
-    <p class="mgr-chart-footnote">${series.filter(p => p.analyzed).length < 2
-      ? "At least two semesters with sentiment data are needed to compare changes."
-      : "Gaps indicate semesters without sentiment data in this scope."}</p>
-  </div>`;
+    <div class="mgr-trend-detail" id="mgrTrendDetail">${trendPeriodDetails(series[selected])}</div>
+    ${series.filter(point => point.analyzed).length < 2
+      ? '<p class="mgr-chart-footnote">Only one semester has sentiment data in this view.</p>'
+      : series.some(point => !point.analyzed)
+        ? '<p class="mgr-chart-footnote">Gaps mark semesters without sentiment data.</p>' : ""}`;
+}
+
+function trendPeriodDetails(point) {
+  const semester = `<b>${escapeHtml(point.semester)}</b>`;
+  if (!point.analyzed) return `${semester}<span>No sentiment data</span>`;
+  const shares = dashboardSentimentShares(point);
+  return `${semester}<span>${plural(point.analyzed, "response")} analyzed</span>
+    <ul>${SENTIMENTS.map(tone => `<li class="is-${tone}"><i class="fa-dot" aria-hidden="true"></i>
+      ${SENTIMENT_LABEL[tone]} <b>${shares[tone]}%</b></li>`).join("")}</ul>`;
+}
+
+function selectChartPeriod(marker) {
+  if (!marker || marker.classList.contains("is-selected")) return;
+  const chart = $("trendAnalysis");
+  const previous = chart.querySelector(".mgr-period.is-selected");
+  previous?.classList.remove("is-selected");
+  previous?.setAttribute("aria-pressed", "false");
+  marker.classList.add("is-selected");
+  marker.setAttribute("aria-pressed", "true");
+  $("mgrTrendDetail").innerHTML = trendPeriodDetails(rspState.trends.series[Number(marker.dataset.period)]);
+}
+
+function setTrendMetric(metric) {
+  $("trendAnalysis").hidden = metric !== "sentiment";
+  $("mgrTopicTrendPanel").hidden = metric !== "topics";
+  $("mgrTrendSwitch").querySelectorAll("[data-trend]").forEach(button =>
+    button.setAttribute("aria-pressed", String(button.dataset.trend === metric)));
 }
 
 function renderTrendAnalysis() {
@@ -2433,7 +2588,7 @@ function renderTrendAnalysis() {
     chart.innerHTML = emptyAnalysis(periods.length ? "Sentiment analysis is unavailable for these semesters."
       : "No feedback matches the selected filters.");
   } else {
-    chart.innerHTML = trendLineSvg(periods);
+    chart.innerHTML = trendLineSvg(periods, chart.clientWidth || 440);
   }
   const topics = rspState.trends?.topics || [];
   const select = $("mgrTopicTrendSelect");
@@ -2442,6 +2597,20 @@ function renderTrendAnalysis() {
   select.disabled = !topics.length;
   renderTopicTrend();
 }
+
+const trendChart = $("trendAnalysis");
+new ResizeObserver(() => {
+  const svg = trendChart.querySelector(".mgr-chart");
+  const width = trendChart.clientWidth;
+  if (!svg || !width || Number(svg.dataset.chartWidth) === width) return;
+  const selected = Number(trendChart.querySelector(".mgr-period.is-selected").dataset.period);
+  const focused = svg.contains(document.activeElement) ? document.activeElement.dataset.period : null;
+  const scrollLeft = svg.parentElement.scrollLeft;
+  trendChart.innerHTML = trendLineSvg(rspState.trends.series, width, selected);
+  trendChart.querySelector(".mgr-trend-scroll").scrollLeft = scrollLeft;
+  if (focused != null) trendChart.querySelector(`[data-period="${focused}"]`)?.focus({ preventScroll: true });
+}).observe(trendChart);
+
 function renderTopicTrend() {
   const topic = $("mgrTopicTrendSelect").value;
   const periods = rspState.trends?.topic_series || [];
@@ -2452,82 +2621,72 @@ function renderTopicTrend() {
     return;
   }
   const maximum = Math.max(1, ...periods.map(p => p.mentions?.[topic] ?? 0));
-  chart.innerHTML = `<div class="mgr-topic-bars">${periods.map(p => {
+  const scrollable = periods.length > 5 ? ' tabindex="0" role="region" aria-label="Topic mentions by semester"' : "";
+  chart.innerHTML = `<div class="mgr-topic-bars"${scrollable}>${periods.map(p => {
     const count = p.mentions?.[topic];
     return `<div class="mgr-topic-bar-row"><span>${escapeHtml(p.semester)}</span>
       <div class="mgr-topic-bar-track" aria-hidden="true"><i style="width:${(count ?? 0) / maximum * 100}%"></i></div>
       <b>${count == null ? "No data" : plural(count, "mention")}</b></div>`;
-  }).join("")}</div><p class="mgr-chart-footnote">Number of responses mentioning this topic in each semester.</p>`;
+  }).join("")}</div>`;
 }
 $("mgrTopicTrendSelect").addEventListener("change", renderTopicTrend);
 
-function renderAlertSummary() {
-  const box = $("mgrAlertSummary");
-  if (!box) return;
-  if (!rspState.alerts) {
-    box.innerHTML = emptyAnalysis("Alerts are temporarily unavailable.");
-    return;
-  }
-  const first = rspState.alerts[0];
-  if (!first) {
-    box.innerHTML = '<div class="mgr-alert-mini is-ok"><b>No urgent alert</b><p>No sharp negative trend was detected in the latest comparison.</p></div>';
-    return;
-  }
-  box.innerHTML = `<div class="mgr-alert-mini is-warn">
-    <b>⚠ ${escapeHtml(first.scope_name || "Feedback area")}</b>
-    <p>${Math.round((first.previous_share || 0) * 100)}% → ${Math.round((first.negative_share || 0) * 100)}% negative feedback</p>
-    <small>${escapeHtml(first.message || "Negative feedback increased.")}</small>
-  </div>`;
-}
-
 function renderAlertAnalysis() {
   const alerts = rspState.alerts;
-  renderAlertSummary();
-  if (!alerts) {
-    $("alertAnalysis").innerHTML = emptyAnalysis("Alerts are temporarily unavailable.");
-    return;
-  }
-  if (!alerts.length) {
-    $("alertAnalysis").innerHTML = '<p class="fa-empty fa-empty-ok">' + RSP_ICONS.check + 'No sharp negative trend has been detected in the latest comparison.</p>';
-    return;
-  }
-  $("alertAnalysis").innerHTML = `<div class="mgr-alert-list">${alerts.map(a => `
-    <article class="mgr-alert-card is-${a.severity || "medium"}">
-      <div class="mgr-alert-title">⚠ ${escapeHtml(a.scope_name || "Feedback area")}</div>
-      <div class="mgr-alert-shift">${Math.round((a.previous_share || 0) * 100)}% → ${Math.round((a.negative_share || 0) * 100)}%</div>
-      <p>${escapeHtml(a.message || "Negative feedback increased.")}</p>
-      <ul>
-        <li><b>Affected area:</b> ${escapeHtml(a.scope_name || "—")}</li>
-        <li><b>Previous semester:</b> ${escapeHtml(a.previous_semester || "—")}</li>
-        <li><b>Current semester:</b> ${escapeHtml(a.semester || "—")}</li>
-        <li><b>Likely driver:</b> ${escapeHtml(a.top_topic || "General dissatisfaction")}</li>
-      </ul>
-    </article>`).join("")}</div>`;
+  $("mgrAlertSummary").textContent = alerts
+    ? alerts.length ? `${plural(alerts.length, "alert")} across your access scope` : "No sharp increases detected."
+    : "Alerts are temporarily unavailable.";
+  const row = alert => `<details class="mgr-alert-row">
+    <summary class="mgr-disclosure">
+      <span>${escapeHtml(alert.scope_name || "Feedback area")}</span>
+      <b>${Math.round((alert.previous_share || 0) * 100)}% → ${Math.round((alert.negative_share || 0) * 100)}%</b>
+    </summary>
+    <p>${escapeHtml(alert.message || "Negative feedback increased.")}</p>
+    <small>${escapeHtml(alert.previous_semester || "—")} → ${escapeHtml(alert.semester || "—")}</small>
+  </details>`;
+  const visible = 3;
+  $("alertAnalysis").innerHTML = alerts?.length ? `<div class="mgr-alert-list">
+    ${alerts.slice(0, visible).map(row).join("")}
+    ${alerts.length > visible ? `<details class="mgr-more-alerts"><summary class="mgr-disclosure">
+      ${plural(alerts.length - visible, "more alert")}</summary>
+      <div class="mgr-alert-list">${alerts.slice(visible).map(row).join("")}</div></details>` : ""}
+  </div>` : "";
 }
 
 function compareBlock(result) {
   const rows = result?.items || [];
-  if (!rows.length) return emptyAnalysis("No records are available for this comparison yet.");
-  const currentSemester = result.current_semester || "Current period";
-  const previousSemester = result.previous_semester || "Previous period";
-  const shown = [...rows].sort((a,b) => ((b.current?.avg_rating || b.previous?.avg_rating || 0) - (a.current?.avg_rating || a.previous?.avg_rating || 0))).slice(0, 12);
-  const bar = (data, role) => {
-    const h = data?.avg_rating == null ? 0 : Math.min(100, Math.round(data.avg_rating / 5 * 100));
-    const sem = role === "current" ? currentSemester : previousSemester;
-    return `<div class="mgr-bar-track"><div class="mgr-comparison-bar is-${role}${data ? "" : " is-empty"}" style="height:${h}%" tabindex="0"
-      title="${escapeHtml(sem)}: ${data?.avg_rating == null ? "no data" : data.avg_rating.toFixed(2) + "/5"} (${data?.total || 0} responses)">
-      <div class="mgr-bar-tooltip"><b>${escapeHtml(sem)}</b><span>${data?.avg_rating == null ? "No feedback" : data.avg_rating.toFixed(2) + "/5"}</span><small>${data?.total || 0} responses</small></div>
-    </div></div>`;
+  if (!rows.length) return emptyAnalysis("No feedback is available for this comparison.");
+  const { current_semester, previous_semester, total_groups } = result;
+  const ordered = [...rows].sort((a, b) =>
+    (b.current?.avg_rating ?? b.previous?.avg_rating ?? 0) - (a.current?.avg_rating ?? a.previous?.avg_rating ?? 0));
+  const bar = (data, period) => {
+    const rating = data?.avg_rating;
+    const width = rating == null ? 0 : Math.min(100, rating / 5 * 100);
+    return `<td class="mgr-comparison-cell is-${period}">
+      <span class="mgr-comparison-value"><b>${rating?.toFixed(2) ?? "—"}</b><small>${data ? plural(data.total, "response") : "No data"}</small></span>
+      <span class="mgr-comparison-track" aria-hidden="true"><i style="width:${width}%"></i></span>
+    </td>`;
   };
-  return `<p class="mgr-comparison-description">Average satisfaction out of 5 · ${escapeHtml(currentSemester)} compared with ${escapeHtml(previousSemester)}</p>
-    <div class="mgr-comparison-legend"><span><i class="mgr-legend-swatch is-current"></i>${escapeHtml(currentSemester)}</span><span><i class="mgr-legend-swatch is-previous"></i>${escapeHtml(previousSemester)}</span></div>
-    <div class="mgr-comparison-scroll"><div class="mgr-comparison-grid">${shown.map(row => `
-      <article class="mgr-comparison-group" aria-label="${escapeHtml(row.name)}">
-        <div class="mgr-paired-bars">${bar(row.current, "current")}${bar(row.previous, "previous")}</div>
-        <div class="mgr-comparison-name" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</div>
-        <div class="mgr-comparison-numbers">${row.current?.avg_rating?.toFixed(1) ?? "—"} / ${row.previous?.avg_rating?.toFixed(1) ?? "—"}</div>
-      </article>`).join("")}</div></div>
-    <p class="mgr-chart-footnote">Hover or focus on each bar to see the exact rating and response count. A missing bar means no data in that semester.</p>`;
+  const row = item => `<tr><th scope="row">${escapeHtml(item.name)}</th>${bar(item.current, "current")}
+    ${previous_semester ? bar(item.previous, "previous") : ""}</tr>`;
+  const visible = 3;
+  const hasMore = rows.length > visible;
+  return `<table class="mgr-comparison-table">
+    <thead><tr><th scope="col">Average rating / 5</th>
+      <th scope="col" class="is-current"><i></i>${escapeHtml(current_semester || "Current period")}</th>
+      ${previous_semester ? `<th scope="col" class="is-previous"><i></i>${escapeHtml(previous_semester)}</th>` : ""}
+    </tr></thead>
+    <tbody>${ordered.slice(0, visible).map(row).join("")}</tbody>
+    ${hasMore ? `<tbody id="mgrMoreComparisonRows" hidden>${ordered.slice(visible).map(row).join("")}</tbody>` : ""}
+  </table>
+  ${hasMore ? `<button type="button" class="mgr-more-button" id="mgrMoreComparison" aria-expanded="false" aria-controls="mgrMoreComparisonRows">Show all ${rows.length}</button>` : ""}
+  ${total_groups > rows.length ? `<p class="mgr-chart-footnote">${rows.length} of ${total_groups} groups available in this view.</p>` : ""}`;
+}
+
+function setComparisonType(by) {
+  rspState.compareBy = by;
+  $("compareTabs").querySelectorAll("[data-compare]").forEach(button =>
+    button.setAttribute("aria-pressed", String(button.dataset.compare === by)));
 }
 
 async function fetchCompare() {
@@ -2562,14 +2721,15 @@ function downloadCsv(filename, rows) {
 
 function buildReportSummaryText() {
   const a = rspState.analytics, sum = rspState.summary;
+  const shares = a?.analyzed ? dashboardSentimentShares(a) : null;
   const lines = [
     `Student Feedback Analytics`,
-    $("mgrCurrentFilters").textContent,
+    `Current filters: ${dashboardFilterLabels().join(" · ") || "All semesters · All feedback"}`,
     "",
     `Overall satisfaction: ${a?.avg_rating != null ? a.avg_rating.toFixed(2) + "/5" : "—"}`,
     `Total feedback: ${a?.total ?? "—"}`,
-    `Positive sentiment: ${a?.analyzed ? Math.round(a.positive_share * 100) + "%" : "—"}`,
-    `Negative sentiment: ${a?.analyzed ? Math.round(a.negative_share * 100) + "%" : "—"}`,
+    `Positive sentiment: ${shares ? shares.positive + "%" : "—"}`,
+    `Negative sentiment: ${shares ? shares.negative + "%" : "—"}`,
     "",
   ];
   if (sum?.overview) lines.push(`Overview: ${sum.overview}`, "");
@@ -2601,7 +2761,7 @@ async function loadResponses() {
   renderKpis(null);
   renderManagerOverview(true);
   renderUniversityStats(true);
-  $("mgrAlertSummary").innerHTML = FA_SKELETON;
+  $("mgrAlertSummary").textContent = "Loading alerts…";
   const refresh = $("rspRefresh");
   refresh.disabled = true;
   rspList.innerHTML = RSP_SKELETON;
@@ -2619,11 +2779,12 @@ async function loadResponses() {
   rspCount.textContent = "Loading responses…";
   if (!rspState.meta) await loadResponsesMeta(token, request);
   if (!isCurrentAnalyticsRequest(token, request)) return;
-  syncDashboardFilters();
+  if (!$("mgrFilterDialog").open || $("mgrApplyFilters").disabled) syncDashboardFilters();
   syncExplorerTarget();
   syncSelection();
   const scope = analyticsQuery();
-  if (currentSession.user.role === "manager") {
+  const isManager = currentSession.user.role === "manager";
+  if (isManager) {
     // Refresh persisted semester-to-semester alerts on each manager dashboard load.
     await api("/alerts/recompute", { method: "POST", token });
   }
@@ -2634,16 +2795,16 @@ async function loadResponses() {
     api(`/analytics/summary${scope}`, { token }),
     api(`/analytics/keywords${scope ? `${scope}&` : "?"}limit=40`, { token }),
     api(`/analytics/trends${scope}`, { token }),
-    api("/alerts", { token }),
-    api(`/management/university${scope}`, { token }),
+    isManager ? api("/alerts", { token }) : null,
+    isManager ? api(`/management/university${scope}`, { token }) : null,
   ]);
   if (!isCurrentAnalyticsRequest(token, request)) return;
   showDashboardFilterError(analyticsResult);
   rspState.summary = summaryResult.ok ? summaryResult.data : null;
   rspState.keywords = keywordResult.ok ? keywordResult.data : null;
   rspState.trends = trendsResult.ok ? trendsResult.data : null;
-  rspState.alerts = alertsResult.ok ? alertsResult.data : null;
-  rspState.university = universityResult.ok ? universityResult.data : null;
+  rspState.alerts = alertsResult?.ok ? alertsResult.data : null;
+  rspState.university = universityResult?.ok ? universityResult.data : null;
   refresh.disabled = false;
   rspList.removeAttribute("aria-busy");
   const { ok, status, data, network } = responsesResult;
@@ -2800,7 +2961,9 @@ function problemsHtml(a) {
       <span class="fa-issue-share">${share}% negative</span>
       <span class="fa-issue-meta">${plural(p.negative, "negative mention")} / ${p.total} total</span>
       <span class="fa-issue-link">Read these comments</span>
-    </button></li>`;
+    </button>
+    ${currentSession?.user?.role === "manager" ? `<button type="button" class="btn-sm workflow-problem-action" data-action-topic="${escapeHtml(p.topic)}">Create action</button>` : ""}
+    </li>`;
   }).join("")}</ol>`;
 }
 
@@ -2973,9 +3136,9 @@ function ratingsHtml(r, qLabel) {
 function rspHtml(r, qLabel) {
   // Course targets arrive as "CODE — Title"; the code becomes a quiet label above the title.
   const course = r.kind === "course" && r.target.match(/^(.+?) — (.+)$/);
-  const kindLabel = r.kind === "course" ? (course ? course[1] : "Course") : "Service";
+  const kindLabel = course ? course[1] : KIND_LABEL[r.kind];
   const sentiment = toneOf(r.sentiment);
-  const confidence = r.confidence ? `, ${Math.round(r.confidence * 100)}% confidence` : "";
+  const confidence = !r.is_corrected && r.confidence ? `, ${Math.round(r.confidence * 100)}% confidence` : "";
   const meta = [
     `<span>${RSP_ICONS.date}<span>${r.date ? `<time datetime="${escapeHtml(r.date)}">${fmtDate(`${r.date}T00:00:00`)}</time>` : escapeHtml(r.semester)}</span></span>`,
     `<span>${LOCK_ICON}Anonymous</span>`,
@@ -3002,6 +3165,10 @@ function rspHtml(r, qLabel) {
         : '<p class="fx-text is-empty">No written comment, ratings only.</p>'}
       ${ratingsHtml(r, qLabel)}
       ${topics ? `<ul class="fx-topics" aria-label="Detected topics and their sentiment">${topics}</ul>` : ""}
+      ${r.is_corrected || currentSession?.user?.role === "admin" ? `<div class="workflow-response-tools">
+        ${r.is_corrected ? '<span>Manually corrected</span>' : ""}
+        ${currentSession?.user?.role === "admin" ? `<button type="button" class="btn-sm" data-correct-feedback="${r.id}">Correct analysis</button>` : ""}
+      </div>` : ""}
     </article>`;
 }
 
@@ -3018,7 +3185,7 @@ function markLongComments() {
 
 function activeFilters() {
   const q = rspState.q.trim(), filters = [];
-  if (rspState.kind) filters.push(["kind", rspState.kind === "course" ? "Course evaluations" : "Service reviews"]);
+  if (rspState.kind) filters.push(["kind", KIND_LABEL[rspState.kind]]);
   if (rspState.target) filters.push(["target", rspTarget.selectedOptions[0]?.textContent || rspState.target]);
   if (rspState.sentiment) filters.push(["sentiment", `${SENTIMENT_LABEL[rspState.sentiment]} sentiment`]);
   if (rspState.topic) filters.push(["topic", rspState.tone ? `${rspState.topic}, ${rspState.tone} mentions` : `Topic: ${rspState.topic}`]);
@@ -3208,38 +3375,87 @@ $("rspLanguage").addEventListener("change", e => { rspState.language = e.target.
 $("rspSort").addEventListener("change", e => { rspState.sort = e.target.value; renderResponses(); });
 $("rspCommented").addEventListener("click", () => { rspState.commented = !rspState.commented; renderResponses(); });
 $("rspPiiToggle").addEventListener("click", () => { rspState.pii = !rspState.pii; renderResponses(); });
-["mgrFaculty", "mgrDepartment", "mgrInstructor"].forEach(id => {
+const dashboardFilterDialog = $("mgrFilterDialog");
+$("mgrOpenFilters").addEventListener("click", () => {
+  syncDashboardFilters();
+  dashboardFilterDialog.showModal();
+});
+["mgrFaculty", "mgrDepartment", "mgrInstructor", "mgrKind"].forEach(id => {
   $(id).addEventListener("change", () => syncDashboardFilters(dashboardSelection()));
 });
-$("mgrApplyFilters").addEventListener("click", async () => {
-  Object.assign(rspState, dashboardSelection(), { compare: {}, kind: "" });
+dashboardFilterDialog.addEventListener("submit", async event => {
+  if (event.submitter?.value !== "apply") return;
+  event.preventDefault();
+  const selection = dashboardSelection();
+  dashboardFilterDialog.close();
+  if (Object.keys(DASHBOARD_RESET).every(key => rspState[key] === selection[key])) return;
+  Object.assign(rspState, selection);
+  const kind = selection.kind || selection.target.split(":")[0];
+  if (kind === "service") setComparisonType("service");
+  else if ((kind === "course" || selection.faculty || selection.department_id || selection.instructor_id)
+      && rspState.compareBy === "service") setComparisonType("course");
   await loadResponses();
 });
 $("mgrResetFilters").addEventListener("click", async () => {
-  Object.assign(rspState, DASHBOARD_RESET, { compare: {}, kind: "", meta: null });
+  dashboardFilterDialog.close();
+  Object.assign(rspState, DASHBOARD_RESET, { meta: null });
   await loadResponses();
 });
-$("compareTabs").addEventListener("click", async e => {
-  const b = e.target.closest("button[data-compare]"); if (!b) return;
-  rspState.compareBy = b.dataset.compare;
-  document.querySelectorAll("#compareTabs button").forEach(btn => btn.classList.toggle("on", btn === b));
-  if (!rspState.compare[rspState.compareBy]) await fetchCompare(); else renderCompareAnalysis();
+$("mgrTrendSwitch").addEventListener("click", event => {
+  const button = event.target.closest("[data-trend]");
+  if (button) setTrendMetric(button.dataset.trend);
 });
-$("mgrOpenAlerts").addEventListener("click", () => selectManagerView("compare"));
+$("trendAnalysis").addEventListener("click", event => selectChartPeriod(event.target.closest("[data-period]")));
+$("trendAnalysis").addEventListener("keydown", event => {
+  const marker = event.target.closest("[data-period]");
+  if (!marker || !["Enter", " "].includes(event.key)) return;
+  event.preventDefault();
+  selectChartPeriod(marker);
+});
+$("compareTabs").addEventListener("click", async e => {
+  const button = e.target.closest("[data-compare]");
+  if (!button) return;
+  setComparisonType(button.dataset.compare);
+  renderCompareAnalysis();
+  if (!rspState.compare[rspState.compareBy]) await fetchCompare();
+});
+$("compareAnalysis").addEventListener("click", event => {
+  const button = event.target.closest("#mgrMoreComparison");
+  if (!button) return;
+  const rows = $("mgrMoreComparisonRows");
+  rows.hidden = !rows.hidden;
+  button.setAttribute("aria-expanded", String(!rows.hidden));
+  button.textContent = rows.hidden ? `Show all ${rspState.compare[rspState.compareBy].items.length}` : "Show fewer";
+});
 $("recomputeAlerts").addEventListener("click", async () => {
-  const { ok } = await api("/alerts/recompute", { method: "POST", token: currentSession.token });
-  if (ok) { const result = await api("/alerts", { token: currentSession.token }); rspState.alerts = result.ok ? result.data : null; renderAlertAnalysis(); }
+  const token = currentSession?.token, request = analyticsRequest;
+  if (!token) return;
+  const button = $("recomputeAlerts");
+  button.disabled = true;
+  $("mgrAlertSummary").textContent = "Refreshing alerts…";
+  try {
+    const refresh = await api("/alerts/recompute", { method: "POST", token });
+    if (!isCurrentAnalyticsRequest(token, request)) return;
+    if (refresh.status === 401 || refresh.status === 403) return sessionRevoked();
+    const result = refresh.ok ? await api("/alerts", { token }) : refresh;
+    if (!isCurrentAnalyticsRequest(token, request)) return;
+    if (result.status === 401 || result.status === 403) return sessionRevoked();
+    rspState.alerts = result.ok ? result.data : null;
+    renderAlertAnalysis();
+  } finally {
+    button.disabled = false;
+  }
 });
 function updateReportPreview() {
   const option = $("mgrReportSection").selectedOptions[0];
   const format = $("mgrReportFormat").value;
   const description = {
     overview: "Includes average satisfaction, positive/neutral/negative counts and total feedback.",
-    trends: "Includes every available semester, response volume and sentiment percentages.",
-    compare_course: "Includes each course with its average rating, response count and sentiment.",
-    compare_department: "Includes each department with its average rating and sentiment.",
-    compare_service: "Includes each university service with its average rating and sentiment.",
-    alerts: "Includes detected increases in negative feedback, affected area and semesters.",
+    trends: "Includes response volume and sentiment percentages for the selected semesters.",
+    compare_course: "Includes course ratings and response counts for the displayed semesters.",
+    compare_department: "Includes department ratings and response counts for the displayed semesters.",
+    compare_service: "Includes service ratings and response counts for the displayed semesters.",
+    alerts: "Includes increases in negative feedback across your access scope.",
   }[$("mgrReportSection").value];
   $("mgrReportPreview").innerHTML = `<b>${escapeHtml(option.textContent)}</b><p>${escapeHtml(description)}<br>File: ${format === "pdf" ? "PDF document" : "Excel workbook (.xlsx)"}</p>`;
 }
@@ -3310,6 +3526,7 @@ async function checkHealth() {
 })();
 </script>
 <script src="/university-ui.js"></script>
-<script src="/staff-i18n.js"></script>
+<script src="/sprint6.js?v=1"></script>
+<script src="/staff-i18n.js?v=4"></script>
 </body>
 </html>
