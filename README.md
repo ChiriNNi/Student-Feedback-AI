@@ -252,6 +252,15 @@ calculations. The dashboard and Feedback explorer share semester, faculty,
 department, instructor, course/service and response type. Text search, rating,
 privacy and topic drill-downs filter the Explorer list and its cards locally.
 
+### Sprint 6 workflows
+
+| Story | Demo path | Expected result |
+|---|---|---|
+| 6.1 Manage surveys | Admin → **Surveys** → **New survey**. Add a custom rating statement, save a draft, edit it and publish it. Open **Give feedback** as a student, submit a response, then close the form as admin. | The student sees the custom form after publication. Closing blocks new responses and retains the response count. Published forms and forms with responses keep their question structure. |
+| 6.2 Manage topic categories | Admin → **Topic categories**. Add a category with a distinct keyword or phrase, then rename it. Submit new feedback containing that phrase. | The renamed category appears in new analysis. Existing feedback labels and linked actions follow the rename. An inactive category stops matching new submissions. |
+| 6.3 Correct AI results | Admin → **Feedback analytics → Feedback explorer** → **Correct analysis** on an anonymous response. Save a new sentiment or edit its topic labels. | The response is marked as manually corrected and the dashboard reflects the new labels. The correction audit records the administrator, previous and new labels, and the optional reason. |
+| 6.4 Track improvement actions | Manager → **Feedback explorer** → **Recurring negative themes** → **Create action**. Enter the follow-up and change its status in **Improvement actions**. | The action retains the problem and scope, and its status persists as **Planned**, **In progress** or **Done**. |
+
 Run the backend suite with `cd backend && python -m unittest discover -s tests`.
 For the browser regression, use a disposable demo database with a visible course
 coded `EMPTY 100` that has no feedback. Sign in as manager and evaluate
@@ -398,13 +407,15 @@ pulse/
 ├── backend/                 FastAPI application
 │   ├── app/
 │   │   ├── routers/auth.py  Login, register, /me, change-password, forgot-password
-│   │   ├── routers/admin.py Admin user management (mounted), topics/catalogue (not yet used by the UI)
-│   │   ├── routers/evaluations.py  Course evaluations & service reviews: forms, anonymous submit, responses
+│   │   ├── routers/admin.py User management, topic categories and analysis corrections
+│   │   ├── routers/surveys.py  Admin survey lifecycle and custom form questions
+│   │   ├── routers/evaluations.py  Published forms, anonymous submission and scoped responses
+│   │   ├── routers/actions.py  Improvement action tracking and trend alerts
 │   │   ├── nlp/pii.py       Personal data masking for comments
 │   │   ├── models.py        SQLAlchemy models (users, courses, feedback, ...)
 │   │   ├── security.py      JWT + bcrypt helpers
 │   │   ├── seed.py          Demo departments, users, courses, services, questions, surveys
-│   │   └── main.py          App entrypoint (mounts `auth`, `admin`, `evaluations`)
+│   │   └── main.py          App entrypoint and database upgrades
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
@@ -415,9 +426,3 @@ pulse/
 ├── .env.example
 └── start.ps1
 ```
-
-> Note: a few backend routers (`surveys`, `feedback`, `analytics`, `actions`,
-> `reports`) exist in the codebase for later sprints but are intentionally not
-> mounted in `main.py` yet. The
-> `admin` router's topic/course/service endpoints are mounted and usable via
-> the API, but have no UI yet — only user management does.

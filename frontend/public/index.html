@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#1f3a68">
 <link rel="stylesheet" href="/pulse.css">
 <link rel="stylesheet" href="/sprint5.css?v=5">
+<link rel="stylesheet" href="/sprint6.css?v=2">
 </head>
 <body>
 
@@ -241,6 +242,8 @@
         <button type="button" data-nav="feedback" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Give feedback</span></button>
         <button type="button" data-nav="responses" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Feedback analytics</span></button>
         <button type="button" data-nav="admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 11.5a3 3 0 1 0 0-6M18 14.8c2 .6 3.5 2.2 3.5 5.2"/></svg><span>Users</span></button>
+        <button type="button" data-admin-workspace="surveys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8m-8 4h8m-8 4h5"/></svg><span>Surveys</span></button>
+        <button type="button" data-admin-workspace="topics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v8l9 9 8-8-9-9z"/><circle cx="7.5" cy="7.5" r="1"/></svg><span>Topic categories</span></button>
         <button type="button" data-nav="profile" id="admBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span class="lbl-txt">Profile</span></button>
       </nav>
       <div class="rail-foot">
@@ -257,6 +260,7 @@
     </aside>
     <div class="page">
 
+    <section id="adminUsersWorkspace">
     <div class="adm-head">
       <div>
         <h1>Users</h1>
@@ -311,6 +315,8 @@
       </div>
       <div class="adm-foot" id="admCount"></div>
     </section>
+    </section>
+    <section id="adminOperationsWorkspace" class="workflow-workspace" hidden></section>
     </div>
   </div>
 
@@ -353,7 +359,8 @@
       <div><b data-i18n="anonymous_title">Anonymous feedback</b><span data-i18n="anonymous_text"> Names, IDs, email addresses and phone numbers are removed before a response is saved.</span></div>
     </div>
 
-    <div class="seg fb-tabs" id="fbTabs" role="tablist" aria-label="Form type"></div>
+    <div class="seg fb-tabs" id="fbTabs" role="group" aria-label="Feedback form"></div>
+    <p id="fbDescription" class="workflow-form-description" hidden></p>
 
     <section class="adm-panel">
       <div class="adm-toolbar">
@@ -392,6 +399,7 @@
           <button type="button" data-mgr-view="explorer" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h7"/></svg><span>Feedback explorer</span></button>
           <button type="button" data-mgr-view="overview" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></button>
           <button type="button" data-mgr-view="reports" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3 3 3 3-3"/></svg><span>Reports</span></button>
+          <button type="button" data-mgr-view="actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 2.5 2.5L16 9"/></svg><span>Improvement actions</span></button>
         </div>
         <button type="button" data-nav="admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 11.5a3 3 0 1 0 0-6M18 14.8c2 .6 3.5 2.2 3.5 5.2"/></svg><span>Users</span></button>
         <button type="button" data-nav="profile" data-page-back><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span class="lbl-txt">Profile</span></button>
@@ -456,7 +464,7 @@
           </header>
           <div class="mgr-filter-grid">
             <label class="mgr-field"><span>Semester</span><span class="fx-select"><select id="mgrSemester"><option value="">All semesters</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
-            <label class="mgr-field"><span>Feedback type</span><span class="fx-select"><select id="mgrKind"><option value="">All feedback</option><option value="course">Course evaluations</option><option value="service">Service reviews</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
+            <label class="mgr-field"><span>Feedback type</span><span class="fx-select"><select id="mgrKind"><option value="">All feedback</option><option value="course">Course evaluations</option><option value="service">Service reviews</option><option value="survey">General surveys</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
             <label class="mgr-field"><span>Academic faculty</span><span class="fx-select"><select id="mgrFaculty"><option value="">All faculties</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
             <label class="mgr-field"><span>Academic department</span><span class="fx-select"><select id="mgrDepartment"><option value="">All departments</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
             <label class="mgr-field"><span>Instructor</span><span class="fx-select"><select id="mgrInstructor"><option value="">All instructors</option></select><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 7.5 5 5 5-5"/></svg></span></label>
@@ -679,6 +687,7 @@
           <button type="button" data-kind="" class="on" aria-pressed="true">All</button>
           <button type="button" data-kind="course" aria-pressed="false">Courses</button>
           <button type="button" data-kind="service" aria-pressed="false">Services</button>
+          <button type="button" data-kind="survey" aria-pressed="false">Surveys</button>
         </div>
         <div class="fx-seg fx-tone-seg" id="rspSentimentSeg" role="group" aria-label="Filter by sentiment">
           <button type="button" data-filter-sentiment="" class="on" aria-pressed="true">Any tone</button>
@@ -723,6 +732,7 @@
     </section>
     </section>
 
+    <section class="mgr-section workflow-workspace" id="actionsSection" hidden></section>
     <section class="mgr-section" id="reportsSection" hidden aria-labelledby="reportsSectionTitle">
       <div class="mgr-section-head">
         <div>
@@ -760,6 +770,23 @@
 
     </div>
   </div>
+
+  <dialog class="workflow-dialog" id="workflowDialog" aria-labelledby="workflowDialogTitle">
+    <form id="workflowForm">
+      <header class="workflow-dialog-head">
+        <h2 id="workflowDialogTitle"></h2>
+        <button class="icon-btn" type="button" data-workflow-close aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div id="workflowFields"></div>
+      <p class="workflow-error" id="workflowError" role="alert" hidden></p>
+      <footer class="workflow-dialog-foot">
+        <button class="btn-sm" type="button" data-workflow-close>Cancel</button>
+        <button class="btn-sm workflow-primary" id="workflowSave" type="submit">Save changes</button>
+      </footer>
+    </form>
+  </dialog>
 
   <!-- ========== Create / edit user modal ========== -->
   <div class="modal" id="userModal" hidden role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
@@ -889,7 +916,7 @@
         <div class="eval-stage">
           <div id="evalQuestions"></div>
           <div class="field" id="evalCommentStep" hidden>
-            <label class="lbl" for="evalComment"><span id="evalPrompt">Comment</span><span data-i18n="optional">optional</span></label>
+            <label class="lbl" for="evalComment"><span id="evalPrompt">Comment</span><span id="evalOptional" data-i18n="optional">optional</span></label>
             <textarea class="ta" id="evalComment" maxlength="2000" rows="5" placeholder="Be specific — what should stay, and what should change?"></textarea>
             <div class="ta-foot">
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span data-i18n="pii_note">Names, emails and phone numbers are removed automatically.</span></span>
@@ -1515,6 +1542,9 @@ function openAdmin() {
   $("admMeEmail").textContent = me.email || "";
   $("admAvatar").textContent = initials(me.name);
   showPage("admin");
+  $("adminUsersWorkspace").hidden = false;
+  $("adminOperationsWorkspace").hidden = true;
+  adminApp.querySelectorAll("[data-admin-workspace]").forEach(button => button.removeAttribute("aria-current"));
   loadUsers();
 }
 $("openAdmin").addEventListener("click", openAdmin);
@@ -1893,7 +1923,7 @@ function resetPages() {
   Object.assign(admState, { q: "", role: "", status: "", sort: "name", dir: 1 });
   usersCache = [];
   admSearch.value = "";
-  Object.assign(fbState, { forms: [], kind: "course", q: "" });
+  Object.assign(fbState, { forms: [], formId: null, q: "" });
   fbSearch.value = "";
   fbTabs.innerHTML = fbTargets.innerHTML = "";
   setTrendMetric("sentiment");
@@ -1910,11 +1940,12 @@ function resetPages() {
   rspEmpty.hidden = true;
   $("rspFilters").hidden = true;
   evalCtx = null;
+  document.dispatchEvent(new Event("workflow-reset"));
 }
 document.querySelectorAll("[data-page-back]").forEach(b => b.addEventListener("click", closePages));
 document.querySelectorAll("[data-page-logout]").forEach(b => b.addEventListener("click", () => signOut()));
 
-const KIND_LABEL = { course: "Course evaluation", service: "Service review" };
+const KIND_LABEL = { course: "Course evaluation", service: "Service review", survey: "General survey" };
 const PH_RE = /\[(NAME|EMAIL|PHONE|ID|CONTACT)\]/g;
 const PH_LABEL = { NAME: ["name", "names"], EMAIL: ["email", "emails"], PHONE: ["phone number", "phone numbers"], ID: ["ID number", "ID numbers"], CONTACT: ["contact handle", "contact handles"] };
 // Escapes first, then highlights the placeholders the server put in place of personal data.
@@ -1931,7 +1962,7 @@ const SHIELD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const fbTabs = $("fbTabs"), fbTargets = $("fbTargets"), fbEmpty = $("fbEmpty"), fbSearch = $("fbSearch");
 const evalModal = $("evalModal"), evalForm = $("evalForm"), evalDone = $("evalDone");
 const evalComment = $("evalComment"), evalAlertEl = $("evalAlert"), evalSubmit = $("evalSubmit");
-const fbState = { forms: [], kind: "course", q: "" };
+const fbState = { forms: [], formId: null, q: "" };
 let evalCtx = null;
 let evalStep = 0;
 
@@ -1947,25 +1978,28 @@ async function openFeedback() {
     return;
   }
   fbState.forms = data;
-  if (!data.some(f => f.kind === fbState.kind) && data[0]) fbState.kind = data[0].kind;
+  if (!data.some(form => form.id === fbState.formId)) fbState.formId = data[0]?.id ?? null;
   renderForms();
 }
-const currentForm = () => fbState.forms.find(f => f.kind === fbState.kind);
+const currentForm = () => fbState.forms.find(form => form.id === fbState.formId);
 
 function renderForms() {
   fbTabs.innerHTML = fbState.forms.map(f => {
-    const on = f.kind === fbState.kind, done = f.targets.filter(t => t.done).length;
-    const label = tr(f.kind === "course" ? "kind_course" : "kind_service");
-    return `<button type="button" role="tab" data-kind="${f.kind}" class="${on ? "on" : ""}" aria-selected="${on}">${label}<small>${done}/${f.targets.length}</small></button>`;
+    const on = f.id === fbState.formId, done = f.targets.filter(t => t.done).length;
+    return `<button type="button" data-form-id="${f.id}" class="${on ? "on" : ""}" aria-pressed="${on}">
+      ${escapeHtml(trContent(f.title))}<small>${done}/${f.targets.length}</small></button>`;
   }).join("");
 
   const form = currentForm();
+  $("fbDescription").hidden = !form?.description;
+  $("fbDescription").textContent = form?.description || "";
   if (!form) {
     fbTargets.innerHTML = `<div class="adm-empty" style="grid-column:1/-1"><b>${tr("no_open_forms")}</b></div>`;
     $("fbProgress").textContent = "—"; $("fbBar").style.width = "0";
     fbEmpty.hidden = true;
     return;
   }
+  fbSearch.closest(".input").hidden = form.kind === "survey";
   fbSearch.placeholder = tr(form.kind === "course" ? "search_courses" : "search_services");
   const done = form.targets.filter(t => t.done).length, total = form.targets.length;
   $("fbLead").textContent = `${trContent(form.semester)}. ${tr("rated_progress", { done, total })}`;
@@ -1999,8 +2033,9 @@ function tgtHtml(t) {
 
 fbTabs.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
-  fbState.kind = b.dataset.kind; fbState.q = ""; fbSearch.value = "";
+  fbState.formId = Number(b.dataset.formId); fbState.q = ""; fbSearch.value = "";
   renderForms();
+  fbTabs.querySelector(`[data-form-id="${fbState.formId}"]`).focus();
 });
 fbSearch.addEventListener("input", () => { fbState.q = fbSearch.value; renderForms(); });
 fbTargets.addEventListener("click", e => {
@@ -2026,7 +2061,8 @@ function openEval(form, t) {
           `<label><input type="radio" name="q${q.id}" value="${v}" aria-label="${escapeHtml(tr(`rating_${v}`))}"><span><b>${v}</b><small data-rating-label="${v}">${escapeHtml(tr(`rating_${v}`))}</small></span></label>`).join("")}</div>
       </fieldset>`).join("");
   evalComment.value = "";
-  $("evalPrompt").textContent = tr("comment");
+  $("evalPrompt").textContent = trContent(form.comment_prompt) || tr("comment");
+  $("evalOptional").hidden = form.comment_required;
   evalComment.placeholder = tr("comment_hint");
   updateEvalCount();
   evalAlertEl.className = "alert";
@@ -2035,7 +2071,7 @@ function openEval(form, t) {
   evalDone.hidden = true;
   evalStep = 0;
   renderEvalStep(false);
-  openModal(evalModal, evalModal.querySelector(".likert input"));
+  openModal(evalModal, evalModal.querySelector(".likert input") || evalComment);
 }
 function showEvalAlert(msg) { evalAlertEl.className = "alert show"; evalAlertEl.textContent = msg; }
 function updateEvalCount() { $("evalCount").textContent = `${evalComment.value.length} / 2000`; }
@@ -2053,7 +2089,7 @@ function renderEvalStep(focus = true) {
   $("evalStepLabel").textContent = onComment
     ? tr("comment_step")
     : tr("question_of", { current: evalStep + 1, total: questions.length });
-  $("evalStepHint").textContent = onComment ? tr("optional") : "";
+  $("evalStepHint").textContent = onComment && !evalCtx.form.comment_required ? tr("optional") : "";
   $("evalStepBar").style.width = `${((evalStep + 1) / total) * 100}%`;
   evalAlertEl.className = "alert";
   if (focus) {
@@ -2072,7 +2108,7 @@ function refreshEvalLanguage() {
     : target.department;
   evalForm.querySelectorAll("[data-source]").forEach(el => { el.textContent = trContent(el.dataset.source); });
   evalForm.querySelectorAll("[data-rating-label]").forEach(el => { el.textContent = tr(`rating_${el.dataset.ratingLabel}`); });
-  $("evalPrompt").textContent = tr("comment");
+  $("evalPrompt").textContent = trContent(form.comment_prompt) || tr("comment");
   evalComment.placeholder = tr("comment_hint");
   renderEvalStep(false);
 }
@@ -2108,6 +2144,11 @@ evalForm.addEventListener("submit", async e => {
   e.preventDefault();
   if (!currentSession || !evalCtx || evalSubmit.disabled) return;
   const { form, target } = evalCtx;
+  if (form.comment_required && !evalComment.value.trim()) {
+    showEvalAlert("Please enter a response");
+    evalComment.focus();
+    return;
+  }
   const ratings = {};
   let firstMissing = null;
   form.questions.forEach(q => {
@@ -2130,7 +2171,7 @@ evalForm.addEventListener("submit", async e => {
   try {
     res = await api(`/evaluations/${form.id}/submit`, {
       method: "POST", token: currentSession.token,
-      body: { ratings, comment: evalComment.value.trim(), [form.kind === "course" ? "course_id" : "service_id"]: target.id },
+      body: { ratings, comment: evalComment.value.trim(), ...(form.kind === "survey" ? {} : { [`${form.kind}_id`]: target.id }) },
     });
   } finally {
     evalSubmit.classList.remove("loading"); evalSubmit.disabled = false;
@@ -2237,16 +2278,17 @@ function toggleManagerMenu() {
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
 }
-const managerViews = { explorer: "explorerSection", overview: "overviewSection", reports: "reportsSection" };
+const managerViews = { explorer: "explorerSection", overview: "overviewSection", reports: "reportsSection", actions: "actionsSection" };
 function selectManagerView(view = "overview") {
   if (!Object.prototype.hasOwnProperty.call(managerViews, view)) view = "overview";
-  if (currentSession?.user?.role !== "manager" && view === "reports") view = "overview";
-  managerActiveView = view;
   const isManager = currentSession?.user?.role === "manager";
+  const restricted = ["reports", "actions"];
+  if (!isManager && restricted.includes(view)) view = "overview";
+  managerActiveView = view;
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
   document.querySelectorAll("#mgrSubmenu [data-mgr-view]").forEach(button => {
-    button.hidden = !isManager && button.dataset.mgrView === "reports";
+    button.hidden = !isManager && restricted.includes(button.dataset.mgrView);
     const active = button.dataset.mgrView === view;
     button.classList.toggle("is-active", active);
     if (active) button.setAttribute("aria-current", "page");
@@ -2259,6 +2301,7 @@ function selectManagerView(view = "overview") {
   const appTitle = $("responsesApp").querySelector(".page");
   appTitle.setAttribute("data-mgr-active", view);
   window.scrollTo(0, 0);
+  if (view === "actions") document.dispatchEvent(new Event("workflow-actions-open"));
 }
 $("mgrSubmenu").addEventListener("click", event => {
   const button = event.target.closest("[data-mgr-view]");
@@ -2303,6 +2346,7 @@ function setSelectOptions(select, options, placeholder, current = "") {
 }
 
 function dashboardTargets(meta, { faculty, department_id, instructor_id }, kind = "") {
+  if (kind === "survey") return [];
   const departments = meta.departments.filter(d =>
     (!faculty || String(d.faculty_id) === faculty) &&
     (!department_id || String(d.id) === department_id));
@@ -2325,6 +2369,7 @@ function syncDashboardFilters(selection = rspState) {
   const serviceOnly = kind === "service";
   $("mgrKind").value = kind;
   $("mgrKind").querySelector('[value="service"]').disabled = !meta.services.length;
+  $("mgrKind").querySelector('[value="survey"]').disabled = currentSession?.user?.role === "faculty";
   setSelectOptions($("mgrSemester"), meta.semesters.map(v => ({ value: v, label: v })), "All semesters", semester);
   const toOption = item => ({ value: item.id, label: item.name });
   setSelectOptions($("mgrFaculty"), meta.faculties.map(toOption),
@@ -2338,12 +2383,12 @@ function syncDashboardFilters(selection = rspState) {
   const departmentIds = new Set(departments.filter(d => !selectedDepartment || String(d.id) === selectedDepartment).map(d => d.id));
   const instructorIds = new Set(meta.courses.filter(c => departmentIds.has(c.department_id)).map(c => c.instructor_id));
   const instructors = meta.instructors.filter(i => instructorIds.has(i.id));
-  setSelectOptions($("mgrInstructor"), instructors.map(toOption), "All instructors", serviceOnly ? "" : instructor_id);
-  $("mgrInstructor").disabled = serviceOnly || !instructors.length;
+  setSelectOptions($("mgrInstructor"), instructors.map(toOption), "All instructors", serviceOnly || kind === "survey" ? "" : instructor_id);
+  $("mgrInstructor").disabled = serviceOnly || kind === "survey" || !instructors.length;
   const targets = dashboardTargets(meta, {
     faculty: selectedFaculty, department_id: selectedDepartment, instructor_id: $("mgrInstructor").value,
   }, kind);
-  const anyTarget = { course: "All courses", service: "All services" }[kind] || "All courses &amp; services";
+  const anyTarget = { course: "All courses", service: "All services", survey: "General surveys" }[kind] || "All courses &amp; services";
   setSelectOptions($("mgrTarget"), targets, anyTarget, target);
   $("mgrTarget").disabled = !targets.length;
 }
@@ -2916,7 +2961,9 @@ function problemsHtml(a) {
       <span class="fa-issue-share">${share}% negative</span>
       <span class="fa-issue-meta">${plural(p.negative, "negative mention")} / ${p.total} total</span>
       <span class="fa-issue-link">Read these comments</span>
-    </button></li>`;
+    </button>
+    ${currentSession?.user?.role === "manager" ? `<button type="button" class="btn-sm workflow-problem-action" data-action-topic="${escapeHtml(p.topic)}">Create action</button>` : ""}
+    </li>`;
   }).join("")}</ol>`;
 }
 
@@ -3089,9 +3136,9 @@ function ratingsHtml(r, qLabel) {
 function rspHtml(r, qLabel) {
   // Course targets arrive as "CODE — Title"; the code becomes a quiet label above the title.
   const course = r.kind === "course" && r.target.match(/^(.+?) — (.+)$/);
-  const kindLabel = r.kind === "course" ? (course ? course[1] : "Course") : "Service";
+  const kindLabel = course ? course[1] : KIND_LABEL[r.kind];
   const sentiment = toneOf(r.sentiment);
-  const confidence = r.confidence ? `, ${Math.round(r.confidence * 100)}% confidence` : "";
+  const confidence = !r.is_corrected && r.confidence ? `, ${Math.round(r.confidence * 100)}% confidence` : "";
   const meta = [
     `<span>${RSP_ICONS.date}<span>${r.date ? `<time datetime="${escapeHtml(r.date)}">${fmtDate(`${r.date}T00:00:00`)}</time>` : escapeHtml(r.semester)}</span></span>`,
     `<span>${LOCK_ICON}Anonymous</span>`,
@@ -3118,6 +3165,10 @@ function rspHtml(r, qLabel) {
         : '<p class="fx-text is-empty">No written comment, ratings only.</p>'}
       ${ratingsHtml(r, qLabel)}
       ${topics ? `<ul class="fx-topics" aria-label="Detected topics and their sentiment">${topics}</ul>` : ""}
+      ${r.is_corrected || currentSession?.user?.role === "admin" ? `<div class="workflow-response-tools">
+        ${r.is_corrected ? '<span>Manually corrected</span>' : ""}
+        ${currentSession?.user?.role === "admin" ? `<button type="button" class="btn-sm" data-correct-feedback="${r.id}">Correct analysis</button>` : ""}
+      </div>` : ""}
     </article>`;
 }
 
@@ -3134,7 +3185,7 @@ function markLongComments() {
 
 function activeFilters() {
   const q = rspState.q.trim(), filters = [];
-  if (rspState.kind) filters.push(["kind", rspState.kind === "course" ? "Course evaluations" : "Service reviews"]);
+  if (rspState.kind) filters.push(["kind", KIND_LABEL[rspState.kind]]);
   if (rspState.target) filters.push(["target", rspTarget.selectedOptions[0]?.textContent || rspState.target]);
   if (rspState.sentiment) filters.push(["sentiment", `${SENTIMENT_LABEL[rspState.sentiment]} sentiment`]);
   if (rspState.topic) filters.push(["topic", rspState.tone ? `${rspState.topic}, ${rspState.tone} mentions` : `Topic: ${rspState.topic}`]);
@@ -3475,6 +3526,7 @@ async function checkHealth() {
 })();
 </script>
 <script src="/university-ui.js"></script>
-<script src="/staff-i18n.js?v=3"></script>
+<script src="/sprint6.js?v=1"></script>
+<script src="/staff-i18n.js?v=4"></script>
 </body>
 </html>

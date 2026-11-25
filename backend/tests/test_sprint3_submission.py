@@ -9,7 +9,6 @@ from app.models import (
 )
 from app.nlp.lexicons import DEFAULT_TOPICS
 from app.routers.evaluations import SubmitIn, submit
-from app.services import invalidate_topics
 
 
 class Sprint3SubmissionIntegrationTests(unittest.TestCase):
@@ -36,13 +35,11 @@ class Sprint3SubmissionIntegrationTests(unittest.TestCase):
         self.db.add_all([student, teacher, course, survey, question])
         self.db.add_all(TopicCategory(**topic) for topic in DEFAULT_TOPICS)
         self.db.commit()
-        invalidate_topics()
         self.student, self.course, self.survey, self.question = student, course, survey, question
 
     def tearDown(self):
         self.db.close()
         self.engine.dispose()
-        invalidate_topics()
 
     def test_anonymous_submission_is_analyzed_before_commit(self):
         """Submit -> PII masking -> analysis -> commit: the stored row carries the Sprint 3 analysis."""

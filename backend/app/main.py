@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from .config import settings
 from .db import Base, SessionLocal, engine, wait_for_db
-from .routers import actions, admin, analytics, auth, evaluations, reports, management
+from .routers import actions, admin, analytics, auth, evaluations, reports, management, surveys
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("pulse")
@@ -29,6 +29,14 @@ async def lifespan(_: FastAPI):
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ"))
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"))
             conn.execute(text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS ratings JSON"))
+            conn.execute(text("ALTER TABLE survey_questions ADD COLUMN IF NOT EXISTS survey_id INTEGER REFERENCES surveys(id) ON DELETE CASCADE"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_survey_questions_survey_id ON survey_questions (survey_id)"))
+            conn.execute(text("ALTER TABLE surveys ADD COLUMN IF NOT EXISTS is_demo_archive BOOLEAN NOT NULL DEFAULT FALSE"))
+            conn.execute(text(
+                "UPDATE surveys SET is_demo_archive = TRUE WHERE is_demo_archive = FALSE "
+                "AND kind = 'survey' AND status = 'closed' AND question = 'Demo history' "
+                "AND title = concat('Sprint 5 demo history — ', semester)"
+            ))
             # Sprint 3 analytics columns.  Keep this idempotent upgrade path for
             # databases created by Sprint 1/2; create_all() only creates missing
             # tables and never adds columns to an existing feedback table.
@@ -86,6 +94,7 @@ app.include_router(analytics.router)
 app.include_router(actions.router)
 app.include_router(reports.router)
 app.include_router(management.router)
+app.include_router(surveys.admin_router)
 
 
 @app.get("/api/health", tags=["system"])

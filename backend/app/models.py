@@ -85,7 +85,8 @@ class SurveyQuestion(Base):
     """A 1–5 rating statement shown on every course evaluation or service review form."""
     __tablename__ = "survey_questions"
     id: Mapped[int] = mapped_column(primary_key=True)
-    kind: Mapped[str] = mapped_column(String(16), index=True)  # course | service
+    kind: Mapped[str] = mapped_column(String(16), index=True)
+    survey_id: Mapped[int | None] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"), index=True)
     label: Mapped[str] = mapped_column(String(40))  # short name for result views, e.g. "Clarity"
     text: Mapped[str] = mapped_column(String(300))
     position: Mapped[int] = mapped_column(Integer, default=0)
@@ -100,6 +101,7 @@ class Survey(Base):
     kind: Mapped[str] = mapped_column(String(16))
     semester: Mapped[str] = mapped_column(String(24), index=True)
     status: Mapped[str] = mapped_column(String(16), default="open")  # draft | open | closed
+    is_demo_archive: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     question: Mapped[str] = mapped_column(Text, default="What did you like, and what should be improved?")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -192,3 +194,15 @@ class Action(Base):
 
     course: Mapped[Course | None] = relationship()
     service: Mapped[Service | None] = relationship()
+    department: Mapped[Department | None] = relationship()
+
+
+class AnalysisCorrection(Base):
+    __tablename__ = "analysis_corrections"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    feedback_id: Mapped[int] = mapped_column(ForeignKey("feedback.id", ondelete="CASCADE"), index=True)
+    corrected_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    before: Mapped[dict] = mapped_column(JSON)
+    after: Mapped[dict] = mapped_column(JSON)
+    reason: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

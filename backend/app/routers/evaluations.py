@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Course, Feedback, Service, SubmissionReceipt, Survey, SurveyQuestion, User
+from ..models import KINDS, Course, Feedback, Service, SubmissionReceipt, Survey, SurveyQuestion, User
 from ..nlp.pii import mask_pii_report, names_pattern
 from ..security import staff_only, student_only
 from ..services import Filters, analyze_into, apply_filters, get_matchers, scope_query, semester_key
@@ -24,7 +24,7 @@ from .analytics import filters_dep
 
 router = APIRouter(prefix="/api/evaluations", tags=["evaluations"])
 
-FORM_KINDS = ("course", "service")
+FORM_KINDS = KINDS
 
 
 class SubmitIn(BaseModel):
@@ -34,9 +34,14 @@ class SubmitIn(BaseModel):
     comment: str = Field(default="", max_length=2000)
 
 
-def _questions(db: Session, kind: str) -> list[SurveyQuestion]:
-    return db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind, SurveyQuestion.is_active.is_(True))
-                      .order_by(SurveyQuestion.position, SurveyQuestion.id)).all()
+def _questions(db: Session, kind: str, survey_id: int | None = None) -> list[SurveyQuestion]:
+    stmt = select(SurveyQuestion).where(SurveyQuestion.kind == kind, SurveyQuestion.is_active.is_(True))
+    stmt = stmt.order_by(SurveyQuestion.position, SurveyQuestion.id)
+    if survey_id is not None:
+        questions = db.scalars(stmt.where(SurveyQuestion.survey_id == survey_id)).all()
+        if questions:
+            return questions
+    return db.scalars(stmt.where(SurveyQuestion.survey_id.is_(None))).all()
 
 
 def _question_out(q: SurveyQuestion) -> dict:
@@ -54,7 +59,8 @@ def _known_names(db: Session):
 @router.get("/forms")
 def open_forms(user: User = Depends(student_only), db: Session = Depends(get_db)):
     """Open course-evaluation / service-review surveys, with what this student has already answered."""
-    surveys = db.scalars(select(Survey).where(Survey.status == "open", Survey.kind.in_(FORM_KINDS))).all()
+    surveys = db.scalars(select(Survey).where(Survey.status == "open", Survey.is_demo_archive.is_(False),
+                                             Survey.kind.in_(FORM_KINDS))).all()
     done = {(r.survey_id, r.target_key) for r in db.scalars(
         select(SubmissionReceipt).where(SubmissionReceipt.user_id == user.id))}
 
@@ -68,16 +74,21 @@ def open_forms(user: User = Depends(student_only), db: Session = Depends(get_db)
                 "instructor": c.instructor.name if c.instructor else None,
                 "own_department": c.department_id == user.department_id,
             } for c in db.scalars(select(Course).order_by(Course.code))]
-        else:
+        elif s.kind == "service":
             targets = [{"id": v.id, "key": f"service:{v.id}", "title": v.name, "code": None,
                         "department": v.category, "instructor": None, "own_department": False}
                        for v in db.scalars(select(Service).order_by(Service.name))]
+        else:
+            targets = [{"id": 0, "key": "general", "title": s.title, "code": None,
+                        "department": "", "instructor": None, "own_department": False}]
         for t in targets:
             t["done"] = (s.id, t["key"]) in done
+        questions = _questions(db, s.kind, s.id)
         out.append({
             "id": s.id, "title": s.title, "description": s.description, "kind": s.kind,
             "semester": s.semester, "comment_prompt": s.question,
-            "questions": [_question_out(q) for q in _questions(db, s.kind)],
+            "questions": [_question_out(q) for q in questions],
+            "comment_required": s.kind == "survey" and not questions,
             "targets": targets,
         })
     return out
@@ -90,27 +101,35 @@ def submit(survey_id: int, body: SubmitIn, user: User = Depends(student_only), d
     Writes two rows in one transaction: the Feedback (answer and analysis, no user)
     and the SubmissionReceipt (user and target, no answer).
     """
-    survey = db.get(Survey, survey_id)
-    if not survey or survey.status != "open" or survey.kind not in FORM_KINDS:
+    survey = db.get(Survey, survey_id, with_for_update={"read": True})
+    if not survey or survey.status != "open" or survey.is_demo_archive or survey.kind not in FORM_KINDS:
         raise HTTPException(404, "This form is not open")
 
     # Day precision only — an exact timestamp could be matched against the receipt or server logs.
     today = datetime.combine(date.today(), dtime.min, tzinfo=timezone.utc)
     fb = Feedback(survey_id=survey.id, kind=survey.kind, semester=survey.semester, source="form", created_at=today)
     if survey.kind == "course":
-        course = db.get(Course, body.course_id or 0)
+        course = db.get(Course, body.course_id or 0) if body.service_id is None else None
         if not course:
             raise HTTPException(422, "Please choose a course")
         fb.course_id, fb.department_id = course.id, course.department_id
         target = f"course:{course.id}"
-    else:
-        service = db.get(Service, body.service_id or 0)
+    elif survey.kind == "service":
+        service = db.get(Service, body.service_id or 0) if body.course_id is None else None
         if not service:
             raise HTTPException(422, "Please choose a service")
         fb.service_id = service.id
         target = f"service:{service.id}"
+    else:
+        if body.course_id is not None or body.service_id is not None:
+            raise HTTPException(422, "This survey does not have a course or service target")
+        fb.department_id = user.department_id
+        target = "general"
 
-    questions = _questions(db, survey.kind)
+    questions = _questions(db, survey.kind, survey.id)
+    raw = body.comment.strip()
+    if not questions and (survey.kind != "survey" or not raw):
+        raise HTTPException(422, "Please enter a response" if survey.kind == "survey" else "This form has no questions")
     expected = {q.id for q in questions}
     if set(body.ratings) != expected:
         raise HTTPException(422, "Please answer every rating question")
@@ -118,10 +137,9 @@ def submit(survey_id: int, body: SubmitIn, user: User = Depends(student_only), d
         raise HTTPException(422, "Ratings must be between 1 and 5")
     fb.ratings = {str(k): v for k, v in body.ratings.items()}
     # The rounded mean is the numeric signal the analyzer blends with the text (story 3.1).
-    fb.rating = round(sum(body.ratings.values()) / len(body.ratings))
+    fb.rating = round(sum(body.ratings.values()) / len(body.ratings)) if body.ratings else None
 
     # Story 1.4: personal data is removed before anything is stored — the raw comment never reaches the DB.
-    raw = body.comment.strip()
     masked, removed = mask_pii_report(raw, _known_names(db)) if raw else ("", {})
     fb.text = masked
     fb.pii_masked = bool(removed)
@@ -154,6 +172,8 @@ def responses(
     items = db.scalars(stmt.order_by(Feedback.created_at.desc(), Feedback.id.desc())).all()
 
     questions = db.scalars(select(SurveyQuestion).order_by(SurveyQuestion.position, SurveyQuestion.id)).all()
+    survey_ids = {fb.survey_id for fb in items if fb.kind == "survey" and fb.survey_id}
+    surveys = {s.id: s.title for s in db.scalars(select(Survey).where(Survey.id.in_(survey_ids)))} if survey_ids else {}
     return {
         "scope": _scope_label(user),
         "questions": {k: [_question_out(q) for q in questions if q.kind == k] for k in FORM_KINDS},
@@ -161,7 +181,8 @@ def responses(
             "id": fb.id, "kind": fb.kind, "semester": fb.semester,
             "date": fb.created_at.date().isoformat() if fb.created_at else None,
             "target": (f"{fb.course.code} — {fb.course.title}" if fb.course
-                       else fb.service.name if fb.service else "Removed item"),
+                       else fb.service.name if fb.service else surveys.get(fb.survey_id, "General survey")
+                       if fb.kind == "survey" else "Removed item"),
             "course_id": fb.course_id, "service_id": fb.service_id,
             "department_id": fb.department_id, "department": fb.department.name if fb.department else None,
             "instructor_id": fb.course.instructor_id if fb.course else None,
@@ -169,7 +190,7 @@ def responses(
             "comment": fb.text, "pii_masked": fb.pii_masked, "language": fb.language,
             "sentiment": fb.sentiment, "sentiment_score": fb.sentiment_score,
             "confidence": fb.confidence, "topics": fb.topics or [],
-            "aspects": fb.aspects or {}, "keywords": fb.keywords or [],
+            "aspects": fb.aspects or {}, "keywords": fb.keywords or [], "is_corrected": fb.is_corrected,
         } for fb in items],
     }
 

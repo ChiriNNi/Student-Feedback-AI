@@ -30,20 +30,9 @@ def sort_semesters(items) -> list[str]:
 
 # ---------------------------------------------------------------- analysis
 
-_matchers_cache: dict = {"items": None}
-
-
-def invalidate_topics() -> None:
-    _matchers_cache["items"] = None
-
-
 def get_matchers(db: Session):
-    # Story 3.2: topics and their keywords live in the topic_categories table. Admin
-    # edits to it call invalidate_topics(), so the next analysis uses the new list.
-    if _matchers_cache["items"] is None:
-        cats = db.scalars(select(TopicCategory).where(TopicCategory.is_active.is_(True))).all()
-        _matchers_cache["items"] = build_matchers([{"name": c.name, "keywords": c.keywords} for c in cats])
-    return _matchers_cache["items"]
+    cats = db.scalars(select(TopicCategory).where(TopicCategory.is_active.is_(True)).order_by(TopicCategory.id))
+    return build_matchers([{"name": c.name, "keywords": c.keywords} for c in cats])
 
 
 def analyze_into(fb: Feedback, raw_text: str, matchers) -> Feedback:
