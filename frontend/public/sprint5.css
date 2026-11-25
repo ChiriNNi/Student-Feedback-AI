@@ -1,25 +1,4 @@
 /* Sprint 5 dashboard and reports */
-#responsesApp .staff-sidebar { gap: 19px; padding-top: 16px; }
-#responsesApp .staff-sidebar-head { display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
-#responsesApp .staff-sidebar-head .rail-brand { padding-inline: 4px; }
-#responsesApp .staff-sidebar-toggle {
-  flex: none;
-  width: 37px;
-  height: 37px;
-  border-color: var(--line);
-  border-radius: 8px;
-  color: var(--ink-2);
-}
-#responsesApp .staff-sidebar-toggle:hover { color: var(--brand); background: var(--brand-soft); }
-#responsesApp .staff-sidebar-toggle svg { width: 20px; height: 20px; }
-#responsesApp .staff-sidebar-chevron { transform-origin: 14.5px 12px; }
-#responsesApp .staff-sidebar-toggle[aria-expanded="false"] .staff-sidebar-chevron { transform: scaleX(-1); }
-#responsesApp.is-sidebar-collapsed { --rail: 57px; }
-@media (min-width: 921px) {
-  #responsesApp.is-sidebar-collapsed .staff-sidebar { padding-inline: 9px; }
-  #responsesApp.is-sidebar-collapsed .rail-brand { display: none; }
-}
-
 #responsesApp .mgr-submenu {
   display: grid; gap: 3px; margin: -1px 4px 10px 15px;
   padding: 4px 0 4px 12px; border-left: 1px solid var(--line);
@@ -476,9 +455,6 @@
 #responsesApp #explorerSection .fx { margin-top:28px; }
 
 @media (max-width: 920px) {
-  #responsesApp .staff-sidebar { padding: 8px 12px; gap: 6px 10px; }
-  #responsesApp .staff-sidebar-head { flex-direction: row; align-items: center; gap: 8px; }
-  #responsesApp .staff-sidebar-head .rail-brand { padding-inline: 0; gap: 7px; }
   #responsesApp .rail-nav { flex-wrap: wrap; overflow: visible; }
   #responsesApp .rail-nav .mgr-submenu {
     order: 1;
@@ -502,10 +478,6 @@
   #responsesApp .mgr-comparison-table { font-size: 13px; }
   #responsesApp .mgr-university-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   #responsesApp .mgr-department-grid, #responsesApp .mgr-report-options { grid-template-columns: 1fr; }
-}
-@media (max-width: 430px) {
-  #responsesApp .staff-sidebar-head .logo-mark { display: none; }
-  #responsesApp .staff-sidebar-head .logo-text { font-size: 17px; }
 }
 @media (max-width: 400px) {
   #responsesApp .mgr-kpi-card { padding: 9px; }
