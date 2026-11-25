@@ -18,6 +18,9 @@
   check(initial?.total > 0 && emptyCourse, "Expected demo feedback and an empty course");
   const filterToEmptyCourse = () => {
     selectManagerView("overview");
+    $("mgrOpenFilters").click();
+    $("mgrKind").value = "course";
+    $("mgrKind").dispatchEvent(new Event("change", { bubbles: true }));
     $("mgrTarget").value = "course:" + emptyCourse.id;
     $("mgrApplyFilters").click();
   };
@@ -52,6 +55,7 @@
     check(rspState.trends.series.length === 0, "Trends update despite Explorer failure");
 
     failRequests("/analytics/overview", "/management/university", "/alerts");
+    $("mgrOpenFilters").click();
     $("mgrResetFilters").click();
     await waitFor(() => rspState.summary?.total > 0 && !$("rspRefresh").disabled, "successful Summary during Overview failure");
     check($("mgrTotalFeedback").textContent === "—", "Failed Overview clears prior values");
