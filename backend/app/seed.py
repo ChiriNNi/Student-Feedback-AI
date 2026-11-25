@@ -162,7 +162,7 @@ def _seed_catalogue(db: Session) -> None:
     if not db.scalar(select(Service).limit(1)):
         db.add_all(Service(name=n, category=c) for n, c in SERVICES)
         added.append("services")
-    if not db.scalar(select(SurveyQuestion).limit(1)):
+    if not db.scalar(select(SurveyQuestion).where(SurveyQuestion.survey_id.is_(None)).limit(1)):
         db.add_all(SurveyQuestion(kind=k, label=l, text=t, position=i)
                    for i, (k, l, t) in enumerate(QUESTIONS))
         added.append("questions")
@@ -193,9 +193,11 @@ def _seed_feedback(db: Session) -> None:
 
     courses = {course.code: course for course in db.scalars(select(Course))}
     services = {service.name: service for service in db.scalars(select(Service))}
-    surveys = {survey.kind: survey for survey in db.scalars(select(Survey))}
+    surveys = {survey.kind: survey for survey in db.scalars(
+        select(Survey).where(Survey.semester == SEMESTER, Survey.status == "open").order_by(Survey.id.desc())
+    )}
     questions = {
-        kind: db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind)
+        kind: db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind, SurveyQuestion.survey_id.is_(None))
                          .order_by(SurveyQuestion.position, SurveyQuestion.id)).all()
         for kind in ("course", "service")
     }
@@ -246,7 +248,7 @@ def _seed_demo_history(db: Session) -> None:
         return
     courses = {c.code: c for c in db.scalars(select(Course))}
     services = {v.name: v for v in db.scalars(select(Service))}
-    questions = {kind: db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind)
+    questions = {kind: db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind, SurveyQuestion.survey_id.is_(None))
                      .order_by(SurveyQuestion.position, SurveyQuestion.id)).all()
                  for kind in ("course", "service")}
     matchers = get_matchers(db)
@@ -270,7 +272,7 @@ def _seed_demo_history(db: Session) -> None:
             continue
         survey = Survey(title=f"Sprint 5 demo history — {semester}",
                         description="Synthetic sample dataset for semester comparisons only",
-                        question="Demo history", semester=semester, kind="survey", status="closed")
+                        question="Demo history", semester=semester, kind="survey", status="closed", is_demo_archive=True)
         db.add(survey)
         db.flush()
         for kind, target_name in focus:

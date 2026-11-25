@@ -11,7 +11,7 @@ from app.db import Base
 from app.models import Course, Department, Faculty, Feedback, Service, User
 from app.routers.analytics import filters_dep, meta, overview, summary, trends
 from app.routers.evaluations import responses
-from app.routers.management import _report_rows
+from app.routers.management import _report_rows, comparison
 from app.routers.reports import summary_excel
 from app.services import Filters
 
@@ -174,6 +174,23 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("Sentiment analysis is unavailable", narrative["overview"])
         _, report = _report_rows(self.db, self.manager, filters, "trends")
         self.assertEqual(report[0][3:], [None, None, None])
+
+    def test_management_exports_follow_dashboard_periods(self):
+        self.feedback(self.course, semester="Fall 2025", rating=5)
+        self.feedback(self.course, semester="Spring 2026", rating=3)
+        self.feedback(self.course, semester="Fall 2026", rating=2)
+        filters = Filters(semester="Spring 2026")
+
+        _, trend_rows = _report_rows(self.db, self.manager, filters, "trends")
+        self.assertEqual([row[0] for row in trend_rows], ["Spring 2026"])
+
+        displayed = comparison("course", filters, self.manager, self.db)
+        columns, rows = _report_rows(self.db, self.manager, filters, "compare_course")
+        self.assertEqual(columns, ["Name", "Spring 2026 rating / 5", "Spring 2026 responses",
+                                   "Fall 2025 rating / 5", "Fall 2025 responses"])
+        item = displayed["items"][0]
+        self.assertEqual(rows, [[item["name"], item["current"]["avg_rating"], item["current"]["total"],
+                                 item["previous"]["avg_rating"], item["previous"]["total"]]])
 
     def test_explorer_uses_dashboard_scope_for_kind_and_empty_courses(self):
         self.feedback(self.course)
