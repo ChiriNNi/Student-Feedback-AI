@@ -354,11 +354,29 @@ html[data-theme="dark"] #confirmOk.btn.danger { color: #0e1422; }
 }
 .rail {
   position: sticky; top: 0; height: 100vh;
-  display: flex; flex-direction: column; gap: 28px;
-  padding: 24px 16px 18px;
+  display: flex; flex-direction: column; gap: 19px;
+  padding: 16px 16px 18px;
   background: var(--surface); border-right: 1px solid var(--line);
 }
-.rail-brand { padding: 0 8px; }
+.sidebar-head { display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
+.rail-brand { padding-inline: 4px; }
+.sidebar-toggle {
+  flex: none;
+  width: 37px;
+  height: 37px;
+  border-color: var(--line);
+  border-radius: 8px;
+  color: var(--ink-2);
+}
+.sidebar-toggle:hover { color: var(--brand); background: var(--brand-soft); }
+.sidebar-toggle svg { width: 20px; height: 20px; }
+.sidebar-chevron { transform-origin: 14.5px 12px; }
+.sidebar-toggle[aria-expanded="false"] .sidebar-chevron { transform: scaleX(-1); }
+.admin-app.is-sidebar-collapsed { --rail: 57px; }
+@media (width > 920px) {
+  .is-sidebar-collapsed .rail { padding-inline: 9px; }
+  .is-sidebar-collapsed .rail-brand { display: none; }
+}
 .rail-nav { display: grid; gap: 2px; }
 .rail-nav button {
   display: flex; align-items: center; gap: 12px;
@@ -848,12 +866,13 @@ mark.ph {
   .service-status { margin-top: 20px; }
   .card-wrap { padding: 32px 20px 48px; }
 
-  .admin-app:not([hidden]) { grid-template-columns: 1fr; background: var(--paper); }
+  .admin-app:not([hidden]) { grid-template: auto 1fr / minmax(0, 1fr); background: var(--paper); }
   .rail {
-    position: sticky; z-index: 20; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 14px;
-    padding: 10px 14px; border-right: 0; border-bottom: 1px solid var(--line);
+    position: sticky; z-index: 20; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+    padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--line);
   }
-  .rail-brand { padding: 0; }
+  .sidebar-head { flex-direction: row; align-items: center; gap: 8px; }
+  .rail-brand { padding: 0; gap: 7px; }
   .rail-brand .logo-text small { display: none; }
   .rail-nav { order: 3; flex-basis: 100%; display: flex; gap: 4px; overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
   .rail-nav button { flex: none; min-height: 38px; padding: 7px 11px; font-size: 14.5px; }
@@ -866,6 +885,10 @@ mark.ph {
   .page { padding: 24px 16px 56px; }
   .fa-grid { grid-template-columns: 1fr; }
   .report-cols { grid-template-columns: 1fr; gap: 8px; }
+}
+@media (max-width: 430px) {
+  .sidebar-head .logo-mark { display: none; }
+  .sidebar-head .logo-text { font-size: 17px; }
 }
 @media (max-width: 640px) {
   .fx-toolbar .fx-sort, .fx-sort select { width: 100%; max-width: none; }
