@@ -209,10 +209,9 @@ def recompute_alerts(db: Session) -> int:
             keys.append(("department", r.department_id))
         for k in keys:
             buckets[k][r.semester][r.sentiment] += 1
-            if r.semester == semesters[-1]:
-                for t, lab in (r.aspects or {}).items():
-                    if lab == "negative":
-                        neg_topics[k][t] += 1
+            for topic, label in (r.aspects or {}).items():
+                if label == "negative":
+                    neg_topics[k, r.semester][topic] += 1
 
     names = {
         "course": {c.id: (f"{c.code} {c.title}", c.department_id) for c in db.scalars(select(Course))},
@@ -220,35 +219,34 @@ def recompute_alerts(db: Session) -> int:
         "department": {d.id: (d.name, d.id) for d in db.scalars(select(Department))},
     }
 
-    # Compare the latest semester that has enough data with the one before it
+    # Preserve acknowledged alerts, and refresh every eligible historical comparison.
+    read_alerts = select(Alert.scope_type, Alert.scope_id, Alert.semester).where(Alert.is_read.is_(True))
+    read_keys = {(scope_type, scope_id, semester) for scope_type, scope_id, semester in db.execute(read_alerts)}
     db.execute(delete(Alert).where(Alert.is_read.is_(False)))
     created = 0
     for key, by_sem in buckets.items():
-        sems = [s for s in semesters if sum(by_sem[s].values()) >= settings.alert_min_feedback]
-        if len(sems) < 2 or sems[-1] != semesters[-1] and sems[-1] != semesters[-2]:
-            continue
-        cur, prev = sems[-1], sems[-2]
-        cur_share = by_sem[cur]["negative"] / sum(by_sem[cur].values())
-        prev_share = by_sem[prev]["negative"] / sum(by_sem[prev].values())
-        delta = (cur_share - prev_share) * 100
-        if delta < settings.alert_threshold_pp:
-            continue
-        name, dept = names[key[0]].get(key[1], (f"#{key[1]}", None))
-        top = neg_topics[key].most_common(1)
-        top_topic = top[0][0] if top else None
-        exists = db.scalar(select(Alert).where(
-            Alert.scope_type == key[0], Alert.scope_id == key[1], Alert.semester == cur))
-        if exists:
-            continue
-        msg = (f"Negative feedback for {name} rose from {round(prev_share * 100)}% in {prev} "
-               f"to {round(cur_share * 100)}% in {cur}")
-        msg += f", driven mainly by {top_topic.lower()}." if top_topic else "."
-        db.add(Alert(
-            scope_type=key[0], scope_id=key[1], scope_name=name, department_id=dept,
-            semester=cur, previous_semester=prev, negative_share=round(cur_share, 3),
-            previous_share=round(prev_share, 3), top_topic=top_topic,
-            severity="high" if delta >= settings.alert_threshold_pp * 2 else "medium", message=msg,
-        ))
-        created += 1
+        eligible = [semester for semester in semesters
+                    if sum(by_sem[semester].values()) >= settings.alert_min_feedback]
+        for prev, cur in zip(eligible, eligible[1:]):
+            if (*key, cur) in read_keys:
+                continue
+            cur_share = by_sem[cur]["negative"] / sum(by_sem[cur].values())
+            prev_share = by_sem[prev]["negative"] / sum(by_sem[prev].values())
+            delta = (cur_share - prev_share) * 100
+            if delta < settings.alert_threshold_pp:
+                continue
+            name, dept = names[key[0]].get(key[1], (f"#{key[1]}", None))
+            top = neg_topics[key, cur].most_common(1)
+            top_topic = top[0][0] if top else None
+            msg = (f"Negative feedback for {name} rose from {round(prev_share * 100)}% in {prev} "
+                   f"to {round(cur_share * 100)}% in {cur}")
+            msg += f", with the most negative mentions about {top_topic.lower()}." if top_topic else "."
+            db.add(Alert(
+                scope_type=key[0], scope_id=key[1], scope_name=name, department_id=dept,
+                semester=cur, previous_semester=prev, negative_share=round(cur_share, 3),
+                previous_share=round(prev_share, 3), top_topic=top_topic,
+                severity="high" if delta >= settings.alert_threshold_pp * 2 else "medium", message=msg,
+            ))
+            created += 1
     db.commit()
     return created

@@ -18,27 +18,23 @@
   check(initial?.total > 0 && emptyCourse, "Expected demo feedback and an empty course");
   const filterToEmptyCourse = () => {
     selectManagerView("overview");
-    $("mgrOpenFilters").click();
     $("mgrKind").value = "course";
     $("mgrKind").dispatchEvent(new Event("change", { bubbles: true }));
     $("mgrTarget").value = "course:" + emptyCourse.id;
-    $("mgrApplyFilters").click();
+    $("mgrTarget").dispatchEvent(new Event("change", { bubbles: true }));
   };
 
   filterToEmptyCourse();
-  await waitFor(() => rspState.analytics?.total === 0, "empty course");
-  check($("rsTotal").textContent === "0" && $("mgrTotalFeedback").textContent === "0", "Empty course KPI parity");
-  check(!rspState.trends.series.length, "Empty course trend");
+  await waitFor(() => rspState.trends?.series.length === 0, "empty course trend");
+  check(rspState.analytics === initial, "Chart filter preserves overview data");
+  check($("mgrTotalFeedback").textContent === String(initial.total), "Chart filter preserves overview KPI");
 
   selectManagerView("explorer");
   $("rspKindSeg").querySelector('[data-kind="service"]').click();
-  await waitFor(() => rspState.analytics?.total > 0, "service feedback");
-  check(!$("mgrTarget").value && !rspTarget.value, "Switching type clears incompatible course in both controls");
+  await waitFor(() => rspState.data?.items.length && rspState.data.items.every(item => item.kind === "service"), "service feedback");
+  check($("mgrTarget").value === "course:" + emptyCourse.id && !rspTarget.value, "Explorer preserves independent chart filters");
   check($("rsTotal").textContent === $("mgrTotalFeedback").textContent, "Explorer and overview use the same type");
   check(rspState.data.items.every(item => item.kind === "service"), "Explorer shows only services");
-  check(rspState.trends.series.reduce((total, period) => total + period.total, 0) === rspState.analytics.total,
-    "Trends use the selected type");
-
   const originalFetch = window.fetch;
   const failRequests = (...routes) => {
     window.fetch = (resource, ...args) => routes.some(route => String(resource).includes(route))
@@ -47,16 +43,14 @@
   };
   try {
     failRequests("/evaluations/responses");
-    filterToEmptyCourse();
-    await waitFor(() => rspState.analytics?.total === 0, "successful dashboard during Explorer failure");
-    check($("mgrUniversityStats").textContent.includes("0Course reviews"), "University cards update despite Explorer failure");
+    await loadResponses();
+    check(rspState.analytics?.total > 0, "Dashboard loads during Explorer failure");
     check($("rsTotal").textContent === "—", "Explorer clears unavailable KPI");
     check($("rspEmpty").textContent.includes("Cannot reach the server"), "Explorer shows its own error");
     check(rspState.trends.series.length === 0, "Trends update despite Explorer failure");
 
     failRequests("/analytics/overview", "/management/university", "/alerts");
-    $("mgrOpenFilters").click();
-    $("mgrResetFilters").click();
+    await loadResponses();
     await waitFor(() => rspState.summary?.total > 0 && !$("rspRefresh").disabled, "successful Summary during Overview failure");
     check($("mgrTotalFeedback").textContent === "—", "Failed Overview clears prior values");
     check($("summaryBody").textContent.includes("average rating"), "Summary renders independently");

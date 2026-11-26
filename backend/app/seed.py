@@ -3,9 +3,10 @@
 Each part is seeded independently and only when its table is empty, so a
 database created by an earlier version picks up the newer parts on restart.
 Synthetic feedback is clearly marked with ``source=seed`` and is only created
-when demo data is enabled and the feedback table is empty.
+when demo data is enabled.
 """
 import logging
+from collections import defaultdict
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -125,6 +126,9 @@ def seed(db: Session, *, include_demo: bool = True) -> None:
     if include_demo:
         _seed_feedback(db)
         _seed_demo_history(db)
+        _seed_demo_comparison_samples(db)
+        _seed_demo_course_rating_volume(db)
+        _seed_demo_alert_periods(db)
     _backfill_sprint3(db)
 
 
@@ -321,6 +325,140 @@ def _seed_demo_history(db: Session) -> None:
                     db.add(fb)
         db.commit()
         log.info("Seeded historical demo semester %s (source=seed)", semester)
+
+def _seed_demo_comparison_samples(db: Session) -> None:
+    """Fill out the demo catalogue across semesters using labeled synthetic samples."""
+    from .services import analyze_into, get_matchers
+
+    if not db.scalar(select(Feedback.id).where(Feedback.source == "seed").limit(1)):
+        return
+    courses = {course.code: course for course in db.scalars(select(Course))}
+    services = {service.name: service for service in db.scalars(select(Service))}
+    questions = {
+        kind: db.scalars(select(SurveyQuestion).where(SurveyQuestion.kind == kind, SurveyQuestion.survey_id.is_(None))
+                         .order_by(SurveyQuestion.position, SurveyQuestion.id)).all()
+        for kind in ("course", "service")
+    }
+    matchers = get_matchers(db)
+    for semester in ("Fall 2025", "Spring 2026", "Fall 2026", "Spring 2027"):
+        title = f"Dashboard comparison samples — {semester}"
+        if db.scalar(select(Survey.id).where(Survey.title == title)):
+            continue
+        survey = Survey(title=title, description="Synthetic feedback for dashboard demonstrations",
+                        question="Demo feedback", semester=semester, kind="survey", status="closed", is_demo_archive=True)
+        db.add(survey)
+        db.flush()
+        for kind, name, values, comment in DEMO_FEEDBACK:
+            # The existing historical seed already gives these targets a varied trend.
+            if name in {"IT Help Desk", "Library", "CSS 101", "CSS 215"}:
+                continue
+            target = (courses if kind == "course" else services).get(name)
+            if not target or len(values) != len(questions[kind]):
+                continue
+            for adjustment in (-1, 0, 1):
+                scores = [min(5, max(1, value + adjustment)) for value in values]
+                feedback = Feedback(
+                    survey_id=survey.id, kind=kind, semester=semester,
+                    course_id=target.id if kind == "course" else None,
+                    service_id=target.id if kind == "service" else None,
+                    department_id=target.department_id if kind == "course" else None,
+                    rating=round(sum(scores) / len(scores)),
+                    ratings={str(q.id): score for q, score in zip(questions[kind], scores)},
+                    text="", source="seed",
+                )
+                analyze_into(feedback, comment, matchers)
+                db.add(feedback)
+        db.commit()
+
+
+def _seed_demo_course_rating_volume(db: Session) -> None:
+    """Bring seeded course comparisons to 25 rated responses per demo semester."""
+    title = "Dashboard course rating volume"
+    if db.scalar(select(Survey.id).where(Survey.title == title)):
+        return
+
+    semesters = ("Fall 2025", "Spring 2026", "Fall 2026", "Spring 2027")
+    demo_codes = {name for kind, name, _, _ in DEMO_FEEDBACK if kind == "course"}
+    samples = db.scalars(
+        select(Feedback).join(Course, Course.id == Feedback.course_id)
+        .where(Course.code.in_(demo_codes), Feedback.source == "seed",
+               Feedback.kind == "course", Feedback.semester.in_(semesters), Feedback.rating.between(1, 5))
+        .order_by(Feedback.id)
+    ).all()
+    if not samples:
+        return
+
+    by_course = defaultdict(list)
+    by_period = defaultdict(list)
+    for sample in samples:
+        by_course[sample.course_id].append(sample)
+        by_period[sample.course_id, sample.semester].append(sample)
+
+    archive = Survey(title=title, description="Synthetic course ratings for dashboard demonstrations",
+                     question="Demo feedback", semester=semesters[-1], kind="survey",
+                     status="closed", is_demo_archive=True)
+    db.add(archive)
+    db.flush()
+    for course_id, course_samples in by_course.items():
+        for semester in semesters:
+            period_samples = by_period[course_id, semester]
+            templates = period_samples or course_samples
+            missing = 25 - len(period_samples)
+            for index in range(missing):
+                sample = templates[index * len(templates) // missing]
+                db.add(Feedback(
+                    survey_id=archive.id, kind="course", semester=semester,
+                    course_id=course_id, department_id=sample.department_id,
+                    rating=sample.rating, ratings=dict(sample.ratings), text=sample.text,
+                    language=sample.language, sentiment=sample.sentiment,
+                    sentiment_score=sample.sentiment_score, confidence=sample.confidence,
+                    topics=list(sample.topics), aspects=dict(sample.aspects),
+                    keywords=list(sample.keywords), source="seed",
+                ))
+    db.commit()
+
+
+def _seed_demo_alert_periods(db: Session) -> None:
+    """Give different demo semesters distinct service trends based on stored responses."""
+    from .services import analyze_into, get_matchers
+
+    title = "Dashboard service alert examples"
+    if db.scalar(select(Survey.id).where(Survey.title == title)):
+        return
+    if not db.scalar(select(Feedback.id).where(Feedback.source == "seed").limit(1)):
+        return
+
+    scenarios = (
+        ("Library", "Fall 2025", "Spring 2026",
+         "The library has enough seats and the staff are helpful.",
+         "The library is overcrowded and there are no seats to study."),
+        ("Cafeteria", "Spring 2026", "Fall 2026",
+         "The cafeteria food is fresh and the prices are fair.",
+         "Food prices are too expensive and the cafeteria queue is too long."),
+        ("Dormitory", "Fall 2026", "Spring 2027",
+         "The dormitory rooms are clean and the facilities work well.",
+         "The dormitory is cold, the showers are broken, and the kitchen is dirty."),
+    )
+    services = {service.name: service.id for service in db.scalars(select(Service))}
+    matchers = get_matchers(db)
+    archive = Survey(title=title, description="Synthetic service feedback for semester alert examples",
+                     question="Demo feedback", semester="Spring 2027", kind="survey",
+                     status="closed", is_demo_archive=True)
+    db.add(archive)
+    db.flush()
+    for service, previous, current, positive, negative in scenarios:
+        if service not in services:
+            continue
+        for semester, negative_count in ((previous, 4), (current, 19)):
+            for index in range(24):
+                is_negative = index < negative_count
+                feedback = Feedback(survey_id=archive.id, kind="service", semester=semester,
+                                    service_id=services[service], rating=2 if is_negative else 4,
+                                    text="", source="seed")
+                analyze_into(feedback, negative if is_negative else positive, matchers)
+                db.add(feedback)
+    db.commit()
+
 
 def _backfill_sprint3(db: Session) -> None:
     """Analyze Sprint 2 rows once after an existing database is upgraded."""

@@ -4,16 +4,16 @@ from io import BytesIO
 
 from fastapi import HTTPException
 from openpyxl import load_workbook
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from app.db import Base
-from app.models import Course, Department, Faculty, Feedback, Service, User
+from app.models import Alert, Course, Department, Faculty, Feedback, Service, User
 from app.routers.analytics import filters_dep, meta, overview, summary, trends
 from app.routers.evaluations import responses
 from app.routers.management import _report_rows, comparison
 from app.routers.reports import summary_excel
-from app.services import Filters
+from app.services import Filters, recompute_alerts
 
 
 class DashboardTests(unittest.TestCase):
@@ -130,11 +130,30 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(result["series"][1]["total"], 0)
         self.assertIsNone(result["topic_series"][1]["mentions"])
 
+    def test_alerts_keep_earlier_rises_and_their_detection_semesters(self):
+        for semester, negative in (("Fall 2025", 1), ("Spring 2026", 7),
+                                   ("Fall 2026", 7), ("Spring 2027", 7)):
+            for index in range(8):
+                self.feedback(semester=semester, sentiment="negative" if index < negative else "positive",
+                              aspects={"Digital Resources": "negative"} if index < negative else {})
+        self.assertEqual(recompute_alerts(self.db), 1)
+        alert = self.db.scalars(select(Alert)).one()
+        self.assertEqual((alert.previous_semester, alert.semester, alert.top_topic),
+                         ("Fall 2025", "Spring 2026", "Digital Resources"))
+        alert.is_read = True
+        self.db.commit()
+        self.assertEqual(recompute_alerts(self.db), 0)
+        self.assertTrue(self.db.scalars(select(Alert)).one().is_read)
+
     def test_trends_honor_semester_and_empty_scope(self):
         self.feedback(self.course, semester="Spring 2026", confidence=0.8)
         self.feedback(self.course, semester="Fall 2026", confidence=0.8)
         result = trends(Filters(semester="Fall 2026"), self.teacher, self.db)
         self.assertEqual([p["semester"] for p in result["series"]], ["Fall 2026"])
+        history = trends(Filters(semester="Fall 2026", course_id=self.course.id),
+                         self.teacher, self.db, include_history=True)
+        self.assertEqual([(p["semester"], p["total"]) for p in history["series"]],
+                         [("Spring 2026", 1), ("Fall 2026", 1)])
         self.assertEqual(trends(Filters(course_id=self.other_course.id), self.admin, self.db)["series"], [])
 
 
