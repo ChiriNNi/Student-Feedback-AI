@@ -166,6 +166,7 @@ def overview(f: Filters = Depends(filters_dep), user: User = Depends(staff_only)
         "languages": dict(Counter(r["language"] for r in rows)),
         "kinds": dict(Counter(r["kind"] for r in rows)),
         "open_alerts": len(alerts),
+        "sample_data_present": any(row["source"] == "seed" for row in rows),
         "scope": scope_label(db, f),
     }
 
@@ -182,14 +183,16 @@ def _visible_alerts(alerts, user: User, db: Session):
 # ------------------------------------------------------------------ trends
 
 @router.get("/analytics/trends")
-def trends(f: Filters = Depends(filters_dep), user: User = Depends(staff_only), db: Session = Depends(get_db)):
-    rows = feedback_rows(db, user, f)
+def trends(f: Filters = Depends(filters_dep), user: User = Depends(staff_only), db: Session = Depends(get_db),
+           include_history: bool = False):
+    scope = Filters(**{**f.__dict__, "semester": None}) if include_history else f
+    rows = feedback_rows(db, user, scope)
     by_sem = defaultdict(list)
     for row in rows:
         by_sem[row["semester"]].append(row)
     periods = []
     if rows:
-        periods = [f.semester] if f.semester else _all_semesters(db, user)
+        periods = [scope.semester] if scope.semester else _all_semesters(db, user)
 
     series = [{"semester": period, **feedback_metrics(by_sem[period])} for period in periods]
     totals = _topic_mentions(rows)

@@ -76,11 +76,17 @@ def university(f: Filters = Depends(filters_dep), user: User = Depends(managers)
 
 @router.get("/comparison")
 def comparison(by: str = Query("course", pattern="^(course|department|service)$"),
-               f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db)):
+               f: Filters = Depends(filters_dep), user: User = Depends(managers), db: Session = Depends(get_db),
+               all_groups: bool = False, aggregate: bool = False):
     """Paired group ratings for selected period and preceding period, including services."""
-    current, previous, items = _semester_comparison(db, user, f, by)
+    if aggregate and not f.semester:
+        current, previous = None, None
+        items = [{"id": group["id"], "name": group["name"], "current": group, "previous": None}
+                 for group in _groups(db, user, f, by)]
+    else:
+        current, previous, items = _semester_comparison(db, user, f, by)
     return {"current_semester": current, "previous_semester": previous,
-            "items": items[:16], "total_groups": len(items)}
+            "items": items if all_groups else items[:16], "total_groups": len(items)}
 
 
 def _semester_comparison(db: Session, user: User, f: Filters, by: str):
