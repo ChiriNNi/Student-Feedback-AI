@@ -145,6 +145,7 @@
     "No sharp increases detected.": ["Резкого роста не обнаружено.", "Күрт өсу анықталмады."],
     "Alerts are temporarily unavailable.": ["Уведомления временно недоступны.", "Ескертулер уақытша қолжетімсіз."],
     "SDU at a glance": ["Статистика SDU", "SDU статистикасы"],
+    "Reports contain aggregate results for your access scope.": ["Отчёты содержат сводные результаты по доступным вам данным.", "Есептер қолжетімді деректердің жиынтық нәтижелерін қамтиды."],
     "Reports": ["Отчёты", "Есептер"],
 
     // story 4.1 summary

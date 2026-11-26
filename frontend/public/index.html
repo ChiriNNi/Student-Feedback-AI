@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#1f3a68">
 <link rel="stylesheet" href="/pulse.css?v=2">
-<link rel="stylesheet" href="/sprint5.css?v=16">
+<link rel="stylesheet" href="/sprint5.css?v=17">
 <link rel="stylesheet" href="/sprint6.css?v=2">
 </head>
 <body>
@@ -393,7 +393,6 @@
         <div class="mgr-submenu" id="mgrSubmenu" aria-label="Feedback analytics sections" hidden>
           <button type="button" data-mgr-view="explorer" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h7"/></svg><span>Feedback explorer</span></button>
           <button type="button" data-mgr-view="overview" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></button>
-          <button type="button" data-mgr-view="reports" aria-current="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3 3 3 3-3"/></svg><span>Reports</span></button>
           <button type="button" data-mgr-view="actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 2.5 2.5L16 9"/></svg><span>Improvement actions</span></button>
         </div>
         <button type="button" data-nav="admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 11.5a3 3 0 1 0 0-6M18 14.8c2 .6 3.5 2.2 3.5 5.2"/></svg><span>Users</span></button>
@@ -439,7 +438,7 @@
     <section class="mgr-section mgr-dashboard" id="overviewSection" hidden aria-labelledby="overviewSectionTitle">
       <header class="mgr-dashboard-head">
         <h1 id="overviewSectionTitle">Feedback dashboard</h1>
-        <button type="button" class="btn-sm" id="mgrResetFilters">Reset filters</button>
+        <button type="button" class="btn-sm mgr-control" id="mgrResetFilters">Reset filters</button>
       </header>
 
       <div class="mgr-filter-grid" id="mgrFilters" role="group" aria-label="Dashboard filters">
@@ -494,6 +493,7 @@
         <button type="button" data-dashboard-view="overview" aria-controls="mgrOverviewView" aria-pressed="true">Overview</button>
         <button type="button" data-dashboard-view="comparison" aria-controls="mgrComparisonView" aria-pressed="false" data-manager-only>Comparison</button>
         <button type="button" data-dashboard-view="alerts" aria-controls="mgrAlertsView" aria-pressed="false" data-manager-only>Alerts</button>
+        <button type="button" data-dashboard-view="reports" aria-controls="reportsSection" aria-pressed="false" data-manager-only>Reports</button>
         <button type="button" data-dashboard-view="university" aria-controls="mgrUniversityDetails" aria-pressed="false" data-manager-only>SDU at a glance</button>
       </div>
 
@@ -529,10 +529,8 @@
           <header class="mgr-card-head">
             <h2 id="mgrTrendsTitle">Semester trends</h2>
             <div class="mgr-trend-controls">
-              <div class="mgr-segments">
-                <button type="button" id="mgrTrendSentiment" aria-pressed="true" aria-controls="trendAnalysis">Sentiment</button>
-              </div>
-              <label class="mgr-topic-picker">
+              <button type="button" class="btn-sm mgr-control" id="mgrTrendSentiment" aria-pressed="true" aria-controls="trendAnalysis">Sentiment</button>
+              <label class="mgr-select mgr-topic-picker">
                 <select id="mgrTopicTrendSelect" aria-label="Topic" aria-controls="trendAnalysis" disabled><option value="">Choose a topic</option></select>
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 7.5 5 5 5-5"/></svg>
               </label>
@@ -553,7 +551,7 @@
             <button type="button" data-compare="service" aria-pressed="false">Services</button>
           </div>
         </header>
-        <input class="mgr-compare-search" id="mgrCompareSearch" type="search" aria-label="Search comparison" placeholder="Search by name or course code">
+        <input class="mgr-compare-search mgr-control" id="mgrCompareSearch" type="search" aria-label="Search comparison" placeholder="Search by name or course code">
         <div id="compareAnalysis" aria-live="polite"></div>
       </article>
 
@@ -567,6 +565,39 @@
         <p class="mgr-alert-explanation">These alerts show where the share of negative feedback rose sharply. The semester filter selects the period when the increase was detected.</p>
         <p class="mgr-alert-summary" id="mgrAlertSummary" role="status"></p>
         <div id="alertAnalysis"></div>
+      </article>
+
+      <article class="mgr-card mgr-report-builder" id="reportsSection" data-dashboard-panel="reports" hidden aria-labelledby="reportsSectionTitle">
+        <header class="mgr-card-head">
+          <div><h2 id="reportsSectionTitle">Reports</h2><p id="mgrReportScope"></p></div>
+        </header>
+        <div class="mgr-report-options">
+          <label class="mgr-report-field"><span>Report content</span>
+            <span class="mgr-select">
+              <select id="mgrReportSection">
+                <option value="overview">Overview — satisfaction, response counts, sentiment</option>
+                <option value="trends">Semester trends — changes across periods</option>
+                <option value="compare_course">Course comparison — ratings by course</option>
+                <option value="compare_department">Department comparison — ratings by department</option>
+                <option value="compare_service">Service comparison — ratings by service</option>
+                <option value="alerts">Negative trend alerts — affected areas and rates</option>
+              </select>
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 7.5 5 5 5-5"/></svg>
+            </span>
+          </label>
+          <label class="mgr-report-field"><span>File format</span>
+            <span class="mgr-select">
+              <select id="mgrReportFormat"><option value="pdf">PDF — ready to share at meetings</option><option value="xlsx">Excel (.xlsx) — editable table</option></select>
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 7.5 5 5 5-5"/></svg>
+            </span>
+          </label>
+        </div>
+        <div class="mgr-report-preview" id="mgrReportPreview"></div>
+        <div class="mgr-export-grid">
+          <button type="button" class="btn-sm mgr-control mgr-export-primary" id="mgrDownloadReport">Download selected report</button>
+          <button type="button" class="btn-sm mgr-control" id="copyReportSummary">Copy overview summary</button>
+        </div>
+        <p class="mgr-export-note">Reports contain aggregate results for your access scope.</p>
       </article>
 
       <article class="mgr-card" id="mgrUniversityDetails" data-dashboard-panel="university" hidden aria-labelledby="mgrUniversityTitle">
@@ -749,39 +780,6 @@
     </section>
 
     <section class="mgr-section workflow-workspace" id="actionsSection" hidden></section>
-    <section class="mgr-section" id="reportsSection" hidden aria-labelledby="reportsSectionTitle">
-      <div class="mgr-section-head">
-        <div>
-          <span class="mgr-kicker">Share results</span>
-          <h2 id="reportsSectionTitle">Reports</h2>
-          <p id="mgrReportScope"></p>
-        </div>
-      </div>
-      <article class="mgr-card mgr-card-wide mgr-report-builder">
-        <header class="mgr-card-head"><div><h3>Build your report</h3><p>First choose what information to include, then choose a file format.</p></div></header>
-        <div class="mgr-report-options">
-          <label class="mgr-report-field"><span>Report content</span>
-            <select id="mgrReportSection">
-              <option value="overview">Overview — satisfaction, response counts, sentiment</option>
-              <option value="trends">Semester trends — changes across periods</option>
-              <option value="compare_course">Course comparison — ratings by course</option>
-              <option value="compare_department">Department comparison — ratings by department</option>
-              <option value="compare_service">Service comparison — ratings by service</option>
-              <option value="alerts">Negative trend alerts — affected areas and rates</option>
-            </select>
-          </label>
-          <label class="mgr-report-field"><span>File format</span>
-            <select id="mgrReportFormat"><option value="pdf">PDF — ready to share at meetings</option><option value="xlsx">Excel (.xlsx) — editable table</option></select>
-          </label>
-        </div>
-        <div class="mgr-report-preview" id="mgrReportPreview"></div>
-        <div class="mgr-export-grid">
-          <button type="button" class="mgr-export-btn" id="mgrDownloadReport">Download selected report</button>
-          <button type="button" class="mgr-export-btn mgr-export-btn-secondary" id="copyReportSummary">Copy overview summary</button>
-        </div>
-        <p class="mgr-export-note">The report reflects the selected dashboard filters and your manager access scope. It contains aggregate results only — no student identities.</p>
-      </article>
-    </section>
 
 
     </div>
@@ -2317,18 +2315,17 @@ function toggleManagerMenu() {
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
 }
-const managerViews = { explorer: "explorerSection", overview: "overviewSection", reports: "reportsSection", actions: "actionsSection" };
+const managerViews = { explorer: "explorerSection", overview: "overviewSection", actions: "actionsSection" };
 function selectManagerView(view = "overview") {
   closeDashboardFilterPicker();
   if (!Object.prototype.hasOwnProperty.call(managerViews, view)) view = "overview";
   const isManager = currentSession?.user?.role === "manager";
-  const restricted = ["reports", "actions"];
-  if (!isManager && restricted.includes(view)) view = "overview";
+  if (!isManager && view === "actions") view = "overview";
   managerActiveView = view;
   $("mgrSubmenu").hidden = !managerMenuOpen;
   document.querySelector('#responsesApp [data-nav="responses"]')?.setAttribute("aria-expanded", String(managerMenuOpen));
   document.querySelectorAll("#mgrSubmenu [data-mgr-view]").forEach(button => {
-    button.hidden = !isManager && restricted.includes(button.dataset.mgrView);
+    button.hidden = !isManager && button.dataset.mgrView === "actions";
     const active = button.dataset.mgrView === view;
     button.classList.toggle("is-active", active);
     if (active) button.setAttribute("aria-current", "page");
@@ -3783,6 +3780,6 @@ async function checkHealth() {
 </script>
 <script src="/university-ui.js"></script>
 <script src="/sprint6.js?v=1"></script>
-<script src="/staff-i18n.js?v=9"></script>
+<script src="/staff-i18n.js?v=10"></script>
 </body>
 </html>
